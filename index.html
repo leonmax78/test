@@ -259,6 +259,17 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
   }
 }
 
+
+/* v88i header emphasis + clean home */
+.brandTitle{font-size:22px!important;font-weight:1000!important;letter-spacing:.02em!important;color:#f8fbff!important}
+.maker{font-size:15px!important;font-weight:1000!important;color:#f8fbff!important;text-align:right!important}
+.topbar{padding:calc(12px + env(safe-area-inset-top)) 24px 12px!important}
+@media (max-width:700px){
+  .brandTitle{font-size:17px!important;line-height:1.2!important}
+  .maker{font-size:12px!important}
+  .topbar{padding:calc(10px + env(safe-area-inset-top)) 12px 10px!important}
+}
+
 </style>
 </head>
 <body>
@@ -436,12 +447,7 @@ function renderItemPage(tab='item'){
  if(activeItem)searchItems(); else searchReverseItems();
 }
 function renderHome(){
- byId('reader').innerHTML=`<section class="card">
- <div class="quick homeQuick">
-  <button data-open="jiang">降神、經驗試算</button>
-  <button data-open="monster">怪物查詢</button>
-  <button data-open="item">道具查詢</button>
- </div></section>`;
+ byId('reader').innerHTML='';
 }
 function renderLoad(){
  // v82：正式版正常不顯示讀取狀態，避免像工程頁。
@@ -684,10 +690,13 @@ function fillJiangFields(kind){
  const stars20=Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} 星</option>`).join('');
 
  if(kind==='support'){
-  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><h2>副降神模擬</h2><div class="muted">已選過的副降神會從其他欄位移除，避免手機版重複選擇。</div>
-  <div class="notice">副降神 1～4 的角色能力會以原本能力的 10% 計算。</div>
-  <div class="kvGrid">${Array.from({length:4},(_,i)=>`<div class="kv"><div class="k">副降神 ${i+1}</div><div class="v"><select id="jsN${i}" class="jsSupportName" data-index="${i}">${opts}</select><label>星等</label><select id="jsS${i}">${stars1}</select></div></div>`).join('')}</div>
-  <div class="quick"><button id="calcSupport">產生閱讀頁<small>角色能力以 10% 計算，並計算成立連結</small></button></div></section>`;
+  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><h2>副降神模擬</h2>
+  <div class="notice">主降神以 100% 能力計算；副降神 1～4 以原本能力的 10% 計算。</div>
+  <div class="kvGrid">
+    <div class="kv"><div class="k">主降神</div><div class="v"><select id="jsN0" class="jsSupportName" data-index="0">${opts}</select><label>星等</label><select id="jsS0">${stars1}</select></div></div>
+    ${Array.from({length:4},(_,i)=>`<div class="kv"><div class="k">副降神 ${i+1}</div><div class="v"><select id="jsN${i+1}" class="jsSupportName" data-index="${i+1}">${opts}</select><label>星等</label><select id="jsS${i+1}">${stars1}</select></div></div>`).join('')}
+  </div>
+  <div class="quick"><button id="calcSupport">產生閱讀頁<small>主降神 100%，副降神 10%，並計算成立連結</small></button></div></section>`;
   updateSupportOptions();
  }
 
@@ -774,29 +783,31 @@ function calcSupport(){
  window.v86LastView='jiang';
  const picks=[];
  const used=new Set();
- for(let i=0;i<4;i++){
+ for(let i=0;i<5;i++){
   const n=byId('jsN'+i)?.value;
   const s=intOf(byId('jsS'+i)?.value,1);
-  if(n && !used.has(n)){picks.push({n,s});used.add(n);}
+  const role=i===0?'主降神':`副降神 ${i}`;
+  const rate=i===0?1:0.1;
+  if(n && !used.has(n)){picks.push({n,s,role,rate});used.add(n);}
  }
- if(!picks.length){empty('請選擇副降神');return}
+ if(!picks.length){empty('請選擇主降神或副降神');return}
 
  const total=Object.fromEntries(STATS.map(s=>[s,0]));
  const rows=[];
  for(const p of picks){
   const raw=ability(p.n,p.s);
-  const a=scaleAbility(raw,0.1);
-  rows.push([p.n,p.s,a]);
+  const a=scaleAbility(raw,p.rate);
+  rows.push([p.n,p.s,p.role,p.rate,a]);
   for(const st of STATS)total[st]+=a[st];
  }
  const combos=activeCombos(picks.map(x=>x.n)), bonus=comboBonus(combos);
  for(const st of STATS)total[st]+=bonus[st];
 
  byId('reader').innerHTML=`<section class="card">${backButtonHTML('jiang')}<h1>副降神模擬</h1>
- <div class="muted">${picks.map(p=>`${esc(p.n)} ${p.s}星`).join('、')}｜角色能力以 10% 計算</div>
+ <div class="muted">${picks.map(p=>`${esc(p.role)}：${esc(p.n)} ${p.s}星 ${p.rate===1?'100%':'10%'}`).join('、')}</div>
  <h3>總能力</h3><div class="kvGrid">${STATS.map(st=>`<div class="kv"><div class="k">${esc(st)}</div><div class="v">${fmt(total[st])}</div></div>`).join('')}</div>
  <h3>成立連結</h3>${combos.length?combos.map(c=>`<div class="notice"><b>${esc(c)}</b><br>${esc((DATA.comboMembers[c]||[]).join('、'))}<br>${esc(comboText(c))}</div>`).join(''):'<div class="empty">沒有成立連結</div>'}
- <h3>各副降神能力（已套用 10%）</h3>${rows.map(([n,s,a])=>`<div class="card" style="box-shadow:none"><h2>${esc(n)}｜${s}星｜10%</h2><div class="kvGrid">${STATS.map(st=>`<div class="kv"><div class="k">${esc(st)}</div><div class="v">${fmt(a[st])}</div></div>`).join('')}</div></div>`).join('')}
+ <h3>各降神能力</h3>${rows.map(([n,s,role,rate,a])=>`<div class="card" style="box-shadow:none"><h2>${esc(role)}｜${esc(n)}｜${s}星｜${rate===1?'100%':'10%'}</h2><div class="kvGrid">${STATS.map(st=>`<div class="kv"><div class="k">${esc(st)}</div><div class="v">${fmt(a[st])}</div></div>`).join('')}</div></div>`).join('')}
  </section>`;
  closeDrawer();
  window.scrollTo({top:0,behavior:'smooth'});
