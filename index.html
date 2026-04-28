@@ -7012,6 +7012,8 @@ function fillJiangFields(kind){
 
  if(kind==='training'){
   renderTrainingCalc();
+  closeDrawer();
+  window.scrollTo({top:0,behavior:'smooth'});
   return;
  }
  closeDrawer();
