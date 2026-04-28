@@ -261,6 +261,7 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
 
 
 /* v88i header emphasis + clean home */
+/* v88k mobile jiang menu flow: main opens submenu only */
 .brandTitle{font-size:22px!important;font-weight:1000!important;letter-spacing:.02em!important;color:#f8fbff!important}
 .maker{font-size:15px!important;font-weight:1000!important;color:#f8fbff!important;text-align:right!important}
 .topbar{padding:calc(12px + env(safe-area-inset-top)) 24px 12px!important}
@@ -778,14 +779,15 @@ function updateSupportOptions(){
  }
 }
 function renderJiangHome(){
- byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1>
- <div class="quick cleanQuick">
-  <button data-jiang-open="support">副降神模擬</button>
-  <button data-jiang-open="compare">主降神比較</button>
-  <button data-jiang-open="stars">20星等</button>
-  <button data-jiang-open="starAura">星等 / 靈氣</button>
-  <button data-jiang-open="expPill">等級 / 經驗丹</button>
- </div></section>`
+ // v88k：降神主分類只負責展開左側小分類，不在右側顯示重複提示按鈕。
+ byId('reader').innerHTML='';
+}
+function openJiangMenuOnly(){
+ currentView='jiang';
+ document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='jiang'));
+ document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
+ byId('jiangForm').classList.add('active');
+ renderJiangHome();
 }
 function calcSupport(){
  updateSupportOptions();
@@ -850,9 +852,7 @@ function setView(view){
   closeDrawer();
  }
  if(view==='jiang'){
-  byId('jiangForm').classList.add('active');
-  renderJiangHome();
-  closeDrawer();
+  openJiangMenuOnly();
  }
  if(view==='monster'){
   renderMonsterPage();
@@ -868,7 +868,10 @@ function setView(view){
   closeDrawer();
  }
 }
-function setJiang(kind){setView('jiang');fillJiangFields(kind)}
+function setJiang(kind){
+ openJiangMenuOnly();
+ fillJiangFields(kind);
+}
 
 function calcStarAura(){
  window.v86LastView='jiang';
@@ -981,7 +984,7 @@ function backButtonHTML(view){
 function initEvents(){
  byId('openMenuBtn').onclick=openDrawer;byId('closeMenuBtn').onclick=closeDrawer;byId('backdrop').onclick=closeDrawer;
  document.addEventListener('change',e=>{if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();});
- document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v)setView(v);const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);if(window.innerWidth<980)openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo);if(window.innerWidth<980)openDrawer()}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid)showMonster(mid);const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds();if(e.target.id==='calcStarAura')calcStarAura();if(e.target.id==='calcExpNeed')calcExpNeed();if(e.target.id==='calcEatPill')calcEatPill();const et=e.target.closest('[data-exp-tab]');if(et){document.querySelectorAll('.calcTab').forEach(b=>b.classList.remove('active'));et.classList.add('active');byId('expTabNeed').style.display=et.dataset.expTab==='need'?'block':'none';byId('expTabEat').style.display=et.dataset.expTab==='eat'?'block':'none';}});
+ document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v){if(v==='jiang')openJiangMenuOnly();else setView(v);}const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);if(window.innerWidth<980)openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo)}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid)showMonster(mid);const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds();if(e.target.id==='calcStarAura')calcStarAura();if(e.target.id==='calcExpNeed')calcExpNeed();if(e.target.id==='calcEatPill')calcEatPill();const et=e.target.closest('[data-exp-tab]');if(et){document.querySelectorAll('.calcTab').forEach(b=>b.classList.remove('active'));et.classList.add('active');byId('expTabNeed').style.display=et.dataset.expTab==='need'?'block':'none';byId('expTabEat').style.display=et.dataset.expTab==='eat'?'block':'none';}});
  ['monsterQ','monsterMin','monsterMax'].forEach(id=>{const el=byId(id); if(el)el.addEventListener('input',searchMonsters);});
  
  
