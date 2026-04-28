@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>神州降神試算、掉落查詢系統｜手機優先自動讀INI修正版</title>
+<title>神州降神試算、掉落查詢系統｜手機優先自動讀INI修正版 v76</title>
 <style>
 :root{
   --bg:#07111f; --panel:#101a2d; --panel2:#0c1628; --line:#26364f;
@@ -73,7 +73,7 @@ table{border-collapse:collapse;width:100%;min-width:520px}th,td{border-bottom:1p
       <div class="brand-title">神州降神試算、掉落查詢系統</div>
       <div class="maker">製作By文昌 尼扣扣</div>
     </div>
-    <div class="status" id="licenseStatus">手機優先自動讀INI修正版</div>
+    <div class="status" id="licenseStatus">手機優先自動讀INI修正版 v76</div>
   </div>
 </header>
 
@@ -509,7 +509,7 @@ async function loadData(){
     setAutoLoadStatus('自動讀取新 INI 失敗，已暫時使用手機快取。<br>' + (e.message||e), false);
     return;
   }
-  setAutoLoadStatus('自動讀取 INI 失敗。請確認 INI / CSV 與 index.html 放在 GitHub 同一層。<br><br>' + (e.message||e), true);
+  setAutoLoadStatus('自動讀取 INI 失敗。請確認 INI / CSV 與 index.html 放在 GitHub 同一層，且已更新 data_version.txt。<br><br>' + (e.message||e), true);
  }
 }
 
