@@ -760,8 +760,8 @@ const TRAINING_DATA = {
     "effectsByLevel 為累計能力，第 0 筆代表 0 階。",
     "currentEffects = effectsByLevel[目前階]；targetEffects = effectsByLevel[目標階]；gainEffects = targetEffects - currentEffects。",
     "能力四聖諦與天照珠玉是自由分配能力值，若網站要精準到體魄/力量/智慧/靈敏，需另外做分配輸入。",
-    "六宇聚變核原始表第28階疑似寫成 +272；此版依等差規律使用 +372。",
-    "五鑽連貫心元為自動衍生能力：由梅冠、菱冠、心冠、桃冠、同花大聖鑽五種目前階取最低值，不列入道具缺少顆數彙總。"
+    "",
+    ""
   ],
   "data": [
     {
@@ -7215,19 +7215,37 @@ function trainingGroupRank(g){
 }
 function trainingElementRank(text){
  const s=String(text||'');
- const order=['玄武','白虎','青龍','朱雀','麒麟','騰蛇','梅冠','菱冠','心冠','桃冠','同花'];
+ const order=['玄武','體宇','體魄','白虎','力宇','力量','青龍','智宇','智慧','朱雀','敏宇','靈敏','麒麟','血宇','生命','騰蛇','精宇','精力','梅冠','菱冠','心冠','桃冠','同花'];
  const idx=order.findIndex(k=>s.includes(k));
  return idx>=0?idx:999;
+}
+function trainingDisplayName(name){
+ return String(name||'').replace(/五鑽連貫心元/g,'五鑽連貫心');
+}
+function trainingFilterGroups(value){
+ if(value==='group_diamond')return ['聖鑽','同花大聖鑽','五鑽連貫心'];
+ if(value==='group_ether')return ['以太核','六宇聚變核'];
+ return value?[value]:[];
+}
+function trainingGroupLabel(g){
+ if(g==='group_diamond')return '聖鑽(聖鑽、同花大聖鑽、五鑽連貫心)';
+ if(g==='group_ether')return '以太核(以太核、六宇聚變核)';
+ return g||'全部分類';
+}
+function trainingViewGroupValue(g){
+ if(['聖鑽','同花大聖鑽','五鑽連貫心'].includes(g))return 'group_diamond';
+ if(['以太核','六宇聚變核'].includes(g))return 'group_ether';
+ return g||'';
 }
 function sortedTrainingData(){
  const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
  return data.map((x,i)=>({x,i})).sort((a,b)=>{
   const ga=trainingGroupRank(a.x.group), gb=trainingGroupRank(b.x.group);
   if(ga!==gb)return ga-gb;
-  const ea=trainingElementRank((a.x.item||'')+(a.x.name||'')+(a.x.stat||''));
-  const eb=trainingElementRank((b.x.item||'')+(b.x.name||'')+(b.x.stat||''));
+  const ea=trainingElementRank((a.x.item||'')+trainingDisplayName(a.x.name)+(a.x.stat||''));
+  const eb=trainingElementRank((b.x.item||'')+trainingDisplayName(b.x.name)+(b.x.stat||''));
   if(ea!==eb)return ea-eb;
-  return String(a.x.name||'').localeCompare(String(b.x.name||''),'zh-Hant');
+  return trainingDisplayName(a.x.name).localeCompare(trainingDisplayName(b.x.name),'zh-Hant');
  });
 }
 function materialRank(item){
@@ -7252,19 +7270,22 @@ function sortMaterialEntries(entries){
  });
 }
 function appendTrainingNote(x){
- let note=x.note||'';
  if((x.group||'')==='五鑽連貫心'){
-  const add='請找『王都盧索』安全區「冥司印曷闐」啟用';
-  if(!note.includes(add))note+=(note?' ':'')+add;
+  return '不需要手動選階、請找『王都盧索』安全區「冥司印曷闐」啟用';
  }
+ let note=x.note||'';
+ note=note.replace(/六宇聚變核原始表第28階[^。]*。?/g,'').trim();
+ note=note.replace(/原始表第28階看起來寫成 \+272；此版按前後規律修正為 \+372/g,'').trim();
  return note;
 }
 function renderTrainingCalc(){
  const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
- const groups=(TRAINING_DATA&&TRAINING_DATA.groupOrder)||[...new Set(data.map(x=>x.group).filter(Boolean))];
- const groupOpts='<option value="">全部分類</option>'+groups.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
+ const groupOptions=['四聖諦','天照珠玉','靈丹','聖靈煉金','真元','group_diamond','group_ether'];
+ const groupOpts='<option value="">全部分類</option>'+groupOptions.map(g=>`<option value="${esc(g)}">${esc(trainingGroupLabel(g))}</option>`).join('');
  function card(pair){
   const x=pair.x, i=pair.i;
+  const displayName=trainingDisplayName(x.name||'');
+  const viewGroup=trainingViewGroupValue(x.group||'');
   const max=Number(x.maxLevel||0);
   const cur=Math.min(max,Math.max(0,Number(x.defaultCurrentLevel||0)));
   const tar=Math.min(max,Math.max(cur,Number(x.defaultTargetLevel||max)));
@@ -7273,8 +7294,8 @@ function renderTrainingCalc(){
   const defaultNeed=(x.costs||[]).slice(cur,tar).reduce((a,b)=>a+Number(b||0),0);
   const note=appendTrainingNote(x);
   const derived=x.inputMode==='derived';
-  return `<div class="trainCard" data-train-row="${i}" data-group="${esc(x.group||'')}">
-    <div class="trainCardHead"><div><div class="trainName">${esc(x.name||'')}</div><div class="trainSub">${esc((x.group||'')+sub)}｜${esc(x.stat||'')}</div></div><div class="trainBadge">滿階 ${max}</div></div>
+  return `<div class="trainCard" data-train-row="${i}" data-group="${esc(viewGroup)}">
+    <div class="trainCardHead"><div><div class="trainName">${esc(displayName)}</div><div class="trainSub">${esc((x.group||'')+sub)}｜${esc(trainingDisplayName(x.stat||''))}</div></div><div class="trainBadge">滿階 ${max}</div></div>
     <div class="trainNeedBox"><b>需求數量：</b>${esc(x.item||'')} × <span class="trainNeed" data-i="${i}">${fmt(defaultNeed)}</span><div class="rSub">0 → 滿階：${fmt(fullNeed)}</div></div>
     ${note?`<div class="trainNote">${esc(note)}</div>`:''}
     <div class="trainLevels">
@@ -7383,6 +7404,7 @@ function calcTraining(){
  window.v86LastView='jiang';
  clampTrainingInputs();
  const selectedGroup=byId('trainGroupFilter')?.value||'';
+ const selectedGroups=trainingFilterGroups(selectedGroup);
  const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
  const effectOrder=(TRAINING_DATA&&TRAINING_DATA.effectStatOrder)||['體魄','力量','智慧','靈敏','生命','精力','自由分配能力值'];
  const costByItem={};
@@ -7390,7 +7412,7 @@ function calcTraining(){
  const detail=[];
  for(let i=0;i<data.length;i++){
   const x=data[i];
-  if(selectedGroup && x.group!==selectedGroup)continue;
+  if(selectedGroups.length && !selectedGroups.includes(x.group))continue;
   const max=Number(x.maxLevel||0);
   const curEl=document.querySelector(`.trainCur[data-i="${i}"]`);
   const tarEl=document.querySelector(`.trainTar[data-i="${i}"]`);
@@ -7409,22 +7431,22 @@ function calcTraining(){
    const v=Number(tarEff[k]||0)-Number(curEff[k]||0);
    if(v){gains[k]=v; gainByStat[k]=(gainByStat[k]||0)+v;}
   });
-  detail.push({name:x.name||'', group:x.group||'', subGroup:x.subGroup||'', item:x.item||'', cur, tar, cost, gains, note:appendTrainingNote(x), noCost:!!x.excludeFromItemSummary});
+  detail.push({name:trainingDisplayName(x.name||''), group:x.group||'', subGroup:x.subGroup||'', item:x.item||'', cur, tar, cost, gains, note:appendTrainingNote(x), noCost:!!x.excludeFromItemSummary});
  }
  const costRows=sortMaterialEntries(Object.entries(costByItem)).map(([item,n])=>`<tr><td>${esc(item)}</td><td>${fmt(n)}</td></tr>`).join('');
  const allStats=[...effectOrder,...Object.keys(gainByStat).filter(s=>!effectOrder.includes(s))];
- const gainRows=allStats.filter(s=>gainByStat[s]).map(s=>`<tr><td>${esc(s)}</td><td>+${fmt(gainByStat[s])}</td></tr>`).join('');
+ const gainRows=allStats.filter(s=>gainByStat[s]).map(s=>`<tr><td>${esc(trainingDisplayName(s))}</td><td>+${fmt(gainByStat[s])}</td></tr>`).join('');
  const detailRows=detail.sort((a,b)=>{
   const ga=trainingGroupRank(a.group),gb=trainingGroupRank(b.group); if(ga!==gb)return ga-gb;
   const ea=trainingElementRank(a.item+a.name),eb=trainingElementRank(b.item+b.name); if(ea!==eb)return ea-eb;
   return a.name.localeCompare(b.name,'zh-Hant');
  }).map(d=>{
-  const gainText=Object.entries(d.gains).map(([k,v])=>`${k}+${fmt(v)}`).join('、')||'-';
+  const gainText=Object.entries(d.gains).map(([k,v])=>`${trainingDisplayName(k)}+${fmt(v)}`).join('、')||'-';
   const sub=d.subGroup?`｜${d.subGroup}`:'';
   const materialText=d.noCost?'無消耗':`${d.item} × ${fmt(d.cost)}`;
   return `<tr><td><b>${esc(d.name)}</b><div class="rSub">${esc(d.group+sub)}</div>${d.note?`<div class="rSub">${esc(d.note)}</div>`:''}</td><td>${d.cur} → ${d.tar}</td><td>${esc(materialText)}</td><td>${esc(gainText)}</td></tr>`;
  }).join('');
- const title=selectedGroup?`計算結果：${esc(selectedGroup)}`:'計算結果';
+ const title=selectedGroup?`計算結果：${esc(trainingGroupLabel(selectedGroup))}`:'計算結果';
  byId('trainingResult').innerHTML=`<h3>${title}</h3>
  ${detail.length?'': '<div class="empty">目前沒有任何提升項目，請把目標階調高後再計算。</div>'}
  ${costRows?`<h3>材料統計</h3><div class="tableWrap"><table><thead><tr><th>材料</th><th>數量</th></tr></thead><tbody>${costRows}</tbody></table></div>`:''}
