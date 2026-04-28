@@ -286,11 +286,6 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
         <div id="jiangFields"></div>
       </div>
       <button class="navBtn major" data-view="monster">怪物查詢 <span>›</span></button>
-      <div class="formBox" id="monsterForm">
-        <label>怪物名稱</label><input id="monsterQ" placeholder="例如：問頂仙龍、飛燕、山犬">
-        <div class="row2"><div><label>最低 Lv</label><input id="monsterMin" type="number"></div><div><label>最高 Lv</label><input id="monsterMax" type="number"></div></div>
-        <div class="results" id="monsterResults"></div>
-      </div>
       <button class="navBtn major" data-view="item">道具查詢 <span>›</span></button>
     </div>
     <div class="navGroup" id="manualGroup" style="display:none">
@@ -337,6 +332,7 @@ function raceName(v){const h=normHex(v);return RACE_MAP[h]||h||''}
 function subtypeName(type,sub){const th=normHex(type), sh=normHex(sub);return SUBTYPE_MAP[`${th}|${sh}`]||sh||''}
 function itemTypeName(t){return ITEM_TYPE_MAP[String(t||'').trim()]||''}
 function statusName(id){return statusIndex[String(intOf(id))]?.Name||''}
+function magicName(id){return magicIndex[String(intOf(id))]?.Name||''}
 function itemKind(it){
  const candidates=[it.Kind,it.kind,it.RaceKind,it.Race,it.TargetRace,it.TargetKind].filter(v=>v!==undefined&&String(v).trim()!=='');
  for(const v of candidates){
@@ -348,17 +344,55 @@ function itemKind(it){
  }
  return '';
 }
+function cleanEffectToken(x){
+ const t=String(x??'').trim();
+ if(!t||t==='0'||t==='0x0'||t==='0x00000000')return '';
+ // ITEM.INI 常見的 EFFECT_GIVE / EFFECT_* 是效果類型代碼，不是玩家要看的能力名稱。
+ if(/^[A-Z][A-Z0-9_]*$/.test(t)&&!/^\d+$/.test(t)&&!/^0x/i.test(t))return '';
+ return t;
+}
 function itemStatus(it){
  const vals=[];
  for(const [k,v] of Object.entries(it||{})){
-  if(/ExtraStatus|Status/i.test(k) && v!==undefined && String(v).trim()!=='' && String(v).trim()!=='0'){
+  if(/Status|ExtraStatus|State|Buff|Effect/i.test(k) && v!==undefined && String(v).trim()!=='' && String(v).trim()!=='0'){
     vals.push(String(v).trim());
   }
  }
- const ids=vals.join(',').split(/[,\s;|]+/).filter(Boolean);
- const names=[...new Set(ids.map(x=>statusName(x)||(/^0x/i.test(x)?'':`StatusID:${x}`)).filter(Boolean))];
- return names.join('、');
+ const ids=vals.join(',').split(/[,;|\s]+/).map(cleanEffectToken).filter(Boolean);
+ const names=[];
+ for(const x of ids){
+   const n=statusName(x)||magicName(x);
+   if(n)names.push(n);
+   else if(/^\d+$/.test(x)||/^0x/i.test(x))names.push(`StatusID:${x}`);
+ }
+ return [...new Set(names)].join('、');
 }
+const ITEM_FIELD_LABELS={
+ HP:'血量',MaxHP:'血量',AddHP:'血量',AddMaxHP:'血量',Life:'血量',MP:'精力',SP:'精力',MaxMP:'精力',MaxSP:'精力',AddMP:'精力',AddSP:'精力',
+ Con:'體魄',CON:'體魄',AddCon:'體魄',Str:'力量',STR:'力量',AddStr:'力量',Wis:'智慧',WIS:'智慧',Int:'智慧',INT:'智慧',AddWis:'智慧',AddInt:'智慧',
+ Dex:'靈敏',DEX:'靈敏',Agi:'靈敏',AGI:'靈敏',AddDex:'靈敏',AddAgi:'靈敏',
+ Atk:'攻擊',Attack:'攻擊',AddAtk:'攻擊',MinAtk:'最小攻擊',MaxAtk:'最大攻擊',MAtk:'術攻',MagicAtk:'術攻',AddMAtk:'術攻',AddMagicAtk:'術攻',
+ Def:'防禦',Defense:'防禦',AddDef:'防禦',MDef:'術防',MagicDef:'術防',AddMDef:'術防',AddMagicDef:'術防',
+ Hit:'命中',AddHit:'命中',Dodge:'閃避',AddDodge:'閃避',Critical:'爆擊',Crit:'爆擊',AddCrit:'爆擊',Speed:'速度',MoveSpeed:'移動速度',AttackSpeed:'攻速',
+ Weight:'重量',Price:'價格',Durability:'耐久',ReqLevel:'需求等級',NeedLevel:'需求等級'
+};
+const ITEM_SKIP_KEYS=new Set(['ID','Id','id','Name','Type','Level','Help','Desc','Description','Kind','kind','RaceKind','Race','TargetRace','TargetKind','Pic','Icon','Image','Shape','File','ItemID']);
+function isBlankItemValue(v){const s=String(v??'').trim();return !s||s==='0'||s==='0.0'||s==='0.00'||s==='0x0'||s==='0x00000000'}
+function prettyItemKey(k){return ITEM_FIELD_LABELS[k]||k.replace(/^Add/,'').replace(/_/g,' ')}
+function itemAbilityFields(it){
+ const out=[];
+ for(const [k,v] of Object.entries(it||{})){
+  if(ITEM_SKIP_KEYS.has(k))continue;
+  if(/Status|ExtraStatus|State|Buff|Effect/i.test(k))continue;
+  if(isBlankItemValue(v))continue;
+  const label=prettyItemKey(k);
+  const raw=String(v).trim();
+  const val=/^-?\d+(\.\d+)?$/.test(raw)&&Number(raw)>0?`+${raw}`:raw;
+  out.push([label,val]);
+ }
+ return out;
+}
+
 function openDrawer(){byId('drawer').classList.add('open');byId('backdrop').classList.add('open')}
 function closeDrawer(){byId('drawer').classList.remove('open');byId('backdrop').classList.remove('open')}
 function setTopStatus(s){byId('topStatus').textContent=s}
@@ -553,23 +587,9 @@ function searchMonstersMain(){
  window.v88MonsterMax=byId('monsterMaxMain')?.value||'';
  const arr=filterMonsterList(window.v88MonsterQ,window.v88MonsterMin,window.v88MonsterMax);
  const box=byId('monsterResultsMain'); if(box)box.innerHTML=monsterResultsHTML(arr);
- const lq=byId('monsterQ');
- if(lq && document.activeElement!==lq){
-  lq.value=window.v88MonsterQ;
-  byId('monsterMin').value=window.v88MonsterMin;
-  byId('monsterMax').value=window.v88MonsterMax;
-  const leftBox=byId('monsterResults'); if(leftBox)leftBox.innerHTML=monsterResultsHTML(arr);
- }
 }
 function searchMonsters(){
- const q=byId('monsterQ'); if(!q)return;
- window.v88MonsterQ=q.value;
- window.v88MonsterMin=byId('monsterMin')?.value||'';
- window.v88MonsterMax=byId('monsterMax')?.value||'';
- const arr=filterMonsterList(window.v88MonsterQ,window.v88MonsterMin,window.v88MonsterMax);
- const box=byId('monsterResults'); if(box)box.innerHTML=monsterResultsHTML(arr);
- const mq=byId('monsterQMain');
- if(mq && document.activeElement!==mq){mq.value=window.v88MonsterQ; byId('monsterMinMain').value=window.v88MonsterMin; byId('monsterMaxMain').value=window.v88MonsterMax; searchMonstersMain();}
+ searchMonstersMain();
 }
 function showMonster(id){
  window.v86LastView='monster';
@@ -610,10 +630,17 @@ function searchItems(){
 function showItem(id){
  window.v86LastView='item';
  history.pushState({app:'detail',view:'item'},'','#item-'+id);
- const it=itemIndex[String(id).trim()]; if(!it)return; const fields=[['ID',it.ID],['名稱',nameOf(it)],['等級',it.Level],['類型',itemTypeName(it.Type)||it.Type],['專剋',itemKind(it)],['特殊能力',itemStatus(it)],['說明',it.Help]].filter(x=>x[1]);
- byId('reader').innerHTML=`<section class="card"><button class="backBtn" onclick="goBackToPrevious()">← 返回查詢</button><h1>${esc(nameOf(it))}</h1><div>${fields.slice(0,6).map(([k,v])=>`<span class="pill">${esc(k)}：${esc(v)}</span>`).join('')}</div><h3>道具資料</h3><div class="kvGrid">${fields.map(([k,v])=>`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('')}</div><div class="quick"><button data-reverse-item="${esc(it.ID)}">反查哪些怪物掉落這個道具<small>查看怪物與掉落機率</small></button></div></section>`;
+ const it=itemIndex[String(id).trim()]; if(!it)return;
+ const special=itemStatus(it);
+ const fields=[['ID',it.ID],['名稱',nameOf(it)],['等級',it.Level],['類型',itemTypeName(it.Type)||it.Type],['專剋',itemKind(it)],['特殊能力',special],['說明',it.Help]].filter(x=>x[1]);
+ const abilities=itemAbilityFields(it);
+ const abilityHtml=abilities.length
+   ? `<h3>道具能力</h3><div class="kvGrid">${abilities.map(([k,v])=>`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('')}</div>`
+   : '';
+ byId('reader').innerHTML=`<section class="card"><button class="backBtn" onclick="goBackToPrevious()">← 返回查詢</button><h1>${esc(nameOf(it))}</h1><div>${fields.slice(0,6).map(([k,v])=>`<span class="pill">${esc(k)}：${esc(v)}</span>`).join('')}</div><h3>道具資料</h3><div class="kvGrid">${fields.map(([k,v])=>`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('')}</div>${abilityHtml}<div class="quick"><button data-reverse-item="${esc(it.ID)}">反查哪些怪物掉落這個道具<small>查看怪物與掉落機率</small></button></div></section>`;
  closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});
 }
+
 function searchReverseItems(){
  const input=byId('reverseQ'); if(!input)return;
  window.v86ReverseQ=input.value;
@@ -792,28 +819,9 @@ function setView(view){
   closeDrawer();
  }
  if(view==='monster'){
-  byId('monsterForm').classList.add('active');
   renderMonsterPage();
-  if(byId('monsterQ')){
-    byId('monsterQ').value=window.v88MonsterQ||'';
-    byId('monsterMin').value=window.v88MonsterMin||'';
-    byId('monsterMax').value=window.v88MonsterMax||'';
-    searchMonsters();
-  }
-
-  // 手機版：按怪物查詢時停留在篩選區，不要立刻跳到閱讀名片區。
-  if(window.innerWidth < 980){
-    openDrawer();
-    setTimeout(()=>{
-      const form=byId('monsterForm');
-      if(form)form.scrollIntoView({block:'start',behavior:'smooth'});
-      const q=byId('monsterQ');
-      if(q)q.focus({preventScroll:true});
-    },80);
-  }else{
-    closeDrawer();
-    window.scrollTo({top:0,behavior:'smooth'});
-  }
+  closeDrawer();
+  window.scrollTo({top:0,behavior:'smooth'});
  }
  if(view==='item'){
   renderItemPage('item');
@@ -938,7 +946,7 @@ function initEvents(){
  byId('openMenuBtn').onclick=openDrawer;byId('closeMenuBtn').onclick=closeDrawer;byId('backdrop').onclick=closeDrawer;
  document.addEventListener('change',e=>{if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();});
  document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v)setView(v);const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);if(window.innerWidth<980)openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo);if(window.innerWidth<980)openDrawer()}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid)showMonster(mid);const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds();if(e.target.id==='calcStarAura')calcStarAura();if(e.target.id==='calcExpNeed')calcExpNeed();if(e.target.id==='calcEatPill')calcEatPill();const et=e.target.closest('[data-exp-tab]');if(et){document.querySelectorAll('.calcTab').forEach(b=>b.classList.remove('active'));et.classList.add('active');byId('expTabNeed').style.display=et.dataset.expTab==='need'?'block':'none';byId('expTabEat').style.display=et.dataset.expTab==='eat'?'block':'none';}});
- ['monsterQ','monsterMin','monsterMax'].forEach(id=>byId(id).addEventListener('input',searchMonsters));
+ ['monsterQ','monsterMin','monsterMax'].forEach(id=>{const el=byId(id); if(el)el.addEventListener('input',searchMonsters);});
  
  
  document.addEventListener('input',e=>{if(['monsterQMain','monsterMinMain','monsterMaxMain'].includes(e.target.id))searchMonstersMain();if(['itemQ','itemMin','itemMax'].includes(e.target.id))searchItems();if(e.target.id==='reverseQ')searchReverseItems();});
