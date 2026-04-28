@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>神州降神試算、掉落查詢系統｜手機優先自動讀INI獨立啟動版 v79</title>
+<title>神州降神試算、掉落查詢系統｜手機優先自動讀INI套用修正版 v80</title>
 <style>
 :root{
   --bg:#07111f; --panel:#101a2d; --panel2:#0c1628; --line:#26364f;
@@ -73,7 +73,7 @@ table{border-collapse:collapse;width:100%;min-width:520px}th,td{border-bottom:1p
       <div class="brand-title">神州降神試算、掉落查詢系統</div>
       <div class="maker">製作By文昌 尼扣扣</div>
     </div>
-    <div class="status" id="licenseStatus">手機優先自動讀INI獨立啟動版 v79</div>
+    <div class="status" id="licenseStatus">手機優先自動讀INI套用修正版 v80</div>
   </div>
 </header>
 
@@ -763,6 +763,7 @@ window.addEventListener('DOMContentLoaded',()=>{initAuth();renderHome();});
 
   function g(id){return document.getElementById(id)}
   function safe(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  function nmLocal(d){return String((d&&d.Name)||'').trim()}
   function ensureStatus(){
     let reader=g('reader');
     if(!reader)return null;
@@ -868,6 +869,49 @@ window.addEventListener('DOMContentLoaded',()=>{initAuth();renderHome();});
     line(`${safe(label)} 讀取失敗`, 'bad');
     return {missing:true,tried};
   }
+  
+  function v80SafeApplyData(parsed){
+    // 補全舊主程式可能沒有掛到 window 的工具函式
+    if(typeof window.nm !== 'function') window.nm = nmLocal;
+
+    try{
+      if(typeof window.applyData === 'function'){
+        window.applyData(parsed);
+        return true;
+      }
+      if(typeof applyData === 'function'){
+        applyData(parsed);
+        return true;
+      }
+    }catch(e){
+      line('原本 applyData 套用失敗，改用 v80 安全套用：'+safe(e.message||e),'bad');
+    }
+
+    // 安全套用：直接寫入全域資料，建立最基本索引
+    window.monsters = parsed.monsters || [];
+    window.items = parsed.items || [];
+    window.magics = parsed.magics || [];
+    window.statuses = parsed.statuses || [];
+    window.monsterLocations = parsed.monsterLocations || {};
+
+    try{ monsters = window.monsters; }catch(e){}
+    try{ items = window.items; }catch(e){}
+    try{ magics = window.magics; }catch(e){}
+    try{ statuses = window.statuses; }catch(e){}
+    try{ monsterLocations = window.monsterLocations; }catch(e){}
+
+    try{
+      if(typeof buildIndexes === 'function') buildIndexes();
+      else if(typeof window.buildIndexes === 'function') window.buildIndexes();
+    }catch(e){
+      line('buildIndexes 失敗：'+safe(e.message||e),'bad');
+    }
+
+    try{ if(typeof searchMonsters === 'function') searchMonsters(); }catch(e){}
+    try{ if(typeof searchItems === 'function') searchItems(); }catch(e){}
+    return true;
+  }
+
   async function load(force=false){
     clearLines();
     ensureStatus();
@@ -897,14 +941,7 @@ window.addEventListener('DOMContentLoaded',()=>{initAuth();renderHome();});
         throw new Error(`解析後資料不足：怪物 ${parsed.monsters.length}｜道具 ${parsed.items.length}｜技能 ${parsed.magics.length}`);
       }
 
-      if(typeof window.applyData === 'function'){
-        window.applyData(parsed);
-      }else if(typeof applyData === 'function'){
-        applyData(parsed);
-      }else{
-        window.monsters=parsed.monsters;window.items=parsed.items;window.magics=parsed.magics;window.statuses=parsed.statuses;window.monsterLocations=parsed.monsterLocations;
-        if(typeof buildIndexes==='function')buildIndexes();
-      }
+      v80SafeApplyData(parsed);
       try{
         if(typeof cacheSet==='function'){
           await cacheSet('parsed_data',parsed);
