@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>神州降神試算、掉落查詢系統｜手機優先自動讀INI狀態版 v78</title>
+<title>神州降神試算、掉落查詢系統｜手機優先自動讀INI獨立啟動版 v79</title>
 <style>
 :root{
   --bg:#07111f; --panel:#101a2d; --panel2:#0c1628; --line:#26364f;
@@ -73,7 +73,7 @@ table{border-collapse:collapse;width:100%;min-width:520px}th,td{border-bottom:1p
       <div class="brand-title">神州降神試算、掉落查詢系統</div>
       <div class="maker">製作By文昌 尼扣扣</div>
     </div>
-    <div class="status" id="licenseStatus">手機優先自動讀INI狀態版 v78</div>
+    <div class="status" id="licenseStatus">手機優先自動讀INI獨立啟動版 v79</div>
   </div>
 </header>
 
@@ -746,7 +746,186 @@ function submitLicense(){ if(!AUTH_REQUIRED)return; try{const key=$('licenseInpu
 function setLicenseStatus(payload){const owner=payload.owner||'未命名';$('licenseStatus').textContent=`授權｜${payload.exp}｜${owner}`}
 function initAuth(){ if(!AUTH_REQUIRED){$('mainShell').style.display='block';return} const key=localStorage.getItem('combined_manual_tool_license_key'); if(!key){$('mainShell').style.display='none';$('licenseModal').style.display='flex';return} try{const payload=validateLicenseKey(key);setLicenseStatus(payload);$('mainShell').style.display='block'}catch(e){localStorage.removeItem('combined_manual_tool_license_key');$('mainShell').style.display='none';$('licenseError').textContent='原授權無效或已過期：'+e.message;$('licenseModal').style.display='flex'}}
 
-window.addEventListener('DOMContentLoaded',()=>{initAuth();renderHome();loadData();});
+window.addEventListener('DOMContentLoaded',()=>{initAuth();renderHome();});
 </script>
+
+<script>
+/* v79 獨立自動讀 INI 啟動器：不依賴舊 loadData 流程 */
+(function(){
+  const RAW_BASE = 'https://raw.githubusercontent.com/leonmax78/leonmax78.github.io/main/';
+  const SOURCES = {
+    monsters:['MONSTER_C.INI','MONSTER_C.ini','monster_c.ini','MONSTER.INI','monster.ini'],
+    items:['ITEM.INI','item.ini'],
+    magics:['MAGIC.INI','magic.ini'],
+    statuses:['STATUS.INI','status.ini'],
+    locations:['一般怪物位置.csv','一般怪物位置.CSV','monsterLocations.csv','monster_locations.csv','怪物位置.csv']
+  };
+
+  function g(id){return document.getElementById(id)}
+  function safe(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  function ensureStatus(){
+    let reader=g('reader');
+    if(!reader)return null;
+    let box=g('v79BootStatus');
+    if(!box){
+      box=document.createElement('section');
+      box.className='card';
+      box.id='v79BootStatus';
+      box.innerHTML='<h2>資料讀取狀態</h2><div id="v79BootLines" class="muted" style="line-height:1.65"></div><div class="quick"><button onclick="window.v79BootLoadIni(true)">重新讀取 INI<small>強制重新抓 GitHub 上的 INI / CSV</small></button></div>';
+      reader.prepend(box);
+    }
+    return box;
+  }
+  function line(msg,type='info'){
+    const box=ensureStatus();
+    if(!box)return;
+    const lines=g('v79BootLines');
+    const color=type==='ok'?'#86efac':type==='bad'?'#fda4af':'#bfdbfe';
+    lines.innerHTML += `<div style="color:${color};margin:4px 0">${msg}</div>`;
+  }
+  function clearLines(){
+    const box=g('v79BootStatus');
+    if(box)box.remove();
+  }
+  function parseIni(text){
+    const data=[]; let cur=null;
+    function push(){if(cur && Object.keys(cur).length)data.push(cur);cur=null}
+    String(text||'').replace(/^\ufeff/,'').split(/\r?\n/).forEach(raw=>{
+      const line=String(raw||'').trim();
+      if(!line || line.startsWith('//') || line.startsWith(';'))return;
+      if(line.startsWith('[') && line.endsWith(']')){push();cur={};return}
+      const p=line.indexOf('=');
+      if(p<0)return;
+      const k=line.slice(0,p).trim();
+      const v=line.slice(p+1).trim();
+      if(/^ID$/i.test(k) && cur && (cur.ID!==undefined || cur.Id!==undefined || cur.id!==undefined))push();
+      if(!cur)cur={};
+      cur[k]=v;
+    });
+    push();
+    return data.filter(x=>x && (x.ID!==undefined || x.Id!==undefined || x.id!==undefined || x.Name!==undefined));
+  }
+  function parseCSVLine(line){
+    const out=[]; let val='', q=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i], n=line[i+1];
+      if(q){ if(c==='"'&&n==='"'){val+='"';i++} else if(c==='"')q=false; else val+=c; }
+      else{ if(c==='"')q=true; else if(c===','){out.push(val);val=''} else val+=c; }
+    }
+    out.push(val);
+    return out.map(x=>String(x||'').trim());
+  }
+  function parseLoc(text){
+    const map={};
+    String(text||'').replace(/^\ufeff/,'').split(/\r?\n/).forEach(raw=>{
+      const line=String(raw||'').trim();
+      if(!line || line.startsWith('//'))return;
+      let parts=line.includes(',')?parseCSVLine(line):line.split(/\t+/).map(x=>x.trim());
+      parts=parts.filter(Boolean);
+      if(parts.length<2)return;
+      const name=parts[0], loc=parts.slice(1).join('、');
+      if(!name || name==='怪物名稱' || name.toLowerCase()==='name')return;
+      if(map[name] && !map[name].includes(loc))map[name]+='、'+loc;
+      else map[name]=loc;
+    });
+    return map;
+  }
+  async function fetchTimeout(url){
+    const ctrl=new AbortController();
+    const t=setTimeout(()=>ctrl.abort(),12000);
+    try{return await fetch(url,{cache:'no-store',signal:ctrl.signal});}
+    finally{clearTimeout(t);}
+  }
+  function urls(name){
+    const enc=encodeURIComponent(name).replace(/%2F/g,'/');
+    return ['./'+enc, RAW_BASE+enc];
+  }
+  async function fetchOne(list,label){
+    const tried=[];
+    for(const name of list){
+      for(const url of urls(name)){
+        try{
+          line(`讀取 ${safe(name)} ...`);
+          const res=await fetchTimeout(url);
+          tried.push(`${url}：HTTP ${res.status}`);
+          if(res.ok){
+            const buf=await res.arrayBuffer();
+            let text='';
+            try{text=new TextDecoder('big5').decode(buf)}catch(e){}
+            if(!text || text.includes('�')){
+              try{text=new TextDecoder('utf-8').decode(buf)}catch(e){}
+            }
+            if(text && text.trim()){
+              line(`成功：${safe(name)} (${Math.round(buf.byteLength/1024)} KB)`, 'ok');
+              return {name,text,tried};
+            }
+          }
+        }catch(e){
+          tried.push(`${url}：${e.name==='AbortError'?'逾時':(e.message||e)}`);
+        }
+      }
+    }
+    line(`${safe(label)} 讀取失敗`, 'bad');
+    return {missing:true,tried};
+  }
+  async function load(force=false){
+    clearLines();
+    ensureStatus();
+    line('v79 獨立啟動器已啟動。');
+    try{
+      const mon=await fetchOne(SOURCES.monsters,'怪物 INI');
+      const item=await fetchOne(SOURCES.items,'道具 INI');
+      const magic=await fetchOne(SOURCES.magics,'技能 INI');
+      const status=await fetchOne(SOURCES.statuses,'狀態 INI');
+      const loc=await fetchOne(SOURCES.locations,'怪物位置 CSV');
+      const debug=[...(mon.tried||[]),...(item.tried||[]),...(magic.tried||[]),...(status.tried||[]),...(loc.tried||[])];
+
+      if(mon.missing || item.missing || magic.missing){
+        throw new Error('必要檔案讀取失敗：<br>'+debug.map(safe).join('<br>'));
+      }
+
+      const parsed={
+        monsters:parseIni(mon.text),
+        items:parseIni(item.text),
+        magics:parseIni(magic.text),
+        statuses:status.missing?[]:parseIni(status.text),
+        monsterLocations:loc.missing?{}:parseLoc(loc.text),
+        sourceFiles:{monsters:mon.name,items:item.name,magics:magic.name,statuses:status.name||'',locations:loc.name||''}
+      };
+      line(`解析完成：怪物 ${parsed.monsters.length}｜道具 ${parsed.items.length}｜技能 ${parsed.magics.length}｜狀態 ${parsed.statuses.length}`, 'ok');
+      if(!parsed.monsters.length || !parsed.items.length || !parsed.magics.length){
+        throw new Error(`解析後資料不足：怪物 ${parsed.monsters.length}｜道具 ${parsed.items.length}｜技能 ${parsed.magics.length}`);
+      }
+
+      if(typeof window.applyData === 'function'){
+        window.applyData(parsed);
+      }else if(typeof applyData === 'function'){
+        applyData(parsed);
+      }else{
+        window.monsters=parsed.monsters;window.items=parsed.items;window.magics=parsed.magics;window.statuses=parsed.statuses;window.monsterLocations=parsed.monsterLocations;
+        if(typeof buildIndexes==='function')buildIndexes();
+      }
+      try{
+        if(typeof cacheSet==='function'){
+          await cacheSet('parsed_data',parsed);
+          await cacheSet('data_version','v79-'+Date.now());
+        }
+      }catch(e){}
+      line(`資料已載入完成。`, 'ok');
+      setTimeout(()=>{const box=g('v79BootStatus'); if(box)box.remove();},3000);
+    }catch(e){
+      line(String(e.message||e),'bad');
+      const bg=g('backupLoadGroup'); if(bg)bg.style.display='block';
+    }
+  }
+  window.v79BootLoadIni=load;
+
+  window.addEventListener('DOMContentLoaded',()=>{
+    // 等 renderHome 建好 reader 之後再跑
+    setTimeout(()=>load(false),250);
+  });
+})();
+</script>
+
 </body>
 </html>
