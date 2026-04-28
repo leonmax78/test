@@ -18,8 +18,8 @@ button{cursor:pointer}
 .topline{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;max-width:1480px;margin:0 auto}
 .menuBtn,.chipBtn,.primary,.ghost{border:1px solid var(--line);background:#0d1729;color:var(--text);border-radius:14px;padding:10px 12px;font-weight:900}
 .primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06101f;border:0}
-.brand{min-width:0}.brandTitle{font-weight:1000;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.maker{font-size:11px;color:#d6e8ff;margin-top:2px;font-weight:800}
-.status{font-size:12px;color:#cfe9ff;font-weight:900;white-space:nowrap}
+.brand{min-width:0}.brandTitle{font-weight:1000;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.maker{font-size:12px;color:#d6e8ff;font-weight:900;text-align:right;white-space:nowrap}
+.status{display:none!important;font-size:12px;color:#cfe9ff;font-weight:900;white-space:nowrap}
 .app{max-width:1480px;margin:0 auto}
 .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:60;display:none}
 .backdrop.open{display:block}
@@ -56,6 +56,14 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
   .drawer{position:sticky;top:86px;height:calc(100vh - 104px);transform:none!important;width:auto;border:1px solid var(--line);border-radius:24px;box-shadow:none;padding-top:0;overflow:hidden}
   .content{padding:0 0 80px}.reader{max-width:1060px;margin:0}.kvGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.quick{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+@media (max-width:520px){
+  .brandTitle{font-size:14px}
+  .maker{font-size:11px}
+  .topline{gap:8px}
+}
+.monsterSearchPage .results{max-height:none}
+.homeQuick button small,.cleanQuick button small{display:none}
 
 /* v84 大標題 / 小標題層級 */
 .bigTitle{
@@ -257,7 +265,8 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
 <div id="mainShell">
 <header class="topbar"><div class="topline">
   <button class="menuBtn" id="openMenuBtn">☰</button>
-  <div class="brand"><div class="brandTitle">神州降神、經驗試算、掉落查詢系統</div><div class="maker">v88c 電腦版左右排版修正版｜製作By文昌 尼扣扣</div></div>
+  <div class="brand"><div class="brandTitle">神州降神、經驗試算、掉落查詢系統</div></div>
+  <div class="maker">製作By文昌 尼扣扣</div>
   <div class="status" id="topStatus">準備中</div>
 </div></header>
 <div class="backdrop" id="backdrop"></div>
@@ -382,12 +391,11 @@ function renderItemPage(tab='item'){
  if(activeItem)searchItems(); else searchReverseItems();
 }
 function renderHome(){
- byId('reader').innerHTML=`<section class="card"><h1>手機優先正式版</h1><div class="muted">左上角 ☰ 選擇大功能與小功能，主畫面會顯示完整閱讀頁。</div>
- <h3>大標題</h3>
- <div class="quick">
-  <button data-open="jiang">降神、經驗試算<small>副降神、主降神比較、20星等、星等 / 靈氣、等級 / 經驗丹</small></button>
-  <button data-open="monster">怪物查詢<small>搜尋怪物、能力與掉落表</small></button>
-  <button data-open="item">道具查詢<small>道具資料與掉落反查</small></button>
+ byId('reader').innerHTML=`<section class="card">
+ <div class="quick homeQuick">
+  <button data-open="jiang">降神、經驗試算</button>
+  <button data-open="monster">怪物查詢</button>
+  <button data-open="item">道具查詢</button>
  </div></section>`;
 }
 function renderLoad(){
@@ -506,26 +514,62 @@ async function loadAllData(){
 }
 function locOf(n){return monsterLocations[n]||''}
 function monsterSearchText(m){return `${nameOf(m)} ${m.ID||''} ${m.Level||''} ${m.DropExp||''} ${locOf(nameOf(m))}`.toLowerCase()}
-function searchMonsters(){
- const q=byId('monsterQ').value.trim().toLowerCase();
- const hasLvFilter = !!(byId('monsterMin').value || byId('monsterMax').value);
- const min=byId('monsterMin').value?intOf(byId('monsterMin').value):null;
- const max=byId('monsterMax').value?intOf(byId('monsterMax').value):null;
-
+function filterMonsterList(q,min,max){
+ const hasLvFilter = !!(min || max);
+ const qText=(q||'').trim().toLowerCase();
+ const minLv=min?intOf(min):null;
+ const maxLv=max?intOf(max):null;
  let arr=monsters.filter(m=>
-  (!q||monsterSearchText(m).includes(q)) &&
-  (min===null||intOf(m.Level)>=min) &&
-  (max===null||intOf(m.Level)<=max)
+  (!qText||monsterSearchText(m).includes(qText)) &&
+  (minLv===null||intOf(m.Level)>=minLv) &&
+  (maxLv===null||intOf(m.Level)<=maxLv)
  );
-
- // v87：有使用等級篩選時，依經驗值由高到低排序；沒有等級篩選時維持原始 INI 順序。
  if(hasLvFilter){
   arr = arr.slice().sort((a,b)=>intOf(b.DropExp)-intOf(a.DropExp));
  }
-
- arr = arr.slice(0,150);
-
- byId('monsterResults').innerHTML=arr.map(m=>`<button class="resultItem" data-monster="${esc(m.ID)}"><div class="rName">${esc(nameOf(m))}</div><div class="rSub">Lv.${esc(m.Level||'')}｜EXP ${esc(m.DropExp||0)}｜${esc(locOf(nameOf(m)))}</div></button>`).join('')||'<div class="muted">找不到怪物</div>';
+ return arr.slice(0,150);
+}
+function monsterResultsHTML(arr){
+ return arr.map(m=>`<button class="resultItem" data-monster="${esc(m.ID)}"><div class="rName">${esc(nameOf(m))}</div><div class="rSub">Lv.${esc(m.Level||'')}｜EXP ${esc(m.DropExp||0)}｜${esc(locOf(nameOf(m)))}</div></button>`).join('')||'<div class="muted">找不到怪物</div>';
+}
+function renderMonsterPage(){
+ const q=window.v88MonsterQ||'';
+ const min=window.v88MonsterMin||'';
+ const max=window.v88MonsterMax||'';
+ byId('reader').innerHTML=`<section class="card monsterSearchPage"><h1>怪物查詢</h1>
+  <div class="kvGrid">
+    <div class="kv"><div class="k">怪物名稱 / ID / 位置</div><div class="v"><input id="monsterQMain" placeholder="例如：問頂仙龍、飛燕、山犬" value="${esc(q)}"></div></div>
+    <div class="kv"><div class="k">最低 Lv</div><div class="v"><input id="monsterMinMain" type="number" value="${esc(min)}"></div></div>
+    <div class="kv"><div class="k">最高 Lv</div><div class="v"><input id="monsterMaxMain" type="number" value="${esc(max)}"></div></div>
+  </div>
+  <div class="results" id="monsterResultsMain"></div>
+ </section>`;
+ searchMonstersMain();
+}
+function searchMonstersMain(){
+ const q=byId('monsterQMain'); if(!q)return;
+ window.v88MonsterQ=q.value;
+ window.v88MonsterMin=byId('monsterMinMain')?.value||'';
+ window.v88MonsterMax=byId('monsterMaxMain')?.value||'';
+ const arr=filterMonsterList(window.v88MonsterQ,window.v88MonsterMin,window.v88MonsterMax);
+ const box=byId('monsterResultsMain'); if(box)box.innerHTML=monsterResultsHTML(arr);
+ const lq=byId('monsterQ');
+ if(lq && document.activeElement!==lq){
+  lq.value=window.v88MonsterQ;
+  byId('monsterMin').value=window.v88MonsterMin;
+  byId('monsterMax').value=window.v88MonsterMax;
+  const leftBox=byId('monsterResults'); if(leftBox)leftBox.innerHTML=monsterResultsHTML(arr);
+ }
+}
+function searchMonsters(){
+ const q=byId('monsterQ'); if(!q)return;
+ window.v88MonsterQ=q.value;
+ window.v88MonsterMin=byId('monsterMin')?.value||'';
+ window.v88MonsterMax=byId('monsterMax')?.value||'';
+ const arr=filterMonsterList(window.v88MonsterQ,window.v88MonsterMin,window.v88MonsterMax);
+ const box=byId('monsterResults'); if(box)box.innerHTML=monsterResultsHTML(arr);
+ const mq=byId('monsterQMain');
+ if(mq && document.activeElement!==mq){mq.value=window.v88MonsterQ; byId('monsterMinMain').value=window.v88MonsterMin; byId('monsterMaxMain').value=window.v88MonsterMax; searchMonstersMain();}
 }
 function showMonster(id){
  window.v86LastView='monster';
@@ -674,14 +718,13 @@ function updateSupportOptions(){
  }
 }
 function renderJiangHome(){
- byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><div class="muted">請從左上角選單選擇小功能。</div>
- <h3>小標題</h3>
- <div class="quick">
-  <button data-jiang-open="support">副降神模擬<small>計算總能力與成立連結</small></button>
-  <button data-jiang-open="compare">主降神比較<small>比較兩位主降神</small></button>
-  <button data-jiang-open="stars">20星等<small>產生 0～20 星能力總表</small></button>
-  <button data-jiang-open="starAura">星等 / 靈氣<small>計算需要的降神數量與靈氣</small></button>
-  <button data-jiang-open="expPill">等級 / 經驗丹<small>計算經驗值、經驗丹換算與吃丹升等</small></button>
+ byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1>
+ <div class="quick cleanQuick">
+  <button data-jiang-open="support">副降神模擬</button>
+  <button data-jiang-open="compare">主降神比較</button>
+  <button data-jiang-open="stars">20星等</button>
+  <button data-jiang-open="starAura">星等 / 靈氣</button>
+  <button data-jiang-open="expPill">等級 / 經驗丹</button>
  </div></section>`
 }
 function calcSupport(){
@@ -750,8 +793,13 @@ function setView(view){
  }
  if(view==='monster'){
   byId('monsterForm').classList.add('active');
-  empty('請在左側選單搜尋怪物');
-  searchMonsters();
+  renderMonsterPage();
+  if(byId('monsterQ')){
+    byId('monsterQ').value=window.v88MonsterQ||'';
+    byId('monsterMin').value=window.v88MonsterMin||'';
+    byId('monsterMax').value=window.v88MonsterMax||'';
+    searchMonsters();
+  }
 
   // 手機版：按怪物查詢時停留在篩選區，不要立刻跳到閱讀名片區。
   if(window.innerWidth < 980){
@@ -764,6 +812,7 @@ function setView(view){
     },80);
   }else{
     closeDrawer();
+    window.scrollTo({top:0,behavior:'smooth'});
   }
  }
  if(view==='item'){
@@ -888,11 +937,11 @@ function backButtonHTML(view){
 function initEvents(){
  byId('openMenuBtn').onclick=openDrawer;byId('closeMenuBtn').onclick=closeDrawer;byId('backdrop').onclick=closeDrawer;
  document.addEventListener('change',e=>{if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();});
- document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v)setView(v);const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo);openDrawer()}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid)showMonster(mid);const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds();if(e.target.id==='calcStarAura')calcStarAura();if(e.target.id==='calcExpNeed')calcExpNeed();if(e.target.id==='calcEatPill')calcEatPill();const et=e.target.closest('[data-exp-tab]');if(et){document.querySelectorAll('.calcTab').forEach(b=>b.classList.remove('active'));et.classList.add('active');byId('expTabNeed').style.display=et.dataset.expTab==='need'?'block':'none';byId('expTabEat').style.display=et.dataset.expTab==='eat'?'block':'none';}});
+ document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v)setView(v);const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);if(window.innerWidth<980)openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo);if(window.innerWidth<980)openDrawer()}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid)showMonster(mid);const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds();if(e.target.id==='calcStarAura')calcStarAura();if(e.target.id==='calcExpNeed')calcExpNeed();if(e.target.id==='calcEatPill')calcEatPill();const et=e.target.closest('[data-exp-tab]');if(et){document.querySelectorAll('.calcTab').forEach(b=>b.classList.remove('active'));et.classList.add('active');byId('expTabNeed').style.display=et.dataset.expTab==='need'?'block':'none';byId('expTabEat').style.display=et.dataset.expTab==='eat'?'block':'none';}});
  ['monsterQ','monsterMin','monsterMax'].forEach(id=>byId(id).addEventListener('input',searchMonsters));
  
  
- document.addEventListener('input',e=>{if(['itemQ','itemMin','itemMax'].includes(e.target.id))searchItems();if(e.target.id==='reverseQ')searchReverseItems();});
+ document.addEventListener('input',e=>{if(['monsterQMain','monsterMinMain','monsterMaxMain'].includes(e.target.id))searchMonstersMain();if(['itemQ','itemMin','itemMax'].includes(e.target.id))searchItems();if(e.target.id==='reverseQ')searchReverseItems();});
  document.addEventListener('change',e=>{if(e.target.id==='itemType')searchItems();});
  document.addEventListener('click',e=>{const tab=e.target.closest('[data-item-tab]')?.dataset.itemTab;if(tab){renderItemPage(tab);}});
  byId('manualFiles').addEventListener('change',async e=>{alert('v86 先以自動讀取為主，手動載入下一版再補。')});
