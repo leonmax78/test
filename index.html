@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>神州降神試算、掉落查詢系統｜手機優先降神閱讀版</title>
+<title>神州降神試算、掉落查詢系統｜手機優先自動讀INI診斷版</title>
 <style>
 :root{
   --bg:#07111f; --panel:#101a2d; --panel2:#0c1628; --line:#26364f;
@@ -73,7 +73,7 @@ table{border-collapse:collapse;width:100%;min-width:520px}th,td{border-bottom:1p
       <div class="brand-title">神州降神試算、掉落查詢系統</div>
       <div class="maker">製作By文昌 尼扣扣</div>
     </div>
-    <div class="status" id="licenseStatus">手機優先降神閱讀版</div>
+    <div class="status" id="licenseStatus">手機優先自動讀INI診斷版</div>
   </div>
 </header>
 
@@ -122,7 +122,7 @@ table{border-collapse:collapse;width:100%;min-width:520px}th,td{border-bottom:1p
       <div class="nav-group">
         <div class="nav-title">資料狀態</div>
         <div class="muted" id="dataStatus" style="display:none"></div>
-        <label>備用：手動選擇 INI / CSV</label>
+        <label>自動讀取失敗時，才需要手動選擇 INI / CSV</label>
         <input type="file" multiple accept=".ini,.csv,.txt" onchange="loadManualJSON(event)">
       </div>
     </div>
@@ -258,11 +258,11 @@ function calcJiangNeeds(close=true){
 
 const INI_DATA_VERSION_FILE = 'data_version.txt';
 const INI_SOURCES = {
-  monsters: ['MONSTER_C.INI','MONSTER.INI','monster.ini','MONSTER.ini'],
-  items: ['ITEM.INI','item.ini'],
-  magics: ['MAGIC.INI','magic.ini'],
-  statuses: ['STATUS.INI','status.ini'],
-  locations: ['一般怪物位置.csv','monsterLocations.csv','monster_locations.csv','怪物位置.csv']
+  monsters: ['MONSTER_C.INI','MONSTER.INI','monster.ini','MONSTER.ini','MONSTER_C.ini','monster_c.ini'],
+  items: ['ITEM.INI','item.ini','Item.ini'],
+  magics: ['MAGIC.INI','magic.ini','Magic.ini'],
+  statuses: ['STATUS.INI','status.ini','Status.ini'],
+  locations: ['一般怪物位置.csv','一般怪物位置.CSV','monsterLocations.csv','monster_locations.csv','怪物位置.csv','monster_location.csv']
 };
 const CACHE_DB_NAME = 'shenzhou_tool_cache_v71';
 const CACHE_STORE = 'kv';
@@ -309,17 +309,43 @@ async function cacheSet(key,val){
   }catch(e){return false}
 }
 
+
+function setAutoLoadStatus(msg, showBackup=false){
+ const ds=$('dataStatus');
+ const sg=$('autoLoadStatusGroup');
+ const bg=$('backupLoadGroup');
+ if(sg){sg.style.display='block';sg.innerHTML=msg}
+ if(ds){ds.style.display=showBackup?'block':'none';ds.innerHTML=showBackup?msg:''}
+ if(bg)bg.style.display=showBackup?'block':'none';
+}
+function hideAutoLoadStatus(){
+ const ds=$('dataStatus');
+ const sg=$('autoLoadStatusGroup');
+ const bg=$('backupLoadGroup');
+ if(ds){ds.style.display='none';ds.innerHTML=''}
+ if(sg){sg.style.display='none';sg.innerHTML=''}
+ if(bg)bg.style.display='none';
+}
+
 async function fetchTextFirst(names){
-  for(const name of names){
-    try{
-      const res=await fetch(name,{cache:'no-store'});
-      if(res.ok){
-        const text=await res.text();
-        return {name,text};
-      }
-    }catch(e){}
+ const tried=[];
+ for(const name of names){
+  try{
+   const url=name + (name.includes('?')?'&':'?') + 'v=' + encodeURIComponent(Date.now());
+   const res=await fetch(url,{cache:'no-store'});
+   tried.push(`${name}：HTTP ${res.status}`);
+   if(res.ok){
+    const text=await res.text();
+    if(text && text.trim()){
+      return {name,text,tried};
+    }
+    tried[tried.length-1]+=' 空檔案';
+   }
+  }catch(e){
+   tried.push(`${name}：${e.message||e}`);
   }
-  return null;
+ }
+ return {name:'',text:'',tried,missing:true};
 }
 
 async function getRemoteVersion(){
@@ -396,50 +422,59 @@ function mergeDropFromOldNew(oldMons,newMons){
 }
 
 async function parseIniSourcesFromServer(){
-  const [mon, item, magic, status, loc] = await Promise.all([
-    fetchTextFirst(INI_SOURCES.monsters),
-    fetchTextFirst(INI_SOURCES.items),
-    fetchTextFirst(INI_SOURCES.magics),
-    fetchTextFirst(INI_SOURCES.statuses),
-    fetchTextFirst(INI_SOURCES.locations)
-  ]);
-  if(!mon || !item || !magic)throw new Error('缺少必要 INI：MONSTER_C.INI / ITEM.INI / MAGIC.INI');
-  return {
-    monsters: parseIniBlocks(mon.text),
-    items: parseIniBlocks(item.text),
-    magics: parseIniBlocks(magic.text),
-    statuses: status ? parseIniBlocks(status.text) : [],
-    monsterLocations: loc ? parseMonsterLocations(loc.text) : {},
-    sourceFiles: {
-      monsters: mon.name, items: item.name, magics: magic.name,
-      statuses: status?.name || '', locations: loc?.name || ''
-    }
-  };
+ const [mon, item, magic, status, loc] = await Promise.all([
+   fetchTextFirst(INI_SOURCES.monsters),
+   fetchTextFirst(INI_SOURCES.items),
+   fetchTextFirst(INI_SOURCES.magics),
+   fetchTextFirst(INI_SOURCES.statuses),
+   fetchTextFirst(INI_SOURCES.locations)
+ ]);
+ const debug = []
+   .concat(mon.tried||[])
+   .concat(item.tried||[])
+   .concat(magic.tried||[])
+   .concat(status.tried||[])
+   .concat(loc.tried||[]);
+ if(mon.missing || item.missing || magic.missing){
+   throw new Error('必要檔案讀取失敗。<br>' + debug.map(x=>esc(x)).join('<br>'));
+ }
+ return {
+   monsters: parseIniBlocks(mon.text),
+   items: parseIniBlocks(item.text),
+   magics: parseIniBlocks(magic.text),
+   statuses: status.missing ? [] : parseIniBlocks(status.text),
+   monsterLocations: loc.missing ? {} : parseMonsterLocations(loc.text),
+   sourceFiles: {
+     monsters: mon.name, items: item.name, magics: magic.name,
+     statuses: status.name || '', locations: loc.name || ''
+   },
+   debug
+ };
 }
 
 async function loadData(){
-  try{
-    const version=await getRemoteVersion();
-    const cachedVersion=await cacheGet(CACHE_KEY_VERSION);
-    const cachedData=await cacheGet(CACHE_KEY_DATA);
-    if(cachedData && cachedVersion===version){
-      applyData(cachedData);
-      return;
-    }
-    const parsed=await parseIniSourcesFromServer();
-    parsed.cacheVersion=version;
-    applyData(parsed);
-    await cacheSet(CACHE_KEY_DATA, parsed);
-    await cacheSet(CACHE_KEY_VERSION, version);
-  }catch(e){
-    const cachedData=await cacheGet(CACHE_KEY_DATA);
-    if(cachedData){
-      applyData(cachedData);
-      return;
-    }
-    const ds=$('dataStatus');
-    if(ds){ds.style.display='block';ds.innerHTML='找不到 INI 資料，請確認檔案與 index.html 放在同一層。'}
+ try{
+  const version=await getRemoteVersion();
+  const cachedVersion=await cacheGet(CACHE_KEY_VERSION);
+  const cachedData=await cacheGet(CACHE_KEY_DATA);
+  if(cachedData && cachedVersion===version){
+    applyData(cachedData);
+    return;
   }
+  const parsed=await parseIniSourcesFromServer();
+  parsed.cacheVersion=version;
+  applyData(parsed);
+  await cacheSet(CACHE_KEY_DATA, parsed);
+  await cacheSet(CACHE_KEY_VERSION, version);
+ }catch(e){
+  const cachedData=await cacheGet(CACHE_KEY_DATA);
+  if(cachedData){
+    applyData(cachedData);
+    setAutoLoadStatus('自動讀取新 INI 失敗，已暫時使用手機快取。<br>' + (e.message||e), false);
+    return;
+  }
+  setAutoLoadStatus('自動讀取 INI 失敗。請確認 INI / CSV 與 index.html 放在 GitHub 同一層。<br><br>' + (e.message||e), true);
+ }
 }
 
 function applyData(d){
@@ -449,8 +484,7 @@ function applyData(d){
  statuses=(d.statuses||[]).filter(x=>x&&x.ID);
  monsterLocations=d.monsterLocations||{};
  buildIndexes();
- const ds=$('dataStatus');
- if(ds){ds.style.display='none';ds.innerHTML=''}
+ hideAutoLoadStatus();
  if(selectedView==='monster')searchMonsters();
  if(selectedView==='item')searchItems();
  if(selectedView==='reverse')searchReverseItems();
