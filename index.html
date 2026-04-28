@@ -51,7 +51,7 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
 .authModal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.72);padding:16px}.authBox{width:min(560px,100%);background:#111827;border:1px solid #475569;border-radius:18px;padding:18px}.authBox textarea{width:100%;min-height:120px;background:#0c1424;color:#fff;border:1px solid #3a4a68;border-radius:12px;padding:10px}.error{color:#fda4af;font-weight:900;margin-top:8px}
 .loadLine{margin:4px 0;color:#bfdbfe}.loadOk{color:var(--ok)}.loadBad{color:#fda4af}
 @media (min-width:980px){
-  .menuBtn,.floatMenu,.backdrop,.closeOnly{display:none!important}
+  .menuBtn,.backdrop,.closeOnly{display:none!important}
   .app{display:grid;grid-template-columns:380px 1fr;gap:18px;padding:18px}
   .drawer{position:sticky;top:86px;height:calc(100vh - 104px);transform:none!important;width:auto;border:1px solid var(--line);border-radius:24px;box-shadow:none;padding-top:0;overflow:hidden}
   .content{padding:0 0 80px}.reader{max-width:1060px;margin:0}.kvGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.quick{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -62,7 +62,7 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
 <div id="mainShell">
 <header class="topbar"><div class="topline">
   <button class="menuBtn" id="openMenuBtn">☰</button>
-  <div class="brand"><div class="brandTitle">神州降神試算、掉落查詢系統</div><div class="maker">v81 乾淨重寫版｜製作By文昌 尼扣扣</div></div>
+  <div class="brand"><div class="brandTitle">神州降神試算、掉落查詢系統</div><div class="maker">v82 手機正式版｜製作By文昌 尼扣扣</div></div>
   <div class="status" id="topStatus">準備中</div>
 </div></header>
 <div class="backdrop" id="backdrop"></div>
@@ -109,7 +109,7 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
 </aside>
 <main class="content"><div class="reader" id="reader"></div></main>
 </div>
-<button class="floatMenu" id="floatMenuBtn">☰ 選單</button>
+
 </div>
 <div class="authModal" id="licenseModal"><div class="authBox"><h2>授權驗證</h2><div class="muted">請貼上授權鑰匙。</div><textarea id="licenseInput"></textarea><div class="error" id="licenseError"></div><button class="primary" id="licenseSubmit">驗證授權</button></div></div>
 
@@ -152,9 +152,27 @@ function renderHome(){
  byId('reader').innerHTML=`<section class="card"><h1>手機優先乾淨版</h1><div class="muted">這版已重新寫資料讀取與顯示流程，不沿用 v71～v80 補丁。左上角 ☰ 選功能，結果會顯示在完整閱讀頁。</div><div class="quick"><button data-open="monster">怪物查詢<small>搜尋怪物、能力與掉落表</small></button><button data-open="item">道具查詢<small>搜尋道具、專剋與特殊能力</small></button><button data-open="reverse">掉落反查<small>查哪些怪物掉落指定道具</small></button><button data-open="jiang">降神試算<small>副降神、主降神比較、各星等能力、升星需求</small></button></div></section>`;
 }
 function renderLoad(){
- byId('reader').innerHTML=`<section class="card" id="loadCard"><h1>資料讀取狀態</h1><div id="loadLines" class="muted"></div></section>`;
+ // v82：正式版正常不顯示讀取狀態，避免像工程頁。
+ // 讀取失敗時才會把 loadCard 顯示出來。
+ const old=byId('loadCard');
+ if(old)old.remove();
 }
-function loadLine(msg,type='info'){const el=byId('loadLines'); if(!el)return; const cls=type==='ok'?'loadOk':type==='bad'?'loadBad':'loadLine'; el.innerHTML+=`<div class="${cls}">${msg}</div>`}
+function loadLine(msg,type='info'){
+ // v82：只有錯誤才顯示讀取狀態。
+ if(type!=='bad')return;
+ let card=byId('loadCard');
+ if(!card){
+  card=document.createElement('section');
+  card.className='card';
+  card.id='loadCard';
+  card.innerHTML='<h1>資料讀取失敗</h1><div id="loadLines" class="muted"></div>';
+  byId('reader').prepend(card);
+ }
+ const el=byId('loadLines');
+ if(!el)return;
+ const cls=type==='ok'?'loadOk':type==='bad'?'loadBad':'loadLine';
+ el.innerHTML+=`<div class="${cls}">${msg}</div>`;
+}
 function empty(msg){byId('reader').innerHTML=`<section class="empty">${esc(msg)}</section>`}
 
 function candidateUrls(name){const enc=encodeURIComponent(name).replace(/%2F/g,'/'); return ['./'+enc, RAW_BASE+enc]}
@@ -209,25 +227,57 @@ function buildDataIndexes(){
  const sel=byId('itemType'); if(sel){sel.innerHTML='<option value="">全部類型</option>'+Object.entries(ITEM_TYPE_MAP).map(([k,v])=>`<option value="${esc(k)}">${esc(v)}</option>`).join('')}
 }
 async function loadAllData(){
- renderLoad(); setTopStatus('讀取中');
+ renderLoad();
+ setTopStatus('讀取中');
  try{
   const mon=await fetchFirst(FILES.monsters,'怪物 INI');
   const item=await fetchFirst(FILES.items,'道具 INI');
   const magic=await fetchFirst(FILES.magics,'技能 INI');
   const status=await fetchFirst(FILES.statuses,'狀態 INI');
   const loc=await fetchFirst(FILES.locations,'怪物位置 CSV');
+
   if(mon.missing||item.missing||magic.missing)throw new Error('必要檔案讀取失敗');
-  monsters=parseIni(mon.text); items=parseIni(item.text); magics=parseIni(magic.text); statuses=status.missing?[]:parseIni(status.text); monsterLocations=loc.missing?{}:parseLocations(loc.text);
-  loadLine(`解析完成：怪物 ${monsters.length}｜道具 ${items.length}｜技能 ${magics.length}｜狀態 ${statuses.length}`,'ok');
+
+  monsters=parseIni(mon.text);
+  items=parseIni(item.text);
+  magics=parseIni(magic.text);
+  statuses=status.missing?[]:parseIni(status.text);
+  monsterLocations=loc.missing?{}:parseLocations(loc.text);
+
+  // v82：排除第一筆/雜訊 UNKNOWN，但保留原始 INI 順序。
+  monsters=monsters.filter(x=>{
+    const n=nameOf(x).trim().toUpperCase();
+    return n && n!=='UNKNOWN' && n!=='NULL';
+  });
+  items=items.filter(x=>{
+    const n=nameOf(x).trim().toUpperCase();
+    return n && n!=='UNKNOWN' && n!=='NULL';
+  });
+
   if(!monsters.length||!items.length||!magics.length)throw new Error('解析後資料不足');
-  buildDataIndexes(); setTopStatus('已載入'); setTimeout(renderHome,1000);
- }catch(e){setTopStatus('讀取失敗');loadLine(String(e.message||e),'bad');byId('manualGroup').style.display='block'}
+
+  buildDataIndexes();
+  setTopStatus('已載入');
+  renderHome();
+ }catch(e){
+  setTopStatus('讀取失敗');
+  loadLine(String(e.message||e),'bad');
+  byId('manualGroup').style.display='block';
+ }
 }
 function locOf(n){return monsterLocations[n]||''}
 function monsterSearchText(m){return `${nameOf(m)} ${m.ID||''} ${m.Level||''} ${m.DropExp||''} ${locOf(nameOf(m))}`.toLowerCase()}
 function searchMonsters(){
- const q=byId('monsterQ').value.trim().toLowerCase(), min=byId('monsterMin').value?intOf(byId('monsterMin').value):null, max=byId('monsterMax').value?intOf(byId('monsterMax').value):null;
- const arr=monsters.filter(m=>(!q||monsterSearchText(m).includes(q))&&(min===null||intOf(m.Level)>=min)&&(max===null||intOf(m.Level)<=max)).sort((a,b)=>intOf(b.DropExp)-intOf(a.DropExp)).slice(0,150);
+ const q=byId('monsterQ').value.trim().toLowerCase();
+ const min=byId('monsterMin').value?intOf(byId('monsterMin').value):null;
+ const max=byId('monsterMax').value?intOf(byId('monsterMax').value):null;
+
+ const arr=monsters.filter(m=>
+  (!q||monsterSearchText(m).includes(q)) &&
+  (min===null||intOf(m.Level)>=min) &&
+  (max===null||intOf(m.Level)<=max)
+ ).slice(0,150);
+
  byId('monsterResults').innerHTML=arr.map(m=>`<button class="resultItem" data-monster="${esc(m.ID)}"><div class="rName">${esc(nameOf(m))}</div><div class="rSub">Lv.${esc(m.Level||'')}｜EXP ${esc(m.DropExp||0)}｜${esc(locOf(nameOf(m)))}</div></button>`).join('')||'<div class="muted">找不到怪物</div>';
 }
 function showMonster(id){
@@ -239,8 +289,18 @@ function showMonster(id){
 }
 function itemSearchText(it){return `${nameOf(it)} ${it.ID||''} ${it.Level||''} ${it.Type||''} ${itemTypeName(it.Type)} ${it.Help||''}`.toLowerCase()}
 function searchItems(){
- const q=byId('itemQ').value.trim().toLowerCase(), type=byId('itemType').value, min=byId('itemMin').value?intOf(byId('itemMin').value):null, max=byId('itemMax').value?intOf(byId('itemMax').value):null;
- const arr=items.filter(it=>(!q||itemSearchText(it).includes(q))&&(!type||it.Type===type)&&(min===null||intOf(it.Level)>=min)&&(max===null||intOf(it.Level)<=max)).sort((a,b)=>intOf(b.Level)-intOf(a.Level)).slice(0,150);
+ const q=byId('itemQ').value.trim().toLowerCase();
+ const type=byId('itemType').value;
+ const min=byId('itemMin').value?intOf(byId('itemMin').value):null;
+ const max=byId('itemMax').value?intOf(byId('itemMax').value):null;
+
+ const arr=items.filter(it=>
+  (!q||itemSearchText(it).includes(q)) &&
+  (!type||it.Type===type) &&
+  (min===null||intOf(it.Level)>=min) &&
+  (max===null||intOf(it.Level)<=max)
+ ).slice(0,150);
+
  byId('itemResults').innerHTML=arr.map(it=>`<button class="resultItem" data-item="${esc(it.ID)}"><div class="rName">${esc(nameOf(it))}</div><div class="rSub">Lv.${esc(it.Level||'')}｜${esc(itemTypeName(it.Type)||it.Type||'')}｜ID ${esc(it.ID)}</div></button>`).join('')||'<div class="muted">找不到道具</div>';
 }
 function showItem(id){
@@ -267,25 +327,123 @@ function activeCombos(names){const set=new Set(names.map(canonicalName).filter(B
 function comboBonus(combos){const total=Object.fromEntries(STATS.map(s=>[s,0])); for(const c of combos){const b=DATA.comboBonuses[c]||{}; for(const st of STATS)total[st]+=Number(b[st]||0)} return total}
 function comboText(c){const b=DATA.comboBonuses[c]||{}, parts=[]; for(const st of STATS){if(b[st])parts.push(`${st}+${fmt(b[st])}`)} return parts.join('、')||'無'}
 function fillJiangFields(kind){
+ // v82：降神的篩選表單顯示在主閱讀頁，不塞在左側選單。
  const opts='<option value="">空白</option>'+DISPLAY_NAMES.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
  const stars=Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} 星</option>`).join('');
- if(kind==='support')byId('jiangFields').innerHTML=Array.from({length:5},(_,i)=>`<label>副降神 ${i+1}</label><select id="jsN${i}">${opts}</select><select id="jsS${i}">${stars}</select>`).join('')+'<button class="primary" id="calcSupport">產生閱讀頁</button>';
- if(kind==='compare')byId('jiangFields').innerHTML=`<label>降神 A</label><select id="jsA">${opts}</select><select id="jsAS">${stars}</select><label>降神 B</label><select id="jsB">${opts}</select><select id="jsBS">${stars}</select><button class="primary" id="calcCompare">產生比較頁</button>`;
- if(kind==='stars')byId('jiangFields').innerHTML=`<label>選擇降神</label><select id="jsStarName">${opts}</select><label>星等</label><select id="jsStarLv">${stars}</select><button class="primary" id="calcStars">查看能力</button>`;
- if(kind==='needs')byId('jiangFields').innerHTML=`<label>目前星等</label><select id="needCur">${Array.from({length:21},(_,i)=>`<option value="${i}">${i} 星</option>`).join('')}</select><label>目標星等</label><select id="needTar">${Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} 星</option>`).join('')}</select><label>目前進度</label><input id="needProg" type="number" value="0"><button class="primary" id="calcNeeds">計算需求</button>`;
+
+ if(kind==='support'){
+  byId('reader').innerHTML=`<section class="card"><h1>副降神模擬</h1><div class="muted">已選過的副降神會自動在其他欄位停用，避免重複選擇。</div>
+  <div class="kvGrid">${Array.from({length:5},(_,i)=>`<div class="kv"><div class="k">副降神 ${i+1}</div><div class="v"><select id="jsN${i}" class="jsSupportName">${opts}</select><label>星等</label><select id="jsS${i}">${stars}</select></div></div>`).join('')}</div>
+  <div class="quick"><button id="calcSupport">產生閱讀頁<small>計算總能力與成立連結</small></button></div></section>`;
+  updateSupportOptions();
+ }
+
+ if(kind==='compare'){
+  byId('reader').innerHTML=`<section class="card"><h1>主降神比較</h1><div class="kvGrid">
+  <div class="kv"><div class="k">降神 A</div><div class="v"><select id="jsA">${opts}</select><label>星等</label><select id="jsAS">${stars}</select></div></div>
+  <div class="kv"><div class="k">降神 B</div><div class="v"><select id="jsB">${opts}</select><label>星等</label><select id="jsBS">${stars}</select></div></div>
+  </div><div class="quick"><button id="calcCompare">產生比較頁<small>比較兩位主降神能力差異</small></button></div></section>`;
+ }
+
+ if(kind==='stars'){
+  byId('reader').innerHTML=`<section class="card"><h1>各星等能力</h1><div class="kvGrid">
+  <div class="kv"><div class="k">選擇降神</div><div class="v"><select id="jsStarName">${opts}</select></div></div>
+  <div class="kv"><div class="k">星等</div><div class="v"><select id="jsStarLv">${stars}</select></div></div>
+  </div><div class="quick"><button id="calcStars">查看能力<small>顯示指定星等能力</small></button></div></section>`;
+ }
+
+ if(kind==='needs'){
+  byId('reader').innerHTML=`<section class="card"><h1>升星 / 靈氣 / 經驗</h1>
+  <h3>升星與靈氣</h3>
+  <div class="kvGrid">
+    <div class="kv"><div class="k">目前星等</div><div class="v"><select id="needCur">${Array.from({length:21},(_,i)=>`<option value="${i}">${i} 星</option>`).join('')}</select></div></div>
+    <div class="kv"><div class="k">目標星等</div><div class="v"><select id="needTar">${Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} 星</option>`).join('')}</select></div></div>
+    <div class="kv"><div class="k">目前卡片進度</div><div class="v"><input id="needProg" type="number" value="0"></div></div>
+  </div>
+  <h3>經驗計算</h3>
+  <div class="kvGrid">
+    <div class="kv"><div class="k">目前等級</div><div class="v"><input id="expCur" type="number" value="1"></div></div>
+    <div class="kv"><div class="k">目標等級</div><div class="v"><input id="expTar" type="number" value="2000"></div></div>
+    <div class="kv"><div class="k">經驗倍率</div><div class="v"><input id="expMulti" type="number" value="1"></div></div>
+  </div>
+  <div class="quick"><button id="calcNeeds">計算需求<small>升星卡、靈氣、經驗丹</small></button></div></section>`;
+ }
+ closeDrawer();
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+function updateSupportOptions(){
+ const selects=[...document.querySelectorAll('.jsSupportName')];
+ const chosen=selects.map(s=>s.value).filter(Boolean);
+ for(const sel of selects){
+  const self=sel.value;
+  for(const opt of sel.options){
+   if(!opt.value){opt.disabled=false;continue}
+   opt.disabled = opt.value!==self && chosen.includes(opt.value);
+  }
+ }
 }
 function renderJiangHome(){byId('reader').innerHTML=`<section class="card"><h1>降神試算</h1><div class="muted">請從左上角選單選擇降神功能。</div><div class="quick"><button data-jiang-open="support">副降神模擬<small>計算總能力與成立連結</small></button><button data-jiang-open="compare">主降神比較<small>比較兩位主降神</small></button><button data-jiang-open="stars">各星等能力<small>查看 0～20 星</small></button><button data-jiang-open="needs">升星 / 靈氣 / 經驗<small>計算需求</small></button></div></section>`}
 function calcSupport(){const picks=[];for(let i=0;i<5;i++){const n=byId('jsN'+i)?.value,s=intOf(byId('jsS'+i)?.value,20);if(n)picks.push({n,s})}if(!picks.length){empty('請選擇副降神');return}const total=Object.fromEntries(STATS.map(s=>[s,0]));for(const p of picks){const a=ability(p.n,p.s);for(const st of STATS)total[st]+=a[st]}const combos=activeCombos(picks.map(x=>x.n)), bonus=comboBonus(combos);for(const st of STATS)total[st]+=bonus[st];byId('reader').innerHTML=`<section class="card"><h1>副降神模擬</h1><div class="muted">${picks.map(p=>`${esc(p.n)} ${p.s}星`).join('、')}</div><h3>總能力</h3><div class="kvGrid">${STATS.map(st=>`<div class="kv"><div class="k">${esc(st)}</div><div class="v">${fmt(total[st])}</div></div>`).join('')}</div><h3>成立連結</h3>${combos.length?combos.map(c=>`<div class="notice"><b>${esc(c)}</b><br>${esc((DATA.comboMembers[c]||[]).join('、'))}<br>${esc(comboText(c))}</div>`).join(''):'<div class="empty">沒有成立連結</div>'}</section>`;closeDrawer()}
 function calcCompare(){const a=byId('jsA').value,b=byId('jsB').value;if(!a||!b){empty('請選擇兩位降神');return}const as=intOf(byId('jsAS').value,20),bs=intOf(byId('jsBS').value,20),A=ability(a,as),B=ability(b,bs);byId('reader').innerHTML=`<section class="card"><h1>主降神比較</h1><div class="muted">${esc(a)} ${as}星 vs ${esc(b)} ${bs}星</div><div class="tableWrap"><table><thead><tr><th>能力</th><th>${esc(a)}</th><th>${esc(b)}</th><th>差異</th></tr></thead><tbody>${STATS.map(st=>`<tr><td>${esc(st)}</td><td>${fmt(A[st])}</td><td>${fmt(B[st])}</td><td>${fmt(A[st]-B[st])}</td></tr>`).join('')}</tbody></table></div></section>`;closeDrawer()}
 function calcStars(){const n=byId('jsStarName').value||DISPLAY_NAMES[0],lv=intOf(byId('jsStarLv').value,20),a=ability(n,lv);byId('reader').innerHTML=`<section class="card"><h1>${esc(n)}｜${lv}星能力</h1><div class="kvGrid">${STATS.map(st=>`<div class="kv"><div class="k">${esc(st)}</div><div class="v">${fmt(a[st])}</div></div>`).join('')}</div></section>`;closeDrawer()}
-function calcNeeds(){const c=intOf(byId('needCur').value),t=intOf(byId('needTar').value),p=intOf(byId('needProg').value);let cards=0,aura=0;for(let s=c+1;s<=t;s++){cards+=Number(DATA.starRequirements[String(s)]?.single||0);aura+=Number(DATA.auraTable[String(s)]?.single||0)}cards=Math.max(0,cards-p);byId('reader').innerHTML=`<section class="card"><h1>升星 / 靈氣 / 經驗需求</h1><div class="kvGrid"><div class="kv"><div class="k">星等</div><div class="v">${c} → ${t}</div></div><div class="kv"><div class="k">降神卡需求</div><div class="v">${fmt(cards)}</div></div><div class="kv"><div class="k">靈氣需求</div><div class="v">${fmt(aura)}</div></div></div></section>`;closeDrawer()}
+function calcNeeds(){
+ const c=intOf(byId('needCur').value);
+ const t=intOf(byId('needTar').value);
+ const p=intOf(byId('needProg').value);
+ let cards=0,aura=0;
+
+ for(let s=c+1;s<=t;s++){
+  cards+=Number(DATA.starRequirements[String(s)]?.single||0);
+  aura+=Number(DATA.auraTable[String(s)]?.single||0);
+ }
+ cards=Math.max(0,cards-p);
+
+ const expCur=Math.max(1,intOf(byId('expCur')?.value,1));
+ const expTar=Math.max(expCur,intOf(byId('expTar')?.value,2000));
+ const multi=Math.max(1,intOf(byId('expMulti')?.value,1));
+ let expTotal=0n;
+ for(let lv=expCur+1;lv<=expTar;lv++){
+  expTotal+=BigInt(DATA.expTable[String(lv)]||0);
+ }
+ expTotal=expTotal/BigInt(multi);
+
+ function group255(n){
+  n=BigInt(n);
+  return [n/255n,n%255n];
+ }
+
+ const expRows=Object.entries(EXP_ITEMS).map(([name,val])=>{
+  const need=(expTotal+val-1n)/val;
+  const [g,r]=group255(need);
+  return [name,fmt(need),`${fmt(g)} 組 + ${fmt(r)} 顆`];
+ });
+
+ byId('reader').innerHTML=`<section class="card"><h1>升星 / 靈氣 / 經驗需求</h1>
+ <h3>升星與靈氣</h3>
+ <div class="kvGrid">
+  <div class="kv"><div class="k">星等</div><div class="v">${c} → ${t}</div></div>
+  <div class="kv"><div class="k">降神卡需求</div><div class="v">${fmt(cards)}</div></div>
+  <div class="kv"><div class="k">靈氣需求</div><div class="v">${fmt(aura)}</div></div>
+ </div>
+ <h3>經驗需求</h3>
+ <div class="kvGrid">
+  <div class="kv"><div class="k">等級</div><div class="v">${expCur} → ${expTar}</div></div>
+  <div class="kv"><div class="k">倍率</div><div class="v">${multi} 倍</div></div>
+  <div class="kv"><div class="k">總經驗</div><div class="v">${fmt(expTotal)}</div></div>
+ </div>
+ <h3>經驗丹換算</h3>
+ <div class="tableWrap"><table><thead><tr><th>經驗丹</th><th>顆數</th><th>組數</th></tr></thead><tbody>${expRows.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</tbody></table></div>
+ </section>`;
+ closeDrawer();
+ window.scrollTo({top:0,behavior:'smooth'});
+}
 
 function setView(view){currentView=view;document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active')); if(view==='home')renderHome(); if(view==='jiang'){byId('jiangForm').classList.add('active');renderJiangHome()} if(view==='monster'){byId('monsterForm').classList.add('active');empty('請在左側選單搜尋怪物');searchMonsters()} if(view==='item'){byId('itemForm').classList.add('active');empty('請在左側選單搜尋道具');searchItems()} if(view==='reverse'){byId('reverseForm').classList.add('active');empty('請在左側選單輸入道具名稱');searchReverseItems()}}
 function setJiang(kind){setView('jiang');fillJiangFields(kind)}
 
 function initEvents(){
- byId('openMenuBtn').onclick=openDrawer;byId('floatMenuBtn').onclick=openDrawer;byId('closeMenuBtn').onclick=closeDrawer;byId('backdrop').onclick=closeDrawer;
- document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v)setView(v);const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo);openDrawer()}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid)showMonster(mid);const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds()});
+ byId('openMenuBtn').onclick=openDrawer;byId('closeMenuBtn').onclick=closeDrawer;byId('backdrop').onclick=closeDrawer;
+ document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v)setView(v);const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo);openDrawer()}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid)showMonster(mid);const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds()});
  ['monsterQ','monsterMin','monsterMax'].forEach(id=>byId(id).addEventListener('input',searchMonsters));
  ['itemQ','itemType','itemMin','itemMax'].forEach(id=>byId(id).addEventListener('input',searchItems));
  byId('reverseQ').addEventListener('input',searchReverseItems);
