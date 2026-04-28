@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>神州降神、經驗試算、掉落查詢系統｜v81乾淨重寫版</title>
+<title>神州降神、經驗試算、掉落查詢系統｜v88c電腦版左右排版修正版</title>
 <style>
 :root{
   --bg:#07111f;--panel:#101a2d;--panel2:#0b1527;--line:#263a58;--text:#eaf2ff;--muted:#9fb4d4;
@@ -234,13 +234,30 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
   }
 }
 
+
+
+/* v88c 電腦版左右排版修正：修正 HTML 結構後，再強制左右兩欄 */
+@media (min-width:980px){
+  .app{
+    display:grid!important;
+    grid-template-columns:360px minmax(0,1fr)!important;
+    grid-template-areas:"menu content"!important;
+  }
+  .app > .drawer{
+    grid-area:menu!important;
+  }
+  .app > .content{
+    grid-area:content!important;
+  }
+}
+
 </style>
 </head>
 <body>
 <div id="mainShell">
 <header class="topbar"><div class="topline">
   <button class="menuBtn" id="openMenuBtn">☰</button>
-  <div class="brand"><div class="brandTitle">神州降神、經驗試算、掉落查詢系統</div><div class="maker">v88b 排版與手機怪物查詢修正版｜製作By文昌 尼扣扣</div></div>
+  <div class="brand"><div class="brandTitle">神州降神、經驗試算、掉落查詢系統</div><div class="maker">v88c 電腦版左右排版修正版｜製作By文昌 尼扣扣</div></div>
   <div class="status" id="topStatus">準備中</div>
 </div></header>
 <div class="backdrop" id="backdrop"></div>
@@ -266,7 +283,6 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
         <div class="results" id="monsterResults"></div>
       </div>
       <button class="navBtn major" data-view="item">道具查詢 <span>›</span></button>
-      </div>
     </div>
     <div class="navGroup" id="manualGroup" style="display:none">
       <div class="navTitle">備用手動載入</div>
