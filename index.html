@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>神州降神試算、掉落查詢系統｜v81乾淨重寫版</title>
+<title>神州降神、經驗試算、掉落查詢系統｜v81乾淨重寫版</title>
 <style>
 :root{
   --bg:#07111f;--panel:#101a2d;--panel2:#0b1527;--line:#263a58;--text:#eaf2ff;--muted:#9fb4d4;
@@ -181,13 +181,66 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
   }
 }
 
+
+/* v88b 強制修正電腦版：左選單、右內容不能掉到下面 */
+@media (min-width:980px){
+  html,body{
+    width:100%!important;
+    overflow-x:hidden!important;
+  }
+  #mainShell{
+    width:100%!important;
+    max-width:none!important;
+  }
+  .app{
+    width:100%!important;
+    max-width:1480px!important;
+    margin:0 auto!important;
+    padding:18px!important;
+    box-sizing:border-box!important;
+    display:grid!important;
+    grid-template-columns:360px minmax(0,1fr)!important;
+    grid-template-areas:"menu content"!important;
+    gap:18px!important;
+    align-items:start!important;
+  }
+  .drawer{
+    grid-area:menu!important;
+    position:sticky!important;
+    top:86px!important;
+    width:360px!important;
+    min-width:360px!important;
+    max-width:360px!important;
+    height:calc(100vh - 104px)!important;
+    transform:none!important;
+    float:none!important;
+    display:flex!important;
+    align-self:start!important;
+  }
+  .content{
+    grid-area:content!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    padding:0 0 80px!important;
+    float:none!important;
+    display:block!important;
+    align-self:start!important;
+  }
+  .reader{
+    width:100%!important;
+    max-width:1060px!important;
+    margin:0!important;
+  }
+}
+
 </style>
 </head>
 <body>
 <div id="mainShell">
 <header class="topbar"><div class="topline">
   <button class="menuBtn" id="openMenuBtn">☰</button>
-  <div class="brand"><div class="brandTitle">神州降神試算、掉落查詢系統</div><div class="maker">v88 電腦版排版修正版｜製作By文昌 尼扣扣</div></div>
+  <div class="brand"><div class="brandTitle">神州降神、經驗試算、掉落查詢系統</div><div class="maker">v88b 排版與手機怪物查詢修正版｜製作By文昌 尼扣扣</div></div>
   <div class="status" id="topStatus">準備中</div>
 </div></header>
 <div class="backdrop" id="backdrop"></div>
@@ -197,7 +250,7 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
   <div class="drawerBody">
     <div class="navGroup">
       <button class="navBtn major active" data-view="home">首頁 <span>›</span></button>
-      <button class="navBtn major" data-view="jiang">降神試算 <span>›</span></button>
+      <button class="navBtn major" data-view="jiang">降神、經驗試算 <span>›</span></button>
       <div class="formBox" id="jiangForm">
         <button class="navBtn sub" data-jiang="support">副降神模擬 <span>›</span></button>
         <button class="navBtn sub" data-jiang="compare">主降神比較 <span>›</span></button>
@@ -316,7 +369,7 @@ function renderHome(){
  byId('reader').innerHTML=`<section class="card"><h1>手機優先正式版</h1><div class="muted">左上角 ☰ 選擇大功能與小功能，主畫面會顯示完整閱讀頁。</div>
  <h3>大標題</h3>
  <div class="quick">
-  <button data-open="jiang">降神試算<small>副降神、主降神比較、20星等、星等 / 靈氣、等級 / 經驗丹</small></button>
+  <button data-open="jiang">降神、經驗試算<small>副降神、主降神比較、20星等、星等 / 靈氣、等級 / 經驗丹</small></button>
   <button data-open="monster">怪物查詢<small>搜尋怪物、能力與掉落表</small></button>
   <button data-open="item">道具查詢<small>道具資料與掉落反查</small></button>
  </div></section>`;
@@ -530,27 +583,27 @@ function fillJiangFields(kind){
  const stars20=Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} 星</option>`).join('');
 
  if(kind==='support'){
-  byId('reader').innerHTML=`<section class="card"><h1>降神試算</h1><h2>副降神模擬</h2><div class="muted">已選過的副降神會從其他欄位移除，避免手機版重複選擇。</div>
+  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><h2>副降神模擬</h2><div class="muted">已選過的副降神會從其他欄位移除，避免手機版重複選擇。</div>
   <div class="kvGrid">${Array.from({length:5},(_,i)=>`<div class="kv"><div class="k">副降神 ${i+1}</div><div class="v"><select id="jsN${i}" class="jsSupportName" data-index="${i}">${opts}</select><label>星等</label><select id="jsS${i}">${stars1}</select></div></div>`).join('')}</div>
   <div class="quick"><button id="calcSupport">產生閱讀頁<small>計算總能力與成立連結</small></button></div></section>`;
   updateSupportOptions();
  }
 
  if(kind==='compare'){
-  byId('reader').innerHTML=`<section class="card"><h1>降神試算</h1><h2>主降神比較</h2><div class="kvGrid">
+  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><h2>主降神比較</h2><div class="kvGrid">
   <div class="kv"><div class="k">降神 A</div><div class="v"><select id="jsA">${opts}</select><label>星等</label><select id="jsAS">${stars20}</select></div></div>
   <div class="kv"><div class="k">降神 B</div><div class="v"><select id="jsB">${opts}</select><label>星等</label><select id="jsBS">${stars20}</select></div></div>
   </div><div class="quick"><button id="calcCompare">產生比較頁<small>比較兩位主降神能力差異</small></button></div></section>`;
  }
 
  if(kind==='stars'){
-  byId('reader').innerHTML=`<section class="card"><h1>降神試算</h1><h2>20星等</h2><div class="muted">選擇降神後，產生 0～20 星完整能力總表。</div><div class="kvGrid">
+  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><h2>20星等</h2><div class="muted">選擇降神後，產生 0～20 星完整能力總表。</div><div class="kvGrid">
   <div class="kv"><div class="k">選擇降神</div><div class="v"><select id="jsStarName">${opts}</select></div></div>
   </div><div class="quick"><button id="calcStars">產生 0～20 星能力總表<small>完整顯示各星等能力</small></button></div></section>`;
  }
 
  if(kind==='starAura'){
-  byId('reader').innerHTML=`<section class="card"><h1>降神試算</h1><h2>星等 / 靈氣</h2>
+  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><h2>星等 / 靈氣</h2>
   <h3>星等：需要的降神數量</h3>
   <div class="kvGrid">
     <div class="kv"><div class="k">目前星等</div><div class="v"><select id="needCur">${Array.from({length:21},(_,i)=>`<option value="${i}">${i} 星</option>`).join('')}</select></div></div>
@@ -567,7 +620,7 @@ function fillJiangFields(kind){
  }
 
  if(kind==='expPill'){
-  byId('reader').innerHTML=`<section class="card"><h1>降神試算</h1><h2>等級 / 經驗丹</h2>
+  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><h2>等級 / 經驗丹</h2>
   <div class="calcTabs">
     <button class="calcTab active" data-exp-tab="need">等級經驗</button>
     <button class="calcTab" data-exp-tab="eat">經驗丹升等</button>
@@ -605,7 +658,7 @@ function updateSupportOptions(){
  }
 }
 function renderJiangHome(){
- byId('reader').innerHTML=`<section class="card"><h1>降神試算</h1><div class="muted">請從左上角選單選擇小功能。</div>
+ byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><div class="muted">請從左上角選單選擇小功能。</div>
  <h3>小標題</h3>
  <div class="quick">
   <button data-jiang-open="support">副降神模擬<small>計算總能力與成立連結</small></button>
@@ -670,12 +723,41 @@ function setView(view){
  document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
  document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
 
- if(view==='home')renderHome();
- if(view==='jiang'){byId('jiangForm').classList.add('active');renderJiangHome()}
- if(view==='monster'){byId('monsterForm').classList.add('active');empty('請在左側選單搜尋怪物');searchMonsters()}
- if(view==='item'){renderItemPage('item')}
- if(view==='reverse'){renderItemPage('reverse')}
- closeDrawer();
+ if(view==='home'){
+  renderHome();
+  closeDrawer();
+ }
+ if(view==='jiang'){
+  byId('jiangForm').classList.add('active');
+  renderJiangHome();
+  closeDrawer();
+ }
+ if(view==='monster'){
+  byId('monsterForm').classList.add('active');
+  empty('請在左側選單搜尋怪物');
+  searchMonsters();
+
+  // 手機版：按怪物查詢時停留在篩選區，不要立刻跳到閱讀名片區。
+  if(window.innerWidth < 980){
+    openDrawer();
+    setTimeout(()=>{
+      const form=byId('monsterForm');
+      if(form)form.scrollIntoView({block:'start',behavior:'smooth'});
+      const q=byId('monsterQ');
+      if(q)q.focus({preventScroll:true});
+    },80);
+  }else{
+    closeDrawer();
+  }
+ }
+ if(view==='item'){
+  renderItemPage('item');
+  closeDrawer();
+ }
+ if(view==='reverse'){
+  renderItemPage('reverse');
+  closeDrawer();
+ }
 }
 function setJiang(kind){setView('jiang');fillJiangFields(kind)}
 
@@ -780,7 +862,7 @@ function backLabelFor(view){
  if(view==='monster')return '返回怪物查詢';
  if(view==='item')return '返回道具查詢';
  if(view==='reverse')return '返回掉落反查';
- if(view==='jiang')return '返回降神試算';
+ if(view==='jiang')return '返回降神、經驗試算';
  return '返回首頁';
 }
 function backButtonHTML(view){
