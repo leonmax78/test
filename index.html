@@ -602,8 +602,12 @@ function searchMonstersMain(){
  window.v88MonsterQ=q.value;
  window.v88MonsterMin=byId('monsterMinMain')?.value||'';
  window.v88MonsterMax=byId('monsterMaxMain')?.value||'';
+ const hasFilter = !!(String(window.v88MonsterQ||'').trim() || String(window.v88MonsterMin||'').trim() || String(window.v88MonsterMax||'').trim());
+ const box=byId('monsterResultsMain');
+ if(!box)return;
+ if(!hasFilter){box.innerHTML='';return;}
  const arr=filterMonsterList(window.v88MonsterQ,window.v88MonsterMin,window.v88MonsterMax);
- const box=byId('monsterResultsMain'); if(box)box.innerHTML=monsterResultsHTML(arr);
+ box.innerHTML=monsterResultsHTML(arr);
 }
 function searchMonsters(){
  searchMonstersMain();
@@ -635,6 +639,11 @@ function searchItems(){
  const min=window.v86ItemMin?intOf(window.v86ItemMin):null;
  const max=window.v86ItemMax?intOf(window.v86ItemMax):null;
 
+ const hasFilter = !!(q || type || window.v86ItemMin || window.v86ItemMax);
+ const box=byId('itemResults');
+ if(!box)return;
+ if(!hasFilter){box.innerHTML='';return;}
+
  const arr=items.filter(it=>
   (!q||itemSearchText(it).includes(q)) &&
   (!type||it.Type===type) &&
@@ -642,7 +651,7 @@ function searchItems(){
   (max===null||intOf(it.Level)<=max)
  ).slice(0,150);
 
- const box=byId('itemResults'); if(box)box.innerHTML=arr.map(it=>`<button class="resultItem" data-item="${esc(it.ID)}"><div class="rName">${esc(nameOf(it))}</div><div class="rSub">Lv.${esc(it.Level||'')}｜${esc(itemTypeName(it.Type)||it.Type||'')}｜ID ${esc(it.ID)}</div></button>`).join('')||'<div class="muted">找不到道具</div>';
+ box.innerHTML=arr.map(it=>`<button class="resultItem" data-item="${esc(it.ID)}"><div class="rName">${esc(nameOf(it))}</div><div class="rSub">Lv.${esc(it.Level||'')}｜${esc(itemTypeName(it.Type)||it.Type||'')}｜ID ${esc(it.ID)}</div></button>`).join('')||'<div class="muted">找不到道具</div>';
 }
 function showItem(id){
  window.v86LastView='item';
