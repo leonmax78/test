@@ -272,6 +272,19 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
   .topbar{padding:calc(10px + env(safe-area-inset-top)) 12px 10px!important}
 }
 
+
+/* v88o training mobile/readability */
+.trainingList{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}
+@media (min-width:900px){.trainingList{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.trainCard{border:1px solid var(--line);background:#081225;border-radius:18px;padding:12px;min-width:0}
+.trainCardHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
+.trainName{font-size:16px;font-weight:1000;color:#fff;line-height:1.35}.trainSub{font-size:12px;color:var(--muted);line-height:1.55;margin-top:3px}
+.trainBadge{white-space:nowrap;border:1px solid #355275;background:#0b1527;color:#bfdbfe;border-radius:999px;padding:5px 8px;font-size:12px;font-weight:900}
+.trainNeedBox{border:1px solid rgba(148,163,184,.22);border-radius:14px;padding:9px;margin:8px 0;background:#0b1527;color:#eaf2ff;line-height:1.45}
+.trainLevels{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.trainLevels label{margin:0 0 5px}.trainLevels input{min-height:44px;font-size:18px;text-align:center;padding:8px 10px}
+.trainNote{font-size:12px;color:#dbeafe;line-height:1.55;border-left:3px solid var(--accent);padding-left:8px;margin-top:8px}
+@media (max-width:700px){.trainingList{gap:8px}.trainCard{padding:10px;border-radius:16px}.trainName{font-size:15px}.trainBadge{font-size:11px;padding:4px 7px}.trainLevels input{font-size:18px;min-height:42px}.trainNeedBox{font-size:14px}.trainSub,.trainNote{font-size:11px}.tableWrap table{min-width:420px}}
+
 </style>
 </head>
 <body>
@@ -719,9 +732,9 @@ function showReverse(id){
 }
 
 
-// v88m 修練機制資料：由上傳的 shenzhou_training_data_with_ability(2).json 內嵌，避免額外讀取 JSON 檔
+// v88o 修練機制資料：由上傳的 shenzhou_training_data_with_ability(3).json 內嵌，避免額外讀取 JSON 檔
 const TRAINING_DATA = {
-  "version": "2026-04-28-ability-v2",
+  "version": "2026-04-28-wuzuan",
   "groupOrder": [
     "四聖諦",
     "天照珠玉",
@@ -730,6 +743,7 @@ const TRAINING_DATA = {
     "真元",
     "聖鑽",
     "同花大聖鑽",
+    "五鑽連貫心",
     "以太核",
     "六宇聚變核"
   ],
@@ -746,7 +760,8 @@ const TRAINING_DATA = {
     "effectsByLevel 為累計能力，第 0 筆代表 0 階。",
     "currentEffects = effectsByLevel[目前階]；targetEffects = effectsByLevel[目標階]；gainEffects = targetEffects - currentEffects。",
     "能力四聖諦與天照珠玉是自由分配能力值，若網站要精準到體魄/力量/智慧/靈敏，需另外做分配輸入。",
-    "六宇聚變核原始表第28階疑似寫成 +272；此版依等差規律使用 +372。"
+    "六宇聚變核原始表第28階疑似寫成 +272；此版依等差規律使用 +372。",
+    "五鑽連貫心元為自動衍生能力：由梅冠、菱冠、心冠、桃冠、同花大聖鑽五種目前階取最低值，不列入道具缺少顆數彙總。"
   ],
   "data": [
     {
@@ -5479,6 +5494,343 @@ const TRAINING_DATA = {
       ]
     },
     {
+      "id": "wuzuan_lianguanxin",
+      "group": "五鑽連貫心",
+      "subGroup": "",
+      "name": "五鑽連貫心元",
+      "item": "無消耗（由五鑽階數自動觸發）",
+      "stat": "綜合能力",
+      "maxLevel": 40,
+      "defaultCurrentLevel": 0,
+      "defaultTargetLevel": 40,
+      "costs": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "hasCost": false,
+      "excludeFromItemSummary": true,
+      "inputMode": "derived",
+      "note": "不需要玩家手動選階；目前階由梅冠聖鑽、菱冠聖鑽、心冠聖鑽、桃冠聖鑽、同花大聖鑽五種目前階取最低值。例：梅3、菱2、心5、桃5、同花20 => 五鑽連貫心2階。",
+      "deriveRule": {
+        "type": "minCurrentLevel",
+        "sourceIds": [
+          "shengzuan_mei",
+          "shengzuan_ling",
+          "shengzuan_xin",
+          "shengzuan_tao",
+          "tonghua_dashengzuan"
+        ],
+        "sourceItems": [
+          "梅冠聖鑽",
+          "菱冠聖鑽",
+          "心冠聖鑽",
+          "桃冠聖鑽",
+          "同花大聖鑽"
+        ],
+        "example": {
+          "梅冠聖鑽": 3,
+          "菱冠聖鑽": 2,
+          "心冠聖鑽": 5,
+          "桃冠聖鑽": 5,
+          "同花大聖鑽": 20,
+          "五鑽連貫心元": 2
+        }
+      },
+      "effectsByLevel": [
+        {},
+        {
+          "力量": 10,
+          "靈敏": 10,
+          "體魄": 0,
+          "智慧": 0
+        },
+        {
+          "力量": 10,
+          "靈敏": 10,
+          "體魄": 10,
+          "智慧": 10
+        },
+        {
+          "力量": 20,
+          "靈敏": 20,
+          "體魄": 10,
+          "智慧": 10
+        },
+        {
+          "力量": 20,
+          "靈敏": 20,
+          "體魄": 20,
+          "智慧": 20
+        },
+        {
+          "力量": 31,
+          "靈敏": 31,
+          "體魄": 20,
+          "智慧": 20
+        },
+        {
+          "力量": 31,
+          "靈敏": 31,
+          "體魄": 31,
+          "智慧": 31
+        },
+        {
+          "力量": 42,
+          "靈敏": 42,
+          "體魄": 31,
+          "智慧": 31
+        },
+        {
+          "力量": 42,
+          "靈敏": 42,
+          "體魄": 42,
+          "智慧": 42
+        },
+        {
+          "力量": 54,
+          "靈敏": 54,
+          "體魄": 42,
+          "智慧": 42
+        },
+        {
+          "力量": 54,
+          "靈敏": 54,
+          "體魄": 54,
+          "智慧": 54
+        },
+        {
+          "力量": 66,
+          "靈敏": 66,
+          "體魄": 54,
+          "智慧": 54
+        },
+        {
+          "力量": 66,
+          "靈敏": 66,
+          "體魄": 66,
+          "智慧": 66
+        },
+        {
+          "力量": 79,
+          "靈敏": 79,
+          "體魄": 66,
+          "智慧": 66
+        },
+        {
+          "力量": 79,
+          "靈敏": 79,
+          "體魄": 79,
+          "智慧": 79
+        },
+        {
+          "力量": 92,
+          "靈敏": 92,
+          "體魄": 79,
+          "智慧": 79
+        },
+        {
+          "力量": 92,
+          "靈敏": 92,
+          "體魄": 92,
+          "智慧": 92
+        },
+        {
+          "力量": 106,
+          "靈敏": 106,
+          "體魄": 92,
+          "智慧": 92
+        },
+        {
+          "力量": 106,
+          "靈敏": 106,
+          "體魄": 106,
+          "智慧": 106
+        },
+        {
+          "力量": 120,
+          "靈敏": 120,
+          "體魄": 106,
+          "智慧": 106
+        },
+        {
+          "力量": 120,
+          "靈敏": 120,
+          "體魄": 120,
+          "智慧": 120
+        },
+        {
+          "力量": 135,
+          "靈敏": 135,
+          "體魄": 120,
+          "智慧": 120
+        },
+        {
+          "力量": 135,
+          "靈敏": 135,
+          "體魄": 135,
+          "智慧": 135
+        },
+        {
+          "力量": 150,
+          "靈敏": 150,
+          "體魄": 135,
+          "智慧": 135
+        },
+        {
+          "力量": 150,
+          "靈敏": 150,
+          "體魄": 150,
+          "智慧": 150
+        },
+        {
+          "力量": 166,
+          "靈敏": 166,
+          "體魄": 150,
+          "智慧": 150
+        },
+        {
+          "力量": 166,
+          "靈敏": 166,
+          "體魄": 166,
+          "智慧": 166
+        },
+        {
+          "力量": 182,
+          "靈敏": 182,
+          "體魄": 166,
+          "智慧": 166
+        },
+        {
+          "力量": 182,
+          "靈敏": 182,
+          "體魄": 182,
+          "智慧": 182
+        },
+        {
+          "力量": 199,
+          "靈敏": 199,
+          "體魄": 182,
+          "智慧": 182
+        },
+        {
+          "力量": 199,
+          "靈敏": 199,
+          "體魄": 199,
+          "智慧": 199
+        },
+        {
+          "力量": 216,
+          "靈敏": 216,
+          "體魄": 199,
+          "智慧": 199
+        },
+        {
+          "力量": 216,
+          "靈敏": 216,
+          "體魄": 216,
+          "智慧": 216
+        },
+        {
+          "力量": 236,
+          "靈敏": 236,
+          "體魄": 216,
+          "智慧": 216
+        },
+        {
+          "力量": 236,
+          "靈敏": 236,
+          "體魄": 236,
+          "智慧": 236
+        },
+        {
+          "力量": 256,
+          "靈敏": 256,
+          "體魄": 236,
+          "智慧": 236
+        },
+        {
+          "力量": 256,
+          "靈敏": 256,
+          "體魄": 256,
+          "智慧": 256
+        },
+        {
+          "力量": 278,
+          "靈敏": 278,
+          "體魄": 256,
+          "智慧": 256
+        },
+        {
+          "力量": 278,
+          "靈敏": 278,
+          "體魄": 278,
+          "智慧": 278
+        },
+        {
+          "力量": 300,
+          "靈敏": 300,
+          "體魄": 278,
+          "智慧": 278
+        },
+        {
+          "力量": 300,
+          "靈敏": 300,
+          "體魄": 300,
+          "智慧": 300
+        }
+      ],
+      "fullEffects": {
+        "力量": 300,
+        "靈敏": 300,
+        "體魄": 300,
+        "智慧": 300
+      },
+      "effectStats": [
+        "體魄",
+        "力量",
+        "智慧",
+        "靈敏"
+      ]
+    },
+    {
       "id": "aether_body",
       "group": "以太核",
       "subGroup": "",
@@ -6856,47 +7208,127 @@ function calcEatPill(){
  window.scrollTo({top:0,behavior:'smooth'});
 }
 
+function trainingGroupRank(g){
+ const order=(TRAINING_DATA&&TRAINING_DATA.groupOrder)||[];
+ const idx=order.indexOf(g||'');
+ return idx>=0?idx:999;
+}
+function trainingElementRank(text){
+ const s=String(text||'');
+ const order=['玄武','白虎','青龍','朱雀','麒麟','騰蛇','梅冠','菱冠','心冠','桃冠','同花'];
+ const idx=order.findIndex(k=>s.includes(k));
+ return idx>=0?idx:999;
+}
+function sortedTrainingData(){
+ const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
+ return data.map((x,i)=>({x,i})).sort((a,b)=>{
+  const ga=trainingGroupRank(a.x.group), gb=trainingGroupRank(b.x.group);
+  if(ga!==gb)return ga-gb;
+  const ea=trainingElementRank((a.x.item||'')+(a.x.name||'')+(a.x.stat||''));
+  const eb=trainingElementRank((b.x.item||'')+(b.x.name||'')+(b.x.stat||''));
+  if(ea!==eb)return ea-eb;
+  return String(a.x.name||'').localeCompare(String(b.x.name||''),'zh-Hant');
+ });
+}
+function materialRank(item){
+ const s=String(item||'');
+ let group=99;
+ if(s.includes('四聖諦'))group=0;
+ else if(s.includes('天照'))group=1;
+ else if(s.includes('靈丹'))group=2;
+ else if(s.includes('賢者之石'))group=3;
+ else if(s.includes('真元'))group=4;
+ else if(s.includes('聖鑽'))group=5;
+ else if(s.includes('以太核'))group=6;
+ else if(s.includes('六宇'))group=7;
+ return [group,trainingElementRank(s),s];
+}
+function sortMaterialEntries(entries){
+ return entries.sort((a,b)=>{
+  const ra=materialRank(a[0]), rb=materialRank(b[0]);
+  if(ra[0]!==rb[0])return ra[0]-rb[0];
+  if(ra[1]!==rb[1])return ra[1]-rb[1];
+  return ra[2].localeCompare(rb[2],'zh-Hant');
+ });
+}
+function appendTrainingNote(x){
+ let note=x.note||'';
+ if((x.group||'')==='五鑽連貫心'){
+  const add='請找『王都盧索』安全區「冥司印曷闐」啟用';
+  if(!note.includes(add))note+=(note?' ':'')+add;
+ }
+ return note;
+}
 function renderTrainingCalc(){
  const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
  const groups=(TRAINING_DATA&&TRAINING_DATA.groupOrder)||[...new Set(data.map(x=>x.group).filter(Boolean))];
  const groupOpts='<option value="">全部分類</option>'+groups.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
- function row(x,i){
+ function card(pair){
+  const x=pair.x, i=pair.i;
   const max=Number(x.maxLevel||0);
   const cur=Math.min(max,Math.max(0,Number(x.defaultCurrentLevel||0)));
   const tar=Math.min(max,Math.max(cur,Number(x.defaultTargetLevel||max)));
   const sub=x.subGroup?`｜${x.subGroup}`:'';
   const fullNeed=(x.costs||[]).reduce((a,b)=>a+Number(b||0),0);
   const defaultNeed=(x.costs||[]).slice(cur,tar).reduce((a,b)=>a+Number(b||0),0);
-  return `<tr data-train-row="${i}" data-group="${esc(x.group||'')}">
-    <td><b>${esc(x.name||'')}</b><div class="rSub">${esc((x.group||'')+sub)}｜材料：${esc(x.item||'')}｜滿階需求：${fmt(fullNeed)}</div></td>
-    <td>${esc(x.stat||'')}</td>
-    <td>${max}</td>
-    <td>${esc(x.item||'')} × <span class="trainNeed" data-i="${i}">${fmt(defaultNeed)}</span><div class="rSub">0 → 滿階：${fmt(fullNeed)}</div></td>
-    <td><input class="trainCur" data-i="${i}" type="number" min="0" max="${max}" value="${cur}"></td>
-    <td><input class="trainTar" data-i="${i}" type="number" min="0" max="${max}" value="${tar}"></td>
-  </tr>`;
+  const note=appendTrainingNote(x);
+  const derived=x.inputMode==='derived';
+  return `<div class="trainCard" data-train-row="${i}" data-group="${esc(x.group||'')}">
+    <div class="trainCardHead"><div><div class="trainName">${esc(x.name||'')}</div><div class="trainSub">${esc((x.group||'')+sub)}｜${esc(x.stat||'')}</div></div><div class="trainBadge">滿階 ${max}</div></div>
+    <div class="trainNeedBox"><b>需求數量：</b>${esc(x.item||'')} × <span class="trainNeed" data-i="${i}">${fmt(defaultNeed)}</span><div class="rSub">0 → 滿階：${fmt(fullNeed)}</div></div>
+    ${note?`<div class="trainNote">${esc(note)}</div>`:''}
+    <div class="trainLevels">
+      <div><label>目前階</label><input class="trainCur" data-i="${i}" type="number" min="0" max="${max}" value="${cur}" ${derived?'readonly':''}></div>
+      <div><label>目標階</label><input class="trainTar" data-i="${i}" type="number" min="0" max="${max}" value="${tar}" ${derived?'readonly':''}></div>
+    </div>
+  </div>`;
  }
  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><h2>修練機制</h2>
- <div class="notice">選擇目前階與目標階，會計算需要材料，以及從目前階提升到目標階增加的能力。</div>
+ <div class="notice">選擇目前階與目標階，會計算需要材料，以及從目前階提升到目標階增加的能力。計算結果預設隱藏，按下「計算修練」後才會顯示。</div>
  <div class="kvGrid">
   <div class="kv"><div class="k">分類篩選</div><div class="v"><select id="trainGroupFilter">${groupOpts}</select></div></div>
   <div class="kv"><div class="k">快速設定</div><div class="v"><div class="quick" style="margin-top:0"><button id="trainAllMax">全部 0 → 滿階<small>把目前階設 0、目標階設最大</small></button><button id="trainClear">目前階 = 目標階<small>只保留目前設定，不計算提升</small></button></div></div></div>
  </div>
  <h3>修練項目</h3>
- <div class="tableWrap"><table><thead><tr><th>項目</th><th>能力</th><th>滿階</th><th>需求數量</th><th>目前階</th><th>目標階</th></tr></thead><tbody>${data.map(row).join('')}</tbody></table></div>
- <div class="quick"><button id="calcTraining">計算修練<small>統計材料數量與增加能力</small></button></div>
- <div id="trainingResult"></div>
+ <div class="trainingList">${sortedTrainingData().map(card).join('')}</div>
+ <div class="quick"><button id="calcTraining">計算修練<small>只統計目前分類篩選內的項目</small></button></div>
+ <div id="trainingResultWrap" style="display:none"><div id="trainingResult"></div></div>
  </section>`;
+ applyTrainingDerivedLevels();
+ updateTrainingNeeds();
  closeDrawer();
  window.scrollTo({top:0,behavior:'smooth'});
 }
 function filterTrainingRows(){
  const g=byId('trainGroupFilter')?.value||'';
- document.querySelectorAll('[data-train-row]').forEach(tr=>{tr.style.display=(!g||tr.dataset.group===g)?'':'none';});
+ document.querySelectorAll('[data-train-row]').forEach(el=>{el.style.display=(!g||el.dataset.group===g)?'':'none';});
+ const wrap=byId('trainingResultWrap'); if(wrap)wrap.style.display='none';
+}
+function applyTrainingDerivedLevels(){
+ const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
+ const idToIndex=Object.fromEntries(data.map((x,i)=>[x.id,i]));
+ data.forEach((x,i)=>{
+  if(x.inputMode!=='derived'||!x.deriveRule||!Array.isArray(x.deriveRule.sourceIds))return;
+  const curVals=[],tarVals=[];
+  for(const sid of x.deriveRule.sourceIds){
+   const si=idToIndex[sid]; if(si===undefined)continue;
+   const sdata=data[si]; const smax=Number(sdata.maxLevel||0);
+   const curEl=document.querySelector(`.trainCur[data-i="${si}"]`);
+   const tarEl=document.querySelector(`.trainTar[data-i="${si}"]`);
+   if(curEl)curVals.push(Math.max(0,Math.min(smax,intOf(curEl.value,0))));
+   if(tarEl)tarVals.push(Math.max(0,Math.min(smax,intOf(tarEl.value,smax))));
+  }
+  const curEl=document.querySelector(`.trainCur[data-i="${i}"]`);
+  const tarEl=document.querySelector(`.trainTar[data-i="${i}"]`);
+  const max=Number(x.maxLevel||0);
+  if(curEl&&curVals.length)curEl.value=Math.max(0,Math.min(max,Math.min(...curVals)));
+  if(tarEl&&tarVals.length)tarEl.value=Math.max(0,Math.min(max,Math.min(...tarVals)));
+ });
 }
 function clampTrainingInputs(){
  const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
  data.forEach((x,i)=>{
+  if(x.inputMode==='derived')return;
   const max=Number(x.maxLevel||0);
   const curEl=document.querySelector(`.trainCur[data-i="${i}"]`);
   const tarEl=document.querySelector(`.trainTar[data-i="${i}"]`);
@@ -6906,9 +7338,11 @@ function clampTrainingInputs(){
   if(tar<cur)tar=cur;
   curEl.value=cur; tarEl.value=tar;
  });
+ applyTrainingDerivedLevels();
  updateTrainingNeeds();
 }
 function updateTrainingNeeds(){
+ applyTrainingDerivedLevels();
  const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
  data.forEach((x,i)=>{
   const max=Number(x.maxLevel||0);
@@ -6926,6 +7360,7 @@ function updateTrainingNeeds(){
 function setTrainingAllMax(){
  const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
  data.forEach((x,i)=>{
+  if(x.inputMode==='derived')return;
   const max=Number(x.maxLevel||0);
   const curEl=document.querySelector(`.trainCur[data-i="${i}"]`);
   const tarEl=document.querySelector(`.trainTar[data-i="${i}"]`);
@@ -6937,6 +7372,7 @@ function setTrainingAllMax(){
 function clearTrainingTargets(){
  const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
  data.forEach((x,i)=>{
+  if(x.inputMode==='derived')return;
   const curEl=document.querySelector(`.trainCur[data-i="${i}"]`);
   const tarEl=document.querySelector(`.trainTar[data-i="${i}"]`);
   if(curEl&&tarEl)tarEl.value=curEl.value;
@@ -6946,6 +7382,7 @@ function clearTrainingTargets(){
 function calcTraining(){
  window.v86LastView='jiang';
  clampTrainingInputs();
+ const selectedGroup=byId('trainGroupFilter')?.value||'';
  const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
  const effectOrder=(TRAINING_DATA&&TRAINING_DATA.effectStatOrder)||['體魄','力量','智慧','靈敏','生命','精力','自由分配能力值'];
  const costByItem={};
@@ -6953,6 +7390,7 @@ function calcTraining(){
  const detail=[];
  for(let i=0;i<data.length;i++){
   const x=data[i];
+  if(selectedGroup && x.group!==selectedGroup)continue;
   const max=Number(x.maxLevel||0);
   const curEl=document.querySelector(`.trainCur[data-i="${i}"]`);
   const tarEl=document.querySelector(`.trainTar[data-i="${i}"]`);
@@ -6962,7 +7400,7 @@ function calcTraining(){
   if(tar<=cur)continue;
   let cost=0;
   for(let lv=cur;lv<tar;lv++)cost+=Number((x.costs||[])[lv]||0);
-  if(cost){costByItem[x.item||'未命名材料']=(costByItem[x.item||'未命名材料']||0)+cost;}
+  if(cost && !x.excludeFromItemSummary){costByItem[x.item||'未命名材料']=(costByItem[x.item||'未命名材料']||0)+cost;}
   const curEff=(x.effectsByLevel||[])[cur]||{};
   const tarEff=(x.effectsByLevel||[])[tar]||{};
   const gains={};
@@ -6971,23 +7409,31 @@ function calcTraining(){
    const v=Number(tarEff[k]||0)-Number(curEff[k]||0);
    if(v){gains[k]=v; gainByStat[k]=(gainByStat[k]||0)+v;}
   });
-  detail.push({name:x.name||'', group:x.group||'', subGroup:x.subGroup||'', item:x.item||'', cur, tar, cost, gains});
+  detail.push({name:x.name||'', group:x.group||'', subGroup:x.subGroup||'', item:x.item||'', cur, tar, cost, gains, note:appendTrainingNote(x), noCost:!!x.excludeFromItemSummary});
  }
- const costRows=Object.entries(costByItem).sort((a,b)=>a[0].localeCompare(b[0],'zh-Hant')).map(([item,n])=>`<tr><td>${esc(item)}</td><td>${fmt(n)}</td></tr>`).join('');
+ const costRows=sortMaterialEntries(Object.entries(costByItem)).map(([item,n])=>`<tr><td>${esc(item)}</td><td>${fmt(n)}</td></tr>`).join('');
  const allStats=[...effectOrder,...Object.keys(gainByStat).filter(s=>!effectOrder.includes(s))];
  const gainRows=allStats.filter(s=>gainByStat[s]).map(s=>`<tr><td>${esc(s)}</td><td>+${fmt(gainByStat[s])}</td></tr>`).join('');
- const detailRows=detail.map(d=>{
+ const detailRows=detail.sort((a,b)=>{
+  const ga=trainingGroupRank(a.group),gb=trainingGroupRank(b.group); if(ga!==gb)return ga-gb;
+  const ea=trainingElementRank(a.item+a.name),eb=trainingElementRank(b.item+b.name); if(ea!==eb)return ea-eb;
+  return a.name.localeCompare(b.name,'zh-Hant');
+ }).map(d=>{
   const gainText=Object.entries(d.gains).map(([k,v])=>`${k}+${fmt(v)}`).join('、')||'-';
   const sub=d.subGroup?`｜${d.subGroup}`:'';
-  return `<tr><td><b>${esc(d.name)}</b><div class="rSub">${esc(d.group+sub)}</div></td><td>${d.cur} → ${d.tar}</td><td>${esc(d.item)} × ${fmt(d.cost)}</td><td>${esc(gainText)}</td></tr>`;
+  const materialText=d.noCost?'無消耗':`${d.item} × ${fmt(d.cost)}`;
+  return `<tr><td><b>${esc(d.name)}</b><div class="rSub">${esc(d.group+sub)}</div>${d.note?`<div class="rSub">${esc(d.note)}</div>`:''}</td><td>${d.cur} → ${d.tar}</td><td>${esc(materialText)}</td><td>${esc(gainText)}</td></tr>`;
  }).join('');
- byId('trainingResult').innerHTML=`<h3>計算結果</h3>
+ const title=selectedGroup?`計算結果：${esc(selectedGroup)}`:'計算結果';
+ byId('trainingResult').innerHTML=`<h3>${title}</h3>
  ${detail.length?'': '<div class="empty">目前沒有任何提升項目，請把目標階調高後再計算。</div>'}
  ${costRows?`<h3>材料統計</h3><div class="tableWrap"><table><thead><tr><th>材料</th><th>數量</th></tr></thead><tbody>${costRows}</tbody></table></div>`:''}
  ${gainRows?`<h3>增加能力</h3><div class="tableWrap"><table><thead><tr><th>能力</th><th>增加值</th></tr></thead><tbody>${gainRows}</tbody></table></div>`:''}
  ${detailRows?`<h3>明細</h3><div class="tableWrap"><table><thead><tr><th>項目</th><th>階數</th><th>材料</th><th>增加能力</th></tr></thead><tbody>${detailRows}</tbody></table></div>`:''}`;
+ const wrap=byId('trainingResultWrap'); if(wrap)wrap.style.display='block';
  byId('trainingResult').scrollIntoView({behavior:'smooth',block:'start'});
 }
+
 
 function goBackToPrevious(){
  const v=window.v86LastView||currentView||'home';
