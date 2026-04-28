@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>神州降神試算、掉落查詢系統｜手機優先自動讀INI直讀版 v77</title>
+<title>神州降神試算、掉落查詢系統｜手機優先自動讀INI狀態版 v78</title>
 <style>
 :root{
   --bg:#07111f; --panel:#101a2d; --panel2:#0c1628; --line:#26364f;
@@ -73,7 +73,7 @@ table{border-collapse:collapse;width:100%;min-width:520px}th,td{border-bottom:1p
       <div class="brand-title">神州降神試算、掉落查詢系統</div>
       <div class="maker">製作By文昌 尼扣扣</div>
     </div>
-    <div class="status" id="licenseStatus">手機優先自動讀INI直讀版 v77</div>
+    <div class="status" id="licenseStatus">手機優先自動讀INI狀態版 v78</div>
   </div>
 </header>
 
@@ -327,30 +327,80 @@ function hideAutoLoadStatus(){
  if(bg)bg.style.display='none';
 }
 
+
+const RAW_BASE_URL = 'https://raw.githubusercontent.com/leonmax78/leonmax78.github.io/main/';
+
+function showLoadLine(msg, type='info'){
+ const reader=$('reader');
+ if(!reader)return;
+ let box=$('loadStatusBox');
+ if(!box){
+   const div=document.createElement('section');
+   div.className='card';
+   div.id='loadStatusBox';
+   div.innerHTML='<h2>資料讀取狀態</h2><div id="loadStatusLines" class="muted"></div><div class="quick"><button onclick="forceReloadIni()">重新讀取 INI<small>重新抓 GitHub 上的 INI / CSV</small></button></div>';
+   reader.prepend(div);
+   box=div;
+ }
+ const lines=$('loadStatusLines');
+ if(lines){
+   const color=type==='ok'?'#86efac':type==='bad'?'#fda4af':'#bfdbfe';
+   lines.innerHTML += `<div style="color:${color};margin:4px 0">${msg}</div>`;
+ }
+}
+
+function clearLoadLines(){
+ const box=$('loadStatusBox');
+ if(box)box.remove();
+}
+
+function fetchWithTimeout(url, ms=12000){
+ const ctrl=new AbortController();
+ const timer=setTimeout(()=>ctrl.abort(), ms);
+ return fetch(url,{cache:'no-store',signal:ctrl.signal}).finally(()=>clearTimeout(timer));
+}
+
+function candidateUrls(name){
+ const encoded=encodeURIComponent(name).replace(/%2F/g,'/');
+ return [
+   './' + encoded,
+   RAW_BASE_URL + encoded
+ ];
+}
+
+async function forceReloadIni(){
+ try{await cacheSet(CACHE_KEY_DATA,null);await cacheSet(CACHE_KEY_VERSION,'force-'+Date.now())}catch(e){}
+ clearLoadLines();
+ await loadData();
+}
+
 async function fetchTextFirst(names){
  const tried=[];
  for(const name of names){
-  try{
-   const url='./' + encodeURIComponent(name).replace(/%2F/g,'/');
-   const res=await fetch(url,{cache:'no-store'});
-   tried.push(`${name}：HTTP ${res.status}`);
-   if(res.ok){
-    const buf=await res.arrayBuffer();
-    let text='';
-    // 最早期寫法概念：盡量用 Big5/CP950 讀，失敗再 UTF-8
-    try{text=new TextDecoder('big5').decode(buf)}catch(e){}
-    if(!text || text.includes('�')){
-      try{text=new TextDecoder('utf-8').decode(buf)}catch(e){}
+  for(const url of candidateUrls(name)){
+   try{
+    showLoadLine(`讀取 ${esc(name)} ...`);
+    const res=await fetchWithTimeout(url,12000);
+    tried.push(`${url}：HTTP ${res.status}`);
+    if(res.ok){
+     const buf=await res.arrayBuffer();
+     let text='';
+     try{text=new TextDecoder('big5').decode(buf)}catch(e){}
+     if(!text || text.includes('�')){
+       try{text=new TextDecoder('utf-8').decode(buf)}catch(e){}
+     }
+     if(text && text.trim()){
+       showLoadLine(`成功讀取 ${esc(name)} (${Math.round(buf.byteLength/1024)} KB)`, 'ok');
+       return {name,text,tried,url};
+     }
+     tried[tried.length-1]+=' 空檔案';
     }
-    if(text && text.trim()){
-      return {name,text,tried};
-    }
-    tried[tried.length-1]+=' 空檔案';
+   }catch(e){
+    tried.push(`${url}：${e.name==='AbortError'?'逾時':(e.message||e)}`);
    }
-  }catch(e){
-   tried.push(`${name}：${e.message||e}`);
   }
  }
+ showLoadLine(`${esc(names[0])} 讀取失敗`, 'bad');
  return {name:'',text:'',tried,missing:true};
 }
 
@@ -458,6 +508,7 @@ function mergeDropFromOldNew(oldMons,newMons){
 }
 
 async function parseIniSourcesFromServer(){
+ showLoadLine('開始讀取 GitHub INI / CSV ...');
  const mon=await fetchTextFirst(INI_SOURCES.monsters);
  const item=await fetchTextFirst(INI_SOURCES.items);
  const magic=await fetchTextFirst(INI_SOURCES.magics);
@@ -475,6 +526,7 @@ async function parseIniSourcesFromServer(){
   throw new Error('必要檔案讀取失敗：<br>'+debug.map(x=>esc(x)).join('<br>'));
  }
 
+ showLoadLine('開始解析 INI ...');
  const parsed={
   monsters: parseIniBlocks(mon.text),
   items: parseIniBlocks(item.text),
@@ -487,6 +539,8 @@ async function parseIniSourcesFromServer(){
   },
   debug
  };
+
+ showLoadLine(`解析完成：怪物 ${parsed.monsters.length}｜道具 ${parsed.items.length}｜技能 ${parsed.magics.length}｜狀態 ${parsed.statuses.length}`, 'ok');
 
  if(!parsed.monsters.length || !parsed.items.length || !parsed.magics.length){
   throw new Error(
@@ -501,7 +555,7 @@ async function parseIniSourcesFromServer(){
 
 async function loadData(){
  try{
-  // v77：先直接讀 GitHub INI，不要先被快取/version 流程卡住
+  clearLoadLines();
   const parsed=await parseIniSourcesFromServer();
   let version='direct-'+Date.now();
   try{version=await getRemoteVersion()}catch(e){}
@@ -509,11 +563,14 @@ async function loadData(){
   applyData(parsed);
   await cacheSet(CACHE_KEY_DATA, parsed);
   await cacheSet(CACHE_KEY_VERSION, version);
+  showLoadLine(`資料已載入完成：怪物 ${monsters.length}｜道具 ${items.length}｜技能 ${magics.length}`, 'ok');
+  setTimeout(()=>{const box=$('loadStatusBox'); if(box)box.remove();},2500);
  }catch(e){
   const cachedData=await cacheGet(CACHE_KEY_DATA);
   if(cachedData){
    applyData(cachedData);
-   setAutoLoadStatus('自動讀取 GitHub INI 失敗，暫時使用手機快取。<br><br>'+String(e.message||e), true);
+   showLoadLine('自動讀取 GitHub INI 失敗，已使用手機快取。', 'bad');
+   showLoadLine(String(e.message||e), 'bad');
    return;
   }
   setAutoLoadStatus(
@@ -522,6 +579,7 @@ async function loadData(){
    String(e.message||e),
    true
   );
+  showLoadLine(String(e.message||e), 'bad');
  }
 }
 
