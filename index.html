@@ -103,13 +103,57 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
   border-color:#60a5fa;
 }
 
+
+/* v86 menu + item page */
+.navBtn.major{
+  font-size:16px;
+  padding:14px 12px;
+  border-color:rgba(96,165,250,.35);
+  background:rgba(14,28,48,.72);
+}
+.navBtn.major.active{
+  background:linear-gradient(135deg,rgba(45,212,191,.24),rgba(96,165,250,.24));
+}
+.navBtn.sub{
+  padding-left:22px;
+  font-size:14px;
+}
+.pageTabs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin:10px 0 14px;
+}
+.pageTab{
+  border:1px solid var(--line);
+  background:#0b1527;
+  color:var(--text);
+  border-radius:14px;
+  padding:12px 10px;
+  font-weight:1000;
+}
+.pageTab.active{
+  background:linear-gradient(135deg,rgba(45,212,191,.28),rgba(96,165,250,.25));
+  border-color:#60a5fa;
+}
+.backBtn{
+  display:inline-flex;
+  margin-bottom:12px;
+  border:1px solid var(--line);
+  background:#0b1527;
+  color:#dbeafe;
+  border-radius:999px;
+  padding:8px 12px;
+  font-weight:900;
+}
+
 </style>
 </head>
 <body>
 <div id="mainShell">
 <header class="topbar"><div class="topline">
   <button class="menuBtn" id="openMenuBtn">☰</button>
-  <div class="brand"><div class="brandTitle">神州降神試算、掉落查詢系統</div><div class="maker">v85 手機正式分層版｜製作By文昌 尼扣扣</div></div>
+  <div class="brand"><div class="brandTitle">神州降神試算、掉落查詢系統</div><div class="maker">v86 手機正式修正版｜製作By文昌 尼扣扣</div></div>
   <div class="status" id="topStatus">準備中</div>
 </div></header>
 <div class="backdrop" id="backdrop"></div>
@@ -118,12 +162,9 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
   <div class="drawerHead"><div><div class="drawerTitle">功能選單</div><div class="muted" style="font-size:12px">選好後回到閱讀頁</div></div><button class="ghost closeOnly" id="closeMenuBtn">✕</button></div>
   <div class="drawerBody">
     <div class="navGroup">
-      <div class="bigTitle">首頁</div>
-      <button class="navBtn active" data-view="home">首頁 <span>›</span></button>
-      <div class="bigTitle">降神試算</div>
-      <button class="navBtn" data-view="jiang">降神試算首頁 <span>›</span></button>
+      <button class="navBtn major active" data-view="home">首頁 <span>›</span></button>
+      <button class="navBtn major" data-view="jiang">降神試算 <span>›</span></button>
       <div class="formBox" id="jiangForm">
-        <div class="subTitle">小功能</div>
         <button class="navBtn sub" data-jiang="support">副降神模擬 <span>›</span></button>
         <button class="navBtn sub" data-jiang="compare">主降神比較 <span>›</span></button>
         <button class="navBtn sub" data-jiang="stars">20星等 <span>›</span></button>
@@ -131,26 +172,13 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
         <button class="navBtn sub" data-jiang="expPill">等級 / 經驗丹 <span>›</span></button>
         <div id="jiangFields"></div>
       </div>
-      <div class="bigTitle">怪物查詢</div>
-      <button class="navBtn" data-view="monster">怪物查詢 <span>›</span></button>
+      <button class="navBtn major" data-view="monster">怪物查詢 <span>›</span></button>
       <div class="formBox" id="monsterForm">
         <label>怪物名稱</label><input id="monsterQ" placeholder="例如：問頂仙龍、飛燕、山犬">
         <div class="row2"><div><label>最低 Lv</label><input id="monsterMin" type="number"></div><div><label>最高 Lv</label><input id="monsterMax" type="number"></div></div>
         <div class="results" id="monsterResults"></div>
       </div>
-      <div class="bigTitle">道具查詢</div>
-      <button class="navBtn" data-view="item">道具 <span>›</span></button>
-      <div class="formBox" id="itemForm">
-        <label>道具名稱 / ID / 類型</label><input id="itemQ" placeholder="例如：火神砲、錦囊、277">
-        <label>類型</label><select id="itemType"></select>
-        <div class="row2"><div><label>等級起</label><input id="itemMin" type="number"></div><div><label>等級迄</label><input id="itemMax" type="number"></div></div>
-        <div class="results" id="itemResults"></div>
-      </div>
-      <div class="subTitle">小功能</div>
-      <button class="navBtn sub" data-view="reverse">掉落反查 <span>›</span></button>
-      <div class="formBox" id="reverseForm">
-        <label>道具名稱</label><input id="reverseQ" placeholder="例如：侯氏兵甲福袋2020">
-        <div class="results" id="reverseResults"></div>
+      <button class="navBtn major" data-view="item">道具查詢 <span>›</span></button>
       </div>
     </div>
     <div class="navGroup" id="manualGroup" style="display:none">
@@ -223,6 +251,33 @@ function openDrawer(){byId('drawer').classList.add('open');byId('backdrop').clas
 function closeDrawer(){byId('drawer').classList.remove('open');byId('backdrop').classList.remove('open')}
 function setTopStatus(s){byId('topStatus').textContent=s}
 
+function renderItemPage(tab='item'){
+ const activeItem=tab==='item';
+ byId('reader').innerHTML=`<section class="card"><h1>道具查詢</h1>
+ <div class="pageTabs">
+  <button class="pageTab ${activeItem?'active':''}" data-item-tab="item">道具查詢</button>
+  <button class="pageTab ${!activeItem?'active':''}" data-item-tab="reverse">掉落反查</button>
+ </div>
+ <div id="itemTabBox" style="${activeItem?'':'display:none'}">
+  <div class="kvGrid">
+    <div class="kv"><div class="k">道具名稱 / ID / 類型</div><div class="v"><input id="itemQ" placeholder="例如：火神砲、錦囊、277" value="${esc(window.v86ItemQ||'')}"></div></div>
+    <div class="kv"><div class="k">類型</div><div class="v"><select id="itemType"></select></div></div>
+    <div class="kv"><div class="k">等級起</div><div class="v"><input id="itemMin" type="number" value="${esc(window.v86ItemMin||'')}"></div></div>
+    <div class="kv"><div class="k">等級迄</div><div class="v"><input id="itemMax" type="number" value="${esc(window.v86ItemMax||'')}"></div></div>
+  </div>
+  <div class="results" id="itemResults"></div>
+ </div>
+ <div id="reverseTabBox" style="${!activeItem?'':'display:none'}">
+  <div class="kvGrid">
+    <div class="kv"><div class="k">輸入道具名稱</div><div class="v"><input id="reverseQ" placeholder="例如：侯氏兵甲福袋2020" value="${esc(window.v86ReverseQ||'')}"></div></div>
+  </div>
+  <div class="results" id="reverseResults"></div>
+ </div>
+ </section>`;
+ const sel=byId('itemType');
+ if(sel){sel.innerHTML='<option value="">全部類型</option>'+Object.entries(ITEM_TYPE_MAP).map(([k,v])=>`<option value="${esc(k)}">${esc(v)}</option>`).join(''); sel.value=window.v86ItemType||'';}
+ if(activeItem)searchItems(); else searchReverseItems();
+}
 function renderHome(){
  byId('reader').innerHTML=`<section class="card"><h1>手機優先正式版</h1><div class="muted">左上角 ☰ 選擇大功能與小功能，主畫面會顯示完整閱讀頁。</div>
  <h3>大標題</h3>
@@ -362,6 +417,8 @@ function searchMonsters(){
  byId('monsterResults').innerHTML=arr.map(m=>`<button class="resultItem" data-monster="${esc(m.ID)}"><div class="rName">${esc(nameOf(m))}</div><div class="rSub">Lv.${esc(m.Level||'')}｜EXP ${esc(m.DropExp||0)}｜${esc(locOf(nameOf(m)))}</div></button>`).join('')||'<div class="muted">找不到怪物</div>';
 }
 function showMonster(id){
+ window.v86LastView='monster';
+ history.pushState({app:'detail',view:'monster'},'','#monster-'+id);
  const m=monsters.find(x=>String(x.ID).trim()===String(id).trim()); if(!m)return;
  const fields=[
   ['ID',m.ID],['怪物名稱',nameOf(m)],['等級',m.Level],['生命',m.HP],['魔力',m.MP],
@@ -370,15 +427,21 @@ function showMonster(id){
   ['掉錢',m.DropMoneyMin||m.DropMoneyMax?`${m.DropMoneyMin||0} ~ ${m.DropMoneyMax||0}`:'']
  ];
  const drops=parseDrop(m.DropItem).map(([iid,rate])=>[iid,itemIndex[iid]?.Name||`未知道具 ${iid}`,rate.toFixed(6)+'%']);
- byId('reader').innerHTML=`<section class="card"><h1>${esc(nameOf(m))}</h1>${locOf(nameOf(m))?`<div class="notice"><b>位置</b><br>${esc(locOf(nameOf(m)))}</div>`:''}<div>${fields.slice(0,7).filter(x=>x[1]).map(([k,v])=>`<span class="pill">${esc(k)}：${esc(v)}</span>`).join('')}</div><h3>怪物資料</h3><div class="kvGrid">${fields.filter(x=>x[1]).map(([k,v])=>`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('')}</div><h3>掉落物品</h3>${drops.length?`<div class="tableWrap"><table><thead><tr><th>ID</th><th>道具</th><th>機率</th></tr></thead><tbody>${drops.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">沒有掉落資料</div>'}</section>`;
+ byId('reader').innerHTML=`<section class="card"><button class="backBtn" onclick="goBackToPrevious()">← 返回查詢</button><h1>${esc(nameOf(m))}</h1>${locOf(nameOf(m))?`<div class="notice"><b>位置</b><br>${esc(locOf(nameOf(m)))}</div>`:''}<div>${fields.slice(0,7).filter(x=>x[1]).map(([k,v])=>`<span class="pill">${esc(k)}：${esc(v)}</span>`).join('')}</div><h3>怪物資料</h3><div class="kvGrid">${fields.filter(x=>x[1]).map(([k,v])=>`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('')}</div><h3>掉落物品</h3>${drops.length?`<div class="tableWrap"><table><thead><tr><th>ID</th><th>道具</th><th>機率</th></tr></thead><tbody>${drops.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">沒有掉落資料</div>'}</section>`;
  closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});
 }
 function itemSearchText(it){return `${nameOf(it)} ${it.ID||''} ${it.Level||''} ${it.Type||''} ${itemTypeName(it.Type)} ${it.Help||''}`.toLowerCase()}
 function searchItems(){
- const q=byId('itemQ').value.trim().toLowerCase();
- const type=byId('itemType').value;
- const min=byId('itemMin').value?intOf(byId('itemMin').value):null;
- const max=byId('itemMax').value?intOf(byId('itemMax').value):null;
+ const itemQ=byId('itemQ'); if(!itemQ)return;
+ window.v86ItemQ=itemQ.value;
+ window.v86ItemType=byId('itemType')?.value||'';
+ window.v86ItemMin=byId('itemMin')?.value||'';
+ window.v86ItemMax=byId('itemMax')?.value||'';
+
+ const q=itemQ.value.trim().toLowerCase();
+ const type=window.v86ItemType;
+ const min=window.v86ItemMin?intOf(window.v86ItemMin):null;
+ const max=window.v86ItemMax?intOf(window.v86ItemMax):null;
 
  const arr=items.filter(it=>
   (!q||itemSearchText(it).includes(q)) &&
@@ -387,21 +450,28 @@ function searchItems(){
   (max===null||intOf(it.Level)<=max)
  ).slice(0,150);
 
- byId('itemResults').innerHTML=arr.map(it=>`<button class="resultItem" data-item="${esc(it.ID)}"><div class="rName">${esc(nameOf(it))}</div><div class="rSub">Lv.${esc(it.Level||'')}｜${esc(itemTypeName(it.Type)||it.Type||'')}｜ID ${esc(it.ID)}</div></button>`).join('')||'<div class="muted">找不到道具</div>';
+ const box=byId('itemResults'); if(box)box.innerHTML=arr.map(it=>`<button class="resultItem" data-item="${esc(it.ID)}"><div class="rName">${esc(nameOf(it))}</div><div class="rSub">Lv.${esc(it.Level||'')}｜${esc(itemTypeName(it.Type)||it.Type||'')}｜ID ${esc(it.ID)}</div></button>`).join('')||'<div class="muted">找不到道具</div>';
 }
 function showItem(id){
+ window.v86LastView='item';
+ history.pushState({app:'detail',view:'item'},'','#item-'+id);
  const it=itemIndex[String(id).trim()]; if(!it)return; const fields=[['ID',it.ID],['名稱',nameOf(it)],['等級',it.Level],['類型',itemTypeName(it.Type)||it.Type],['專剋',itemKind(it)],['特殊能力',itemStatus(it)],['說明',it.Help]].filter(x=>x[1]);
- byId('reader').innerHTML=`<section class="card"><h1>${esc(nameOf(it))}</h1><div>${fields.slice(0,6).map(([k,v])=>`<span class="pill">${esc(k)}：${esc(v)}</span>`).join('')}</div><h3>道具資料</h3><div class="kvGrid">${fields.map(([k,v])=>`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('')}</div><div class="quick"><button data-reverse-item="${esc(it.ID)}">反查哪些怪物掉落這個道具<small>查看怪物與掉落機率</small></button></div></section>`;
+ byId('reader').innerHTML=`<section class="card"><button class="backBtn" onclick="goBackToPrevious()">← 返回查詢</button><h1>${esc(nameOf(it))}</h1><div>${fields.slice(0,6).map(([k,v])=>`<span class="pill">${esc(k)}：${esc(v)}</span>`).join('')}</div><h3>道具資料</h3><div class="kvGrid">${fields.map(([k,v])=>`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('')}</div><div class="quick"><button data-reverse-item="${esc(it.ID)}">反查哪些怪物掉落這個道具<small>查看怪物與掉落機率</small></button></div></section>`;
  closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});
 }
 function searchReverseItems(){
- const q=byId('reverseQ').value.trim().toLowerCase(); if(!q){byId('reverseResults').innerHTML='<div class="muted">請輸入道具名稱</div>';return}
+ const input=byId('reverseQ'); if(!input)return;
+ window.v86ReverseQ=input.value;
+ const q=input.value.trim().toLowerCase();
+ if(!q){byId('reverseResults').innerHTML='<div class="muted">請輸入道具名稱</div>';return}
  const arr=items.filter(it=>itemSearchText(it).includes(q)).slice(0,100);
  byId('reverseResults').innerHTML=arr.map(it=>`<button class="resultItem" data-rev="${esc(it.ID)}"><div class="rName">${esc(nameOf(it))}</div><div class="rSub">Lv.${esc(it.Level||'')}｜${esc(itemTypeName(it.Type)||'')}｜ID ${esc(it.ID)}</div></button>`).join('')||'<div class="muted">找不到道具</div>';
 }
 function showReverse(id){
+ window.v86LastView='reverse';
+ history.pushState({app:'detail',view:'reverse'},'','#reverse-'+id);
  const it=itemIndex[String(id).trim()]; if(!it)return; const arr=dropReverse[String(id).trim()]||[];
- byId('reader').innerHTML=`<section class="card"><h1>${esc(nameOf(it))}</h1><div class="muted">掉落反查｜共 ${arr.length} 筆</div>${arr.length?`<div class="tableWrap"><table><thead><tr><th>怪物</th><th>Lv.</th><th>機率</th><th>位置</th></tr></thead><tbody>${arr.map(x=>`<tr data-monster="${esc(x.monster.ID)}"><td>${esc(nameOf(x.monster))}</td><td>${esc(x.monster.Level||'')}</td><td>${x.rate.toFixed(6)}%</td><td>${esc(locOf(nameOf(x.monster))||'')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">沒有怪物掉落這個道具。</div>'}</section>`;
+ byId('reader').innerHTML=`<section class="card"><button class="backBtn" onclick="goBackToPrevious()">← 返回查詢</button><h1>${esc(nameOf(it))}</h1><div class="muted">掉落反查｜共 ${arr.length} 筆</div>${arr.length?`<div class="tableWrap"><table><thead><tr><th>怪物</th><th>Lv.</th><th>機率</th><th>位置</th></tr></thead><tbody>${arr.map(x=>`<tr data-monster="${esc(x.monster.ID)}"><td>${esc(nameOf(x.monster))}</td><td>${esc(x.monster.Level||'')}</td><td>${x.rate.toFixed(6)}%</td><td>${esc(locOf(nameOf(x.monster))||'')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">沒有怪物掉落這個道具。</div>'}</section>`;
  closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -552,8 +622,9 @@ function setView(view){
  if(view==='home')renderHome();
  if(view==='jiang'){byId('jiangForm').classList.add('active');renderJiangHome()}
  if(view==='monster'){byId('monsterForm').classList.add('active');empty('請在左側選單搜尋怪物');searchMonsters()}
- if(view==='item'){byId('itemForm').classList.add('active');empty('請在左側選單搜尋道具');searchItems()}
- if(view==='reverse'){byId('itemForm').classList.add('active');empty('請在左側選單輸入道具名稱反查');searchReverseItems()}
+ if(view==='item'){renderItemPage('item')}
+ if(view==='reverse'){renderItemPage('reverse')}
+ closeDrawer();
 }
 function setJiang(kind){setView('jiang');fillJiangFields(kind)}
 
@@ -587,8 +658,11 @@ function calcStarAura(){
 function calcExpNeed(){
  const expCur=Math.max(1,intOf(byId('expCur')?.value,1));
  const expTar=Math.max(expCur,intOf(byId('expTar')?.value,2000));
- let expTotal=0n;
- for(let lv=expCur+1;lv<=expTar;lv++)expTotal+=BigInt(DATA.expTable[String(lv)]||0);
+
+ // v86：DATA.expTable 是「累積經驗表」，不是每級相加。
+ const curExp=BigInt(DATA.expTable[String(expCur)]||0);
+ const tarExp=BigInt(DATA.expTable[String(expTar)]||0);
+ const expTotal=tarExp>curExp ? tarExp-curExp : 0n;
 
  const pills=[
   ['乙太經驗丹（8000億）',800000000000n],
@@ -602,7 +676,7 @@ function calcExpNeed(){
   return [name,fmt(need),`${fmt(g)} 組 + ${fmt(r)} 顆`];
  });
 
- byId('reader').innerHTML=`<section class="card"><h1>等級經驗計算結果</h1>
+ byId('reader').innerHTML=`<section class="card"><button class="backBtn" onclick="goBackToPrevious()">← 返回查詢</button><h1>等級經驗計算結果</h1>
  <div class="kvGrid">
   <div class="kv"><div class="k">${expCur} 等 → ${expTar} 等需要的經驗值</div><div class="v">${fmt(expTotal)}</div></div>
  </div>
@@ -616,34 +690,49 @@ function calcEatPill(){
  const unitYi=Math.max(0,intOf(byId('eatUnitYi')?.value,0));
  const count=BigInt(Math.max(0,intOf(byId('eatCount')?.value,0)));
  const expPer=BigInt(unitYi)*100000000n;
- let exp=count*expPer;
+ const baseExp=BigInt(DATA.expTable[String(start)]||0);
+ let totalExp=baseExp + count*expPer;
  let lv=start;
 
  while(lv<9999){
-  const need=BigInt(DATA.expTable[String(lv+1)]||0);
-  if(need<=0n || exp<need)break;
-  exp-=need;
+  const nextNeed=BigInt(DATA.expTable[String(lv+1)]||0);
+  if(nextNeed<=0n || totalExp<nextNeed)break;
   lv++;
  }
+ const remain=totalExp-BigInt(DATA.expTable[String(lv)]||0);
 
- byId('reader').innerHTML=`<section class="card"><h1>經驗丹升等試算結果</h1>
+ byId('reader').innerHTML=`<section class="card"><button class="backBtn" onclick="goBackToPrevious()">← 返回查詢</button><h1>經驗丹升等試算結果</h1>
  <div class="kvGrid">
   <div class="kv"><div class="k">現在等級</div><div class="v">${start}</div></div>
   <div class="kv"><div class="k">經驗丹單位</div><div class="v">${fmt(unitYi)} 億</div></div>
   <div class="kv"><div class="k">經驗丹數量</div><div class="v">${fmt(count)}</div></div>
   <div class="kv"><div class="k">可提升到</div><div class="v">${lv} 等</div></div>
-  <div class="kv"><div class="k">剩餘經驗</div><div class="v">${fmt(exp)}</div></div>
+  <div class="kv"><div class="k">目前等級內剩餘經驗</div><div class="v">${fmt(remain)}</div></div>
  </div></section>`;
  window.scrollTo({top:0,behavior:'smooth'});
 }
+
+function goBackToPrevious(){
+ const v=window.v86LastView||currentView||'home';
+ if(v==='item')setView('item');
+ else if(v==='reverse')setView('reverse');
+ else if(v==='monster')setView('monster');
+ else if(v==='jiang')setView('jiang');
+ else setView('home');
+}
+window.addEventListener('popstate',()=>goBackToPrevious());
+
 function initEvents(){
  byId('openMenuBtn').onclick=openDrawer;byId('closeMenuBtn').onclick=closeDrawer;byId('backdrop').onclick=closeDrawer;
  document.addEventListener('change',e=>{if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();});
  document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v)setView(v);const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo);openDrawer()}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid)showMonster(mid);const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds();if(e.target.id==='calcStarAura')calcStarAura();if(e.target.id==='calcExpNeed')calcExpNeed();if(e.target.id==='calcEatPill')calcEatPill();const et=e.target.closest('[data-exp-tab]');if(et){document.querySelectorAll('.calcTab').forEach(b=>b.classList.remove('active'));et.classList.add('active');byId('expTabNeed').style.display=et.dataset.expTab==='need'?'block':'none';byId('expTabEat').style.display=et.dataset.expTab==='eat'?'block':'none';}});
  ['monsterQ','monsterMin','monsterMax'].forEach(id=>byId(id).addEventListener('input',searchMonsters));
- ['itemQ','itemType','itemMin','itemMax'].forEach(id=>byId(id).addEventListener('input',searchItems));
- byId('reverseQ').addEventListener('input',searchReverseItems);
- byId('manualFiles').addEventListener('change',async e=>{alert('v81 先以自動讀取為主，手動載入下一版再補。')});
+ 
+ 
+ document.addEventListener('input',e=>{if(['itemQ','itemMin','itemMax'].includes(e.target.id))searchItems();if(e.target.id==='reverseQ')searchReverseItems();});
+ document.addEventListener('change',e=>{if(e.target.id==='itemType')searchItems();});
+ document.addEventListener('click',e=>{const tab=e.target.closest('[data-item-tab]')?.dataset.itemTab;if(tab){renderItemPage(tab);}});
+ byId('manualFiles').addEventListener('change',async e=>{alert('v86 先以自動讀取為主，手動載入下一版再補。')});
 }
 function initAuth(){ if(!AUTH_REQUIRED)return true; try{const key=localStorage.getItem('combined_manual_tool_license_key'); if(key&&typeof validateLicenseKey==='function'){validateLicenseKey(key);return true}}catch(e){} byId('mainShell').style.display='none';byId('licenseModal').style.display='flex';return false}
 function init(){initEvents();renderHome(); const ok=initAuth(); if(ok)loadAllData();}
