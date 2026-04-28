@@ -6865,10 +6865,13 @@ function renderTrainingCalc(){
   const cur=Math.min(max,Math.max(0,Number(x.defaultCurrentLevel||0)));
   const tar=Math.min(max,Math.max(cur,Number(x.defaultTargetLevel||max)));
   const sub=x.subGroup?`｜${x.subGroup}`:'';
+  const fullNeed=(x.costs||[]).reduce((a,b)=>a+Number(b||0),0);
+  const defaultNeed=(x.costs||[]).slice(cur,tar).reduce((a,b)=>a+Number(b||0),0);
   return `<tr data-train-row="${i}" data-group="${esc(x.group||'')}">
-    <td><b>${esc(x.name||'')}</b><div class="rSub">${esc((x.group||'')+sub)}｜材料：${esc(x.item||'')}</div></td>
+    <td><b>${esc(x.name||'')}</b><div class="rSub">${esc((x.group||'')+sub)}｜材料：${esc(x.item||'')}｜滿階需求：${fmt(fullNeed)}</div></td>
     <td>${esc(x.stat||'')}</td>
     <td>${max}</td>
+    <td>${esc(x.item||'')} × <span class="trainNeed" data-i="${i}">${fmt(defaultNeed)}</span><div class="rSub">0 → 滿階：${fmt(fullNeed)}</div></td>
     <td><input class="trainCur" data-i="${i}" type="number" min="0" max="${max}" value="${cur}"></td>
     <td><input class="trainTar" data-i="${i}" type="number" min="0" max="${max}" value="${tar}"></td>
   </tr>`;
@@ -6880,7 +6883,7 @@ function renderTrainingCalc(){
   <div class="kv"><div class="k">快速設定</div><div class="v"><div class="quick" style="margin-top:0"><button id="trainAllMax">全部 0 → 滿階<small>把目前階設 0、目標階設最大</small></button><button id="trainClear">目前階 = 目標階<small>只保留目前設定，不計算提升</small></button></div></div></div>
  </div>
  <h3>修練項目</h3>
- <div class="tableWrap"><table><thead><tr><th>項目</th><th>能力</th><th>滿階</th><th>目前階</th><th>目標階</th></tr></thead><tbody>${data.map(row).join('')}</tbody></table></div>
+ <div class="tableWrap"><table><thead><tr><th>項目</th><th>能力</th><th>滿階</th><th>需求數量</th><th>目前階</th><th>目標階</th></tr></thead><tbody>${data.map(row).join('')}</tbody></table></div>
  <div class="quick"><button id="calcTraining">計算修練<small>統計材料數量與增加能力</small></button></div>
  <div id="trainingResult"></div>
  </section>`;
@@ -6903,6 +6906,22 @@ function clampTrainingInputs(){
   if(tar<cur)tar=cur;
   curEl.value=cur; tarEl.value=tar;
  });
+ updateTrainingNeeds();
+}
+function updateTrainingNeeds(){
+ const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
+ data.forEach((x,i)=>{
+  const max=Number(x.maxLevel||0);
+  const curEl=document.querySelector(`.trainCur[data-i="${i}"]`);
+  const tarEl=document.querySelector(`.trainTar[data-i="${i}"]`);
+  const needEl=document.querySelector(`.trainNeed[data-i="${i}"]`);
+  if(!curEl||!tarEl||!needEl)return;
+  let cur=Math.max(0,Math.min(max,intOf(curEl.value,0)));
+  let tar=Math.max(cur,Math.min(max,intOf(tarEl.value,max)));
+  let need=0;
+  for(let lv=cur;lv<tar;lv++)need+=Number((x.costs||[])[lv]||0);
+  needEl.textContent=fmt(need);
+ });
 }
 function setTrainingAllMax(){
  const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
@@ -6913,6 +6932,7 @@ function setTrainingAllMax(){
   if(curEl)curEl.value=0;
   if(tarEl)tarEl.value=max;
  });
+ updateTrainingNeeds();
 }
 function clearTrainingTargets(){
  const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
@@ -6921,6 +6941,7 @@ function clearTrainingTargets(){
   const tarEl=document.querySelector(`.trainTar[data-i="${i}"]`);
   if(curEl&&tarEl)tarEl.value=curEl.value;
  });
+ updateTrainingNeeds();
 }
 function calcTraining(){
  window.v86LastView='jiang';
@@ -6992,12 +7013,13 @@ function backButtonHTML(view){
 
 function initEvents(){
  byId('openMenuBtn').onclick=openDrawer;byId('closeMenuBtn').onclick=closeDrawer;byId('backdrop').onclick=closeDrawer;
- document.addEventListener('change',e=>{if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();});
+ document.addEventListener('change',e=>{if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions(); if(e.target.classList&&(e.target.classList.contains('trainCur')||e.target.classList.contains('trainTar'))){clampTrainingInputs(); updateTrainingNeeds();}});
  document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v){if(v==='jiang')openJiangMenuOnly();else setView(v);}const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);if(window.innerWidth<980)openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo)}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid)showMonster(mid);const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds();if(e.target.id==='calcStarAura')calcStarAura();if(e.target.id==='calcExpNeed')calcExpNeed();if(e.target.id==='calcEatPill')calcEatPill();if(e.target.id==='calcTraining')calcTraining();if(e.target.id==='trainAllMax')setTrainingAllMax();if(e.target.id==='trainClear')clearTrainingTargets();const et=e.target.closest('[data-exp-tab]');if(et){document.querySelectorAll('.calcTab').forEach(b=>b.classList.remove('active'));et.classList.add('active');byId('expTabNeed').style.display=et.dataset.expTab==='need'?'block':'none';byId('expTabEat').style.display=et.dataset.expTab==='eat'?'block':'none';}});
  ['monsterQ','monsterMin','monsterMax'].forEach(id=>{const el=byId(id); if(el)el.addEventListener('input',searchMonsters);});
  
  
- document.addEventListener('input',e=>{if(['monsterQMain','monsterMinMain','monsterMaxMain'].includes(e.target.id))searchMonstersMain();if(['itemQ','itemMin','itemMax'].includes(e.target.id))searchItems();if(e.target.id==='reverseQ')searchReverseItems();});
+ document.addEventListener('input',e=>{if(e.target.classList&&(e.target.classList.contains('trainCur')||e.target.classList.contains('trainTar'))){updateTrainingNeeds();}
+ if(['monsterQMain','monsterMinMain','monsterMaxMain'].includes(e.target.id))searchMonstersMain();if(['itemQ','itemMin','itemMax'].includes(e.target.id))searchItems();if(e.target.id==='reverseQ')searchReverseItems();});
  document.addEventListener('change',e=>{if(e.target.id==='itemType')searchItems();if(e.target.id==='trainGroupFilter')filterTrainingRows();});
  document.addEventListener('click',e=>{const tab=e.target.closest('[data-item-tab]')?.dataset.itemTab;if(tab){renderItemPage(tab);}});
  byId('manualFiles').addEventListener('change',async e=>{alert('v86 先以自動讀取為主，手動載入下一版再補。')});
