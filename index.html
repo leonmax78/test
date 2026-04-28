@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>神州降神試算、掉落查詢系統｜手機優先自動讀INI診斷版</title>
+<title>神州降神試算、掉落查詢系統｜手機優先自動讀INI修正版</title>
 <style>
 :root{
   --bg:#07111f; --panel:#101a2d; --panel2:#0c1628; --line:#26364f;
@@ -73,7 +73,7 @@ table{border-collapse:collapse;width:100%;min-width:520px}th,td{border-bottom:1p
       <div class="brand-title">神州降神試算、掉落查詢系統</div>
       <div class="maker">製作By文昌 尼扣扣</div>
     </div>
-    <div class="status" id="licenseStatus">手機優先自動讀INI診斷版</div>
+    <div class="status" id="licenseStatus">手機優先自動讀INI修正版</div>
   </div>
 </header>
 
@@ -361,26 +361,48 @@ async function getRemoteVersion(){
 }
 
 function parseIniBlocks(text){
-  const data=[]; let cur=null;
+  const data=[];
+  let cur=null;
   const lines=String(text||'').replace(/^\ufeff/,'').split(/\r?\n/);
+
+  function pushCur(){
+    if(cur && Object.keys(cur).length){
+      data.push(cur);
+    }
+    cur=null;
+  }
+
   for(let raw of lines){
-    let line=raw.trim();
+    let line=String(raw||'').trim();
     if(!line || line.startsWith('//') || line.startsWith(';'))continue;
+
+    // 支援 [區塊] 格式
     if(line.startsWith('[') && line.endsWith(']')){
-      if(cur && Object.keys(cur).length)data.push(cur);
+      pushCur();
       cur={};
       continue;
     }
+
     const p=line.indexOf('=');
-    if(p>=0){
-      if(!cur)cur={};
-      const k=line.slice(0,p).trim();
-      const v=line.slice(p+1).trim();
-      cur[k]=v;
+    if(p<0)continue;
+
+    const k=line.slice(0,p).trim();
+    const v=line.slice(p+1).trim();
+
+    // 神州 INI 常見格式沒有 [區塊]，而是每筆資料都從 ID = 開始。
+    // 所以只要遇到新的 ID，且目前已經有 ID，就自動切下一筆。
+    if(/^ID$/i.test(k) && cur && cur.ID!==undefined){
+      pushCur();
     }
+
+    if(!cur)cur={};
+    cur[k]=v;
   }
-  if(cur && Object.keys(cur).length)data.push(cur);
-  return data;
+
+  pushCur();
+
+  // 過濾掉完全沒有 ID / Name 的雜訊
+  return data.filter(x=>x && (x.ID!==undefined || x.Name!==undefined));
 }
 
 function parseCSVLine(line){
@@ -404,15 +426,26 @@ function parseCSVLine(line){
 function parseMonsterLocations(text){
   const map={};
   const lines=String(text||'').replace(/^\ufeff/,'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+
   for(const line of lines){
     if(!line || line.startsWith('//'))continue;
     let parts=line.includes(',') ? parseCSVLine(line) : line.split(/\t+/).map(x=>x.trim());
+    parts=parts.map(x=>String(x||'').trim()).filter(Boolean);
     if(parts.length<2)continue;
-    let name=parts[0], loc=parts.slice(1).filter(Boolean).join('、');
+
+    let name=parts[0];
+    let loc=parts.slice(1).join('、');
+
     if(!name || name==='怪物名稱' || name.toLowerCase()==='name')continue;
-    // 也支援「地點,怪物」格式：若第一欄很像地點、第二欄像怪物，會仍保留第一欄名稱搜尋不錯，但這裡以第一欄為怪物名。
-    map[name]=loc;
+    if(!loc || loc==='出現地點')continue;
+
+    if(map[name] && !map[name].includes(loc)){
+      map[name]+='、'+loc;
+    }else{
+      map[name]=loc;
+    }
   }
+
   return map;
 }
 
@@ -463,6 +496,9 @@ async function loadData(){
   }
   const parsed=await parseIniSourcesFromServer();
   parsed.cacheVersion=version;
+  if(!parsed.monsters.length || !parsed.items.length || !parsed.magics.length){
+    throw new Error('INI 已讀到，但解析後資料不足。怪物 '+parsed.monsters.length+' 筆｜道具 '+parsed.items.length+' 筆｜技能 '+parsed.magics.length+' 筆。可能是 INI 格式需要更新解析。');
+  }
   applyData(parsed);
   await cacheSet(CACHE_KEY_DATA, parsed);
   await cacheSet(CACHE_KEY_VERSION, version);
