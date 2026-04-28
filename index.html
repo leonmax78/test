@@ -262,6 +262,7 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
 
 /* v88i header emphasis + clean home */
 /* v88k mobile jiang menu flow: main opens submenu only */
+/* v88l monster skills from MAGIC.INI + defense info */
 .brandTitle{font-size:22px!important;font-weight:1000!important;letter-spacing:.02em!important;color:#f8fbff!important}
 .maker{font-size:15px!important;font-weight:1000!important;color:#f8fbff!important;text-align:right!important}
 .topbar{padding:calc(12px + env(safe-area-inset-top)) 24px 12px!important}
@@ -613,18 +614,48 @@ function searchMonstersMain(){
 function searchMonsters(){
  searchMonstersMain();
 }
+
+function monsterSkillText(v){
+ const raw=String(v||'').trim();
+ if(!raw)return '';
+ return raw.split(',').map(x=>x.trim()).filter(Boolean).map(id=>{
+  const mg=magicIndex[String(id).trim()];
+  const n=mg && mg.Name ? String(mg.Name).trim() : '';
+  return n ? `${id} ${n}` : id;
+ }).join('、');
+}
+function monsterMoneyText(m){
+ const min=m.DropMoneyMin||'';
+ const max=m.DropMoneyMax||'';
+ if(!min&&!max)return '';
+ return `${min||0} ~ ${max||0}`;
+}
+
 function showMonster(id){
  window.v86LastView='monster';
  history.pushState({app:'detail',view:'monster'},'','#monster-'+id);
  const m=monsters.find(x=>String(x.ID).trim()===String(id).trim()); if(!m)return;
- const fields=[
+ const basicFields=[
   ['ID',m.ID],['怪物名稱',nameOf(m)],['等級',m.Level],['生命',m.HP],['魔力',m.MP],
   ['種族',raceName(m.Type)],['子分類',subtypeName(m.Type,m.SubType)],
-  ['體魄',m.Con],['力量',m.Str],['智慧',m.Int],['靈敏',m.Dex],['經驗',m.DropExp],
-  ['掉錢',m.DropMoneyMin||m.DropMoneyMax?`${m.DropMoneyMin||0} ~ ${m.DropMoneyMax||0}`:'']
+  ['經驗',m.DropExp],['掉錢',monsterMoneyText(m)]
  ];
+ const statFields=[
+  ['體魄',m.Con],['力量',m.Str],['智慧',m.Int],['靈敏',m.Dex]
+ ];
+ const defenseFields=[
+  ['物理防禦',m.ExtraDef],['術法攻擊',m.MagicAttack],['術法防禦',m.MagicDef],
+  ['冰防',m.IceDef],['火防',m.FireDef],['雷防',m.LightningDef],['暗防',m.DarkDef],
+  ['抗定身',m.ParalysisRes],['抗毒',m.PosionRes],['抗盲目',m.BlindRes],['抗禁咒',m.SilentRes]
+ ];
+ const skillFields=[
+  ['技能1',monsterSkillText(m.Skill1)],['技能2',monsterSkillText(m.Skill2)],['技能3',monsterSkillText(m.Skill3)],['技能4',monsterSkillText(m.Skill4)]
+ ];
+ const showRows=rows=>rows.filter(x=>x[1]!==''&&x[1]!==undefined&&x[1]!==null&&String(x[1]).trim()!=='0');
+ const kvHtml=rows=>`<div class="kvGrid">${showRows(rows).map(([k,v])=>`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('')}</div>`;
  const drops=parseDrop(m.DropItem).map(([iid,rate])=>[iid,itemIndex[iid]?.Name||`未知道具 ${iid}`,rate.toFixed(6)+'%']);
- byId('reader').innerHTML=`<section class="card"><button class="backBtn" onclick="goBackToPrevious()">← 返回查詢</button><h1>${esc(nameOf(m))}</h1>${locOf(nameOf(m))?`<div class="notice"><b>位置</b><br>${esc(locOf(nameOf(m)))}</div>`:''}<div>${fields.slice(0,7).filter(x=>x[1]).map(([k,v])=>`<span class="pill">${esc(k)}：${esc(v)}</span>`).join('')}</div><h3>怪物資料</h3><div class="kvGrid">${fields.filter(x=>x[1]).map(([k,v])=>`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('')}</div><h3>掉落物品</h3>${drops.length?`<div class="tableWrap"><table><thead><tr><th>ID</th><th>道具</th><th>機率</th></tr></thead><tbody>${drops.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">沒有掉落資料</div>'}</section>`;
+ const basic=showRows(basicFields), stats=showRows(statFields), defenses=showRows(defenseFields), skills=showRows(skillFields);
+ byId('reader').innerHTML=`<section class="card"><button class="backBtn" onclick="goBackToPrevious()">← 返回查詢</button><h1>${esc(nameOf(m))}</h1>${locOf(nameOf(m))?`<div class="notice"><b>位置</b><br>${esc(locOf(nameOf(m)))}</div>`:''}<div>${basic.slice(0,7).map(([k,v])=>`<span class="pill">${esc(k)}：${esc(v)}</span>`).join('')}</div><h3>怪物資料</h3>${kvHtml(basic)}${stats.length?`<h3>能力資訊</h3>${kvHtml(statFields)}`:''}${defenses.length?`<h3>防禦資訊</h3>${kvHtml(defenseFields)}`:''}${skills.length?`<h3>技能資訊</h3>${kvHtml(skillFields)}`:''}<h3>掉落物品</h3>${drops.length?`<div class="tableWrap"><table><thead><tr><th>ID</th><th>道具</th><th>機率</th></tr></thead><tbody>${drops.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">沒有掉落資料</div>'}</section>`;
  closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});
 }
 function itemSearchText(it){return `${nameOf(it)} ${it.ID||''} ${it.Level||''} ${it.Type||''} ${itemTypeName(it.Type)} ${it.Help||''}`.toLowerCase()}
