@@ -147,13 +147,47 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
   font-weight:900;
 }
 
+
+/* v88 desktop layout fix */
+@media (min-width:980px){
+  body{overflow-x:hidden}
+  .app{
+    display:grid!important;
+    grid-template-columns:360px minmax(0,1fr)!important;
+    gap:18px!important;
+    align-items:start!important;
+    padding:18px!important;
+  }
+  .drawer{
+    position:sticky!important;
+    top:86px!important;
+    height:calc(100vh - 104px)!important;
+    transform:none!important;
+    width:auto!important;
+    max-width:none!important;
+    min-width:0!important;
+    grid-column:1!important;
+    align-self:start!important;
+  }
+  .content{
+    grid-column:2!important;
+    padding:0 0 80px!important;
+    min-width:0!important;
+    align-self:start!important;
+  }
+  .reader{
+    max-width:1060px!important;
+    margin:0!important;
+  }
+}
+
 </style>
 </head>
 <body>
 <div id="mainShell">
 <header class="topbar"><div class="topline">
   <button class="menuBtn" id="openMenuBtn">☰</button>
-  <div class="brand"><div class="brandTitle">神州降神試算、掉落查詢系統</div><div class="maker">v86 手機正式修正版｜製作By文昌 尼扣扣</div></div>
+  <div class="brand"><div class="brandTitle">神州降神試算、掉落查詢系統</div><div class="maker">v88 電腦版排版修正版｜製作By文昌 尼扣扣</div></div>
   <div class="status" id="topStatus">準備中</div>
 </div></header>
 <div class="backdrop" id="backdrop"></div>
@@ -405,14 +439,22 @@ function locOf(n){return monsterLocations[n]||''}
 function monsterSearchText(m){return `${nameOf(m)} ${m.ID||''} ${m.Level||''} ${m.DropExp||''} ${locOf(nameOf(m))}`.toLowerCase()}
 function searchMonsters(){
  const q=byId('monsterQ').value.trim().toLowerCase();
+ const hasLvFilter = !!(byId('monsterMin').value || byId('monsterMax').value);
  const min=byId('monsterMin').value?intOf(byId('monsterMin').value):null;
  const max=byId('monsterMax').value?intOf(byId('monsterMax').value):null;
 
- const arr=monsters.filter(m=>
+ let arr=monsters.filter(m=>
   (!q||monsterSearchText(m).includes(q)) &&
   (min===null||intOf(m.Level)>=min) &&
   (max===null||intOf(m.Level)<=max)
- ).slice(0,150);
+ );
+
+ // v87：有使用等級篩選時，依經驗值由高到低排序；沒有等級篩選時維持原始 INI 順序。
+ if(hasLvFilter){
+  arr = arr.slice().sort((a,b)=>intOf(b.DropExp)-intOf(a.DropExp));
+ }
+
+ arr = arr.slice(0,150);
 
  byId('monsterResults').innerHTML=arr.map(m=>`<button class="resultItem" data-monster="${esc(m.ID)}"><div class="rName">${esc(nameOf(m))}</div><div class="rSub">Lv.${esc(m.Level||'')}｜EXP ${esc(m.DropExp||0)}｜${esc(locOf(nameOf(m)))}</div></button>`).join('')||'<div class="muted">找不到怪物</div>';
 }
@@ -575,6 +617,7 @@ function renderJiangHome(){
 }
 function calcSupport(){
  updateSupportOptions();
+ window.v86LastView='jiang';
  const picks=[];
  const used=new Set();
  for(let i=0;i<5;i++){
@@ -594,7 +637,7 @@ function calcSupport(){
  const combos=activeCombos(picks.map(x=>x.n)), bonus=comboBonus(combos);
  for(const st of STATS)total[st]+=bonus[st];
 
- byId('reader').innerHTML=`<section class="card"><h1>副降神模擬</h1>
+ byId('reader').innerHTML=`<section class="card">${backButtonHTML('jiang')}<h1>副降神模擬</h1>
  <div class="muted">${picks.map(p=>`${esc(p.n)} ${p.s}星`).join('、')}</div>
  <h3>總能力</h3><div class="kvGrid">${STATS.map(st=>`<div class="kv"><div class="k">${esc(st)}</div><div class="v">${fmt(total[st])}</div></div>`).join('')}</div>
  <h3>成立連結</h3>${combos.length?combos.map(c=>`<div class="notice"><b>${esc(c)}</b><br>${esc((DATA.comboMembers[c]||[]).join('、'))}<br>${esc(comboText(c))}</div>`).join(''):'<div class="empty">沒有成立連結</div>'}
@@ -603,10 +646,18 @@ function calcSupport(){
  closeDrawer();
  window.scrollTo({top:0,behavior:'smooth'});
 }
-function calcCompare(){const a=byId('jsA').value,b=byId('jsB').value;if(!a||!b){empty('請選擇兩位降神');return}const as=intOf(byId('jsAS').value,20),bs=intOf(byId('jsBS').value,20),A=ability(a,as),B=ability(b,bs);byId('reader').innerHTML=`<section class="card"><h1>主降神比較</h1><div class="muted">${esc(a)} ${as}星 vs ${esc(b)} ${bs}星</div><div class="tableWrap"><table><thead><tr><th>能力</th><th>${esc(a)}</th><th>${esc(b)}</th><th>差異</th></tr></thead><tbody>${STATS.map(st=>`<tr><td>${esc(st)}</td><td>${fmt(A[st])}</td><td>${fmt(B[st])}</td><td>${fmt(A[st]-B[st])}</td></tr>`).join('')}</tbody></table></div></section>`;closeDrawer()}
+function calcCompare(){
+ window.v86LastView='jiang';
+ const a=byId('jsA').value,b=byId('jsB').value;if(!a||!b){empty('請選擇兩位降神');return}
+ const as=intOf(byId('jsAS').value,20),bs=intOf(byId('jsBS').value,20),A=ability(a,as),B=ability(b,bs);
+ byId('reader').innerHTML=`<section class="card">${backButtonHTML('jiang')}<h1>主降神比較</h1><div class="muted">${esc(a)} ${as}星 vs ${esc(b)} ${bs}星</div><div class="tableWrap"><table><thead><tr><th>能力</th><th>${esc(a)}</th><th>${esc(b)}</th><th>差異</th></tr></thead><tbody>${STATS.map(st=>`<tr><td>${esc(st)}</td><td>${fmt(A[st])}</td><td>${fmt(B[st])}</td><td>${fmt(A[st]-B[st])}</td></tr>`).join('')}</tbody></table></div></section>`;
+ closeDrawer();
+ window.scrollTo({top:0,behavior:'smooth'});
+}
 function calcStars(){
+ window.v86LastView='jiang';
  const n=byId('jsStarName').value||DISPLAY_NAMES[0];
- byId('reader').innerHTML=`<section class="card"><h1>${esc(n)}｜0～20 星能力總表</h1>
+ byId('reader').innerHTML=`<section class="card">${backButtonHTML('jiang')}<h1>${esc(n)}｜0～20 星能力總表</h1>
  <div class="tableWrap"><table><thead><tr><th>星等</th>${STATS.map(st=>`<th>${esc(st)}</th>`).join('')}</tr></thead><tbody>${Array.from({length:21},(_,lv)=>{const a=ability(n,lv);return `<tr><td>${lv} 星</td>${STATS.map(st=>`<td>${fmt(a[st])}</td>`).join('')}</tr>`}).join('')}</tbody></table></div>
  </section>`;
  closeDrawer();
@@ -629,6 +680,7 @@ function setView(view){
 function setJiang(kind){setView('jiang');fillJiangFields(kind)}
 
 function calcStarAura(){
+ window.v86LastView='jiang';
  const c=intOf(byId('needCur').value);
  const t=intOf(byId('needTar').value);
  const owned=intOf(byId('needOwned').value);
@@ -642,7 +694,7 @@ function calcStarAura(){
  let aura=0;
  for(let lv=ac+1;lv<=at;lv++)aura+=Number(DATA.auraTable[String(lv)]?.single||DATA.auraTable[String(lv)]?.total||0);
 
- byId('reader').innerHTML=`<section class="card"><h1>星等 / 靈氣計算結果</h1>
+ byId('reader').innerHTML=`<section class="card">${backButtonHTML('jiang')}<h1>星等 / 靈氣計算結果</h1>
  <h3>星等</h3><div class="kvGrid">
   <div class="kv"><div class="k">目前星等 → 目標星等</div><div class="v">${c} 星 → ${t} 星</div></div>
   <div class="kv"><div class="k">已有降神魂數量</div><div class="v">${fmt(owned)}</div></div>
@@ -656,10 +708,10 @@ function calcStarAura(){
  window.scrollTo({top:0,behavior:'smooth'});
 }
 function calcExpNeed(){
+ window.v86LastView='jiang';
  const expCur=Math.max(1,intOf(byId('expCur')?.value,1));
  const expTar=Math.max(expCur,intOf(byId('expTar')?.value,2000));
 
- // v86：DATA.expTable 是「累積經驗表」，不是每級相加。
  const curExp=BigInt(DATA.expTable[String(expCur)]||0);
  const tarExp=BigInt(DATA.expTable[String(expTar)]||0);
  const expTotal=tarExp>curExp ? tarExp-curExp : 0n;
@@ -676,7 +728,7 @@ function calcExpNeed(){
   return [name,fmt(need),`${fmt(g)} 組 + ${fmt(r)} 顆`];
  });
 
- byId('reader').innerHTML=`<section class="card"><button class="backBtn" onclick="goBackToPrevious()">← 返回查詢</button><h1>等級經驗計算結果</h1>
+ byId('reader').innerHTML=`<section class="card">${backButtonHTML('jiang')}<h1>等級經驗計算結果</h1>
  <div class="kvGrid">
   <div class="kv"><div class="k">${expCur} 等 → ${expTar} 等需要的經驗值</div><div class="v">${fmt(expTotal)}</div></div>
  </div>
@@ -686,6 +738,7 @@ function calcExpNeed(){
  window.scrollTo({top:0,behavior:'smooth'});
 }
 function calcEatPill(){
+ window.v86LastView='jiang';
  const start=Math.max(1,intOf(byId('eatStartLv')?.value,1));
  const unitYi=Math.max(0,intOf(byId('eatUnitYi')?.value,0));
  const count=BigInt(Math.max(0,intOf(byId('eatCount')?.value,0)));
@@ -701,7 +754,7 @@ function calcEatPill(){
  }
  const remain=totalExp-BigInt(DATA.expTable[String(lv)]||0);
 
- byId('reader').innerHTML=`<section class="card"><button class="backBtn" onclick="goBackToPrevious()">← 返回查詢</button><h1>經驗丹升等試算結果</h1>
+ byId('reader').innerHTML=`<section class="card">${backButtonHTML('jiang')}<h1>經驗丹升等試算結果</h1>
  <div class="kvGrid">
   <div class="kv"><div class="k">現在等級</div><div class="v">${start}</div></div>
   <div class="kv"><div class="k">經驗丹單位</div><div class="v">${fmt(unitYi)} 億</div></div>
@@ -721,6 +774,18 @@ function goBackToPrevious(){
  else setView('home');
 }
 window.addEventListener('popstate',()=>goBackToPrevious());
+
+
+function backLabelFor(view){
+ if(view==='monster')return '返回怪物查詢';
+ if(view==='item')return '返回道具查詢';
+ if(view==='reverse')return '返回掉落反查';
+ if(view==='jiang')return '返回降神試算';
+ return '返回首頁';
+}
+function backButtonHTML(view){
+ return `<button class="backBtn" onclick="goBackToPrevious('${view||''}')">← ${esc(backLabelFor(view||window.v86LastView||currentView))}</button>`;
+}
 
 function initEvents(){
  byId('openMenuBtn').onclick=openDrawer;byId('closeMenuBtn').onclick=closeDrawer;byId('backdrop').onclick=closeDrawer;
