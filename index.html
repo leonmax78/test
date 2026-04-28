@@ -674,6 +674,7 @@ function showReverse(id){
 const STATS = DATA.stats; const DISPLAY_NAMES = DATA.displayNames; const EXP_ITEMS={'乙太 8000億':8000n*100000000n,'鑽石 3000億':3000n*100000000n,'真元 500億':500n*100000000n};
 function canonicalName(n){n=String(n??'').trim();if(!n||n==='空格')return null;if(DATA.aliases[n])return DATA.aliases[n];if(DATA.baseStats[n])return n;return null}
 function ability(n,star){const c=canonicalName(n); if(!c)throw new Error('找不到降神：'+n); const base=DATA.baseStats[c], out={}; for(const st of STATS)out[st]=Number(base[st]||0)*Number(DATA.starMultipliers[st][star]||1); return out}
+function scaleAbility(src,rate=1){const out={}; for(const st of STATS)out[st]=Number(src[st]||0)*rate; return out}
 function activeCombos(names){const set=new Set(names.map(canonicalName).filter(Boolean)), res=[]; for(const [combo,members] of Object.entries(DATA.comboMembers)){const need=members.map(canonicalName).filter(Boolean); if(need.length&&need.every(x=>set.has(x)))res.push(combo)} return res}
 function comboBonus(combos){const total=Object.fromEntries(STATS.map(s=>[s,0])); for(const c of combos){const b=DATA.comboBonuses[c]||{}; for(const st of STATS)total[st]+=Number(b[st]||0)} return total}
 function comboText(c){const b=DATA.comboBonuses[c]||{}, parts=[]; for(const st of STATS){if(b[st])parts.push(`${st}+${fmt(b[st])}`)} return parts.join('、')||'無'}
@@ -684,8 +685,9 @@ function fillJiangFields(kind){
 
  if(kind==='support'){
   byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><h2>副降神模擬</h2><div class="muted">已選過的副降神會從其他欄位移除，避免手機版重複選擇。</div>
-  <div class="kvGrid">${Array.from({length:5},(_,i)=>`<div class="kv"><div class="k">副降神 ${i+1}</div><div class="v"><select id="jsN${i}" class="jsSupportName" data-index="${i}">${opts}</select><label>星等</label><select id="jsS${i}">${stars1}</select></div></div>`).join('')}</div>
-  <div class="quick"><button id="calcSupport">產生閱讀頁<small>計算總能力與成立連結</small></button></div></section>`;
+  <div class="notice">副降神 1～4 的角色能力會以原本能力的 10% 計算。</div>
+  <div class="kvGrid">${Array.from({length:4},(_,i)=>`<div class="kv"><div class="k">副降神 ${i+1}</div><div class="v"><select id="jsN${i}" class="jsSupportName" data-index="${i}">${opts}</select><label>星等</label><select id="jsS${i}">${stars1}</select></div></div>`).join('')}</div>
+  <div class="quick"><button id="calcSupport">產生閱讀頁<small>角色能力以 10% 計算，並計算成立連結</small></button></div></section>`;
   updateSupportOptions();
  }
 
@@ -772,7 +774,7 @@ function calcSupport(){
  window.v86LastView='jiang';
  const picks=[];
  const used=new Set();
- for(let i=0;i<5;i++){
+ for(let i=0;i<4;i++){
   const n=byId('jsN'+i)?.value;
   const s=intOf(byId('jsS'+i)?.value,1);
   if(n && !used.has(n)){picks.push({n,s});used.add(n);}
@@ -782,7 +784,8 @@ function calcSupport(){
  const total=Object.fromEntries(STATS.map(s=>[s,0]));
  const rows=[];
  for(const p of picks){
-  const a=ability(p.n,p.s);
+  const raw=ability(p.n,p.s);
+  const a=scaleAbility(raw,0.1);
   rows.push([p.n,p.s,a]);
   for(const st of STATS)total[st]+=a[st];
  }
@@ -790,10 +793,10 @@ function calcSupport(){
  for(const st of STATS)total[st]+=bonus[st];
 
  byId('reader').innerHTML=`<section class="card">${backButtonHTML('jiang')}<h1>副降神模擬</h1>
- <div class="muted">${picks.map(p=>`${esc(p.n)} ${p.s}星`).join('、')}</div>
+ <div class="muted">${picks.map(p=>`${esc(p.n)} ${p.s}星`).join('、')}｜角色能力以 10% 計算</div>
  <h3>總能力</h3><div class="kvGrid">${STATS.map(st=>`<div class="kv"><div class="k">${esc(st)}</div><div class="v">${fmt(total[st])}</div></div>`).join('')}</div>
  <h3>成立連結</h3>${combos.length?combos.map(c=>`<div class="notice"><b>${esc(c)}</b><br>${esc((DATA.comboMembers[c]||[]).join('、'))}<br>${esc(comboText(c))}</div>`).join(''):'<div class="empty">沒有成立連結</div>'}
- <h3>各副降神能力</h3>${rows.map(([n,s,a])=>`<div class="card" style="box-shadow:none"><h2>${esc(n)}｜${s}星</h2><div class="kvGrid">${STATS.map(st=>`<div class="kv"><div class="k">${esc(st)}</div><div class="v">${fmt(a[st])}</div></div>`).join('')}</div></div>`).join('')}
+ <h3>各副降神能力（已套用 10%）</h3>${rows.map(([n,s,a])=>`<div class="card" style="box-shadow:none"><h2>${esc(n)}｜${s}星｜10%</h2><div class="kvGrid">${STATS.map(st=>`<div class="kv"><div class="k">${esc(st)}</div><div class="v">${fmt(a[st])}</div></div>`).join('')}</div></div>`).join('')}
  </section>`;
  closeDrawer();
  window.scrollTo({top:0,behavior:'smooth'});
