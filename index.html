@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>神州降神、經驗試算、掉落查詢系統｜v88r怪物種族子分類搜尋修正版</title>
+<title>神州降神、經驗、修練試算、掉落查詢系統｜v88r怪物種族子分類搜尋修正版</title>
 <style>
 :root{
   --bg:#07111f;--panel:#101a2d;--panel2:#0b1527;--line:#263a58;--text:#eaf2ff;--muted:#9fb4d4;
@@ -298,7 +298,7 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
 <div id="mainShell">
 <header class="topbar"><div class="topline">
   <button class="menuBtn" id="openMenuBtn">☰</button>
-  <div class="brand"><div class="brandTitle">神州降神、經驗試算、掉落查詢系統</div></div>
+  <div class="brand"><div class="brandTitle">神州降神、經驗、修練試算、掉落查詢系統</div></div>
   <div class="maker">製作By文昌 尼扣扣</div>
   <div class="status" id="topStatus">準備中</div>
 </div></header>
@@ -49184,7 +49184,7 @@ function fillJiangFields(kind){
  const stars20=Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} 星</option>`).join('');
 
  if(kind==='support'){
-  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><h2>副降神模擬</h2>
+  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>副降神模擬</h2>
   <div class="notice">主降神以 100% 能力計算；副降神 1～4 以原本能力的 10% 計算。</div>
   <div class="kvGrid">
     <div class="kv"><div class="k">主降神</div><div class="v"><select id="jsN0" class="jsSupportName" data-index="0">${opts}</select><label>星等</label><select id="jsS0">${stars1}</select></div></div>
@@ -49195,20 +49195,20 @@ function fillJiangFields(kind){
  }
 
  if(kind==='compare'){
-  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><h2>主降神比較</h2><div class="kvGrid">
+  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>主降神比較</h2><div class="kvGrid">
   <div class="kv"><div class="k">降神 A</div><div class="v"><select id="jsA">${opts}</select><label>星等</label><select id="jsAS">${stars20}</select></div></div>
   <div class="kv"><div class="k">降神 B</div><div class="v"><select id="jsB">${opts}</select><label>星等</label><select id="jsBS">${stars20}</select></div></div>
   </div><div class="quick"><button id="calcCompare">產生比較頁<small>比較兩位主降神能力差異</small></button></div></section>`;
  }
 
  if(kind==='stars'){
-  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><h2>20星等</h2><div class="muted">選擇降神後，產生 0～20 星完整能力總表。</div><div class="kvGrid">
+  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>20星等</h2><div class="muted">選擇降神後，產生 0～20 星完整能力總表。</div><div class="kvGrid">
   <div class="kv"><div class="k">選擇降神</div><div class="v"><select id="jsStarName">${opts}</select></div></div>
   </div><div class="quick"><button id="calcStars">產生 0～20 星能力總表<small>完整顯示各星等能力</small></button></div></section>`;
  }
 
  if(kind==='starAura'){
-  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><h2>星等 / 靈氣</h2>
+  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>星等 / 靈氣</h2>
   <h3>星等：需要的降神數量</h3>
   <div class="kvGrid">
     <div class="kv"><div class="k">目前星等</div><div class="v"><select id="needCur">${Array.from({length:21},(_,i)=>`<option value="${i}">${i} 星</option>`).join('')}</select></div></div>
@@ -49225,7 +49225,7 @@ function fillJiangFields(kind){
  }
 
  if(kind==='expPill'){
-  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><h2>等級 / 經驗丹</h2>
+  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>等級 / 經驗丹</h2>
   <div class="calcTabs">
     <button class="calcTab active" data-exp-tab="need">等級經驗</button>
     <button class="calcTab" data-exp-tab="eat">經驗丹升等</button>
@@ -49269,7 +49269,7 @@ function updateSupportOptions(){
   sel.innerHTML='<option value="">空白</option>'+DISPLAY_NAMES.filter(n=>n===current || !chosen.includes(n)).map(n=>`<option value="${esc(n)}" ${n===current?'selected':''}>${esc(n)}</option>`).join('');
  }
 }
-let eqState={main:'',series:'',tier:'',type:'',q:'',uid:'',recipeGroup:'stable_1',recipeId:'',useCount:null};
+let eqState={main:'',series:'',tier:'',type:'',q:'',uid:'',recipeCounts:{},simTotals:null,simCount:0,simRecipeCounts:{}};
 function eqData(){return EQUIP_COMPOUND_DATA||{equipment:[],recipes:[],type_order:[],calc_rules:{}}}
 function eqUnique(arr){return [...new Set(arr.filter(v=>v!==undefined&&v!==null&&String(v).trim()!==''))]}
 function eqEquipList(){return eqData().equipment||[]}
@@ -49279,12 +49279,12 @@ function eqStatValueText(o){if(!o)return''; if(o.min!==undefined||o.max!==undefi
 function eqStatNum(o,side){if(!o)return 0; if(o.value!==undefined)return Number(o.value)||0; if(side==='max')return Number(o.max)||0; return Number(o.min)||0}
 function eqFilteredEquipment(){
  const q=(eqState.q||'').trim().toLowerCase();
- return eqEquipList().filter(e=>(!eqState.main||e.main_category===eqState.main)&&(!eqState.series||e.series_group===eqState.series)&&(!eqState.tier||String(e.tier||e.series_grade||'')===String(eqState.tier))&&(!eqState.type||e.display_type===eqState.type)&&(!q||String(e.search_text||e.name||'').toLowerCase().includes(q))).slice(0,120);
+ return eqEquipList().filter(e=>(!eqState.main||e.main_category===eqState.main)&&(!eqState.series||e.series_group===eqState.series)&&(!eqState.tier||String(e.tier||e.series_grade||'')===String(eqState.tier))&&(!eqState.type||e.display_type===eqState.type)&&(!q||String(e.search_text||e.name||'').toLowerCase().includes(q))).slice(0,160);
 }
 function eqFillSelect(id,vals,allLabel,cur){const el=byId(id); if(!el)return; el.innerHTML=`<option value="">${esc(allLabel)}</option>`+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join(''); el.value=cur||'';}
 function eqRefreshFilters(){
  const all=eqEquipList();
- eqFillSelect('eqMain',eqUnique(all.map(e=>e.main_category)),'全部大類',eqState.main);
+ eqFillSelect('eqMain',eqUnique(all.map(e=>e.main_category)),'全部種類',eqState.main);
  const a1=all.filter(e=>!eqState.main||e.main_category===eqState.main);
  eqFillSelect('eqSeries',eqUnique(a1.map(e=>e.series_group)),'全部系列',eqState.series);
  const a2=a1.filter(e=>!eqState.series||e.series_group===eqState.series);
@@ -49297,253 +49297,143 @@ function eqRefreshFilters(){
 function eqRefreshList(){
  const box=byId('eqList'); if(!box)return;
  const arr=eqFilteredEquipment();
- box.innerHTML=arr.map(e=>`<button class="resultItem" data-eq-uid="${esc(e.uid)}"><div class="rName">${esc(e.name)}</div><div class="rSub">${esc(e.main_category||'')}｜${esc(e.series||e.series_group||'')}｜${esc(e.display_type||'')}｜Lv.${esc(e.base_stats?.level||e.raw_item?.Level||'')}｜ID ${esc(e.item_id||'')}</div></button>`).join('') || '<div class="muted">請調整篩選條件，或找不到裝備。</div>';
+ box.innerHTML=arr.map(e=>`<button class="resultItem" data-eq-uid="${esc(e.uid)}"><div class="rName">${esc(e.name)}</div><div class="rSub">${esc(e.main_category||'')}｜${esc(e.series||e.series_group||'')}｜${esc(e.display_type||'')}｜Lv.${esc(e.base_stats?.level||e.raw_item?.Level||'')}｜ID ${esc(e.item_id||'')}</div></button>`).join('') || '<div class="empty">請調整篩選條件，或找不到裝備。</div>';
 }
 function eqSelected(){return eqEquipList().find(e=>e.uid===eqState.uid)||null}
-function eqSelectedRecipe(){return (eqData().recipes||[]).find(r=>String(r.id)===String(eqState.recipeId))||null}
 function eqAllowedRecipes(){
  const eq=eqSelected(); if(!eq)return [];
  const tp=eq.display_type;
- return eqRecipesForType(tp).filter(r=>{
-  if(eqState.recipeGroup==='stable_50')return r.group==='stable_50'||r.group==='stable_70';
-  return r.group===eqState.recipeGroup;
- });
+ return eqRecipesForType(tp);
 }
-function eqDefaultUse(recipe){if(eqState.useCount!==null&&eqState.useCount!==undefined&&eqState.useCount!=='')return Math.max(1,intOf(eqState.useCount,1)); return intOf(recipe?.default_use_count,1)||1;}
-function eqRenderStats(eq,recipe){
- const base=eq?.base_stats||{}; const count=recipe?eqDefaultUse(recipe):1;
- const keys=eqUnique([...Object.keys(base),...((recipe?.effects||[]).map(e=>e.stat))]);
+function eqRecipeById(id){return (eqData().recipes||[]).find(r=>String(r.id)===String(id))||null}
+function eqSelectedRecipes(){
+ const allowed=new Set(eqAllowedRecipes().map(r=>String(r.id)));
+ return Object.entries(eqState.recipeCounts||{}).filter(([id,c])=>allowed.has(String(id)) && Number(c)>0).map(([id,c])=>({recipe:eqRecipeById(id),count:Math.max(1,intOf(c,1))})).filter(x=>x.recipe);
+}
+function eqRecipeDefaultCount(recipe){return Math.max(1,intOf(recipe?.default_use_count,1)||1)}
+function eqToggleRecipe(id){
+ const r=eqRecipeById(id); if(!r)return;
+ eqState.recipeCounts=eqState.recipeCounts||{};
+ if(eqState.recipeCounts[String(id)]) delete eqState.recipeCounts[String(id)];
+ else eqState.recipeCounts[String(id)]=eqRecipeDefaultCount(r);
+ eqResetRandom();
+ eqRenderPreview();
+}
+function eqSetRecipeCount(id,val){
+ eqState.recipeCounts=eqState.recipeCounts||{};
+ if(eqState.recipeCounts[String(id)]!==undefined){eqState.recipeCounts[String(id)]=Math.max(1,intOf(val,1)); eqResetRandom(); eqRenderPreview();}
+}
+function eqEffectAccumulator(){
+ const acc={};
+ for(const {recipe,count} of eqSelectedRecipes()){
+  for(const e of recipe.effects||[]){
+   const k=e.stat; if(!acc[k])acc[k]={stat:k,label:e.label||eqData().stat_labels?.[k]||k,min:0,max:0,value:0,unit:e.unit||'',hasRange:false,hasValue:false,stackable:e.stackable!==false, parts:[]};
+   const mult=e.stackable===false?1:count;
+   if(e.min!==undefined||e.max!==undefined){acc[k].hasRange=true; acc[k].min+=(Number(e.min)||0)*mult; acc[k].max+=(Number(e.max)||0)*mult; acc[k].parts.push(`${recipe.name} × ${count}：+${fmt((Number(e.min)||0)*mult)}${(Number(e.max)||0)!=(Number(e.min)||0)?'～'+fmt((Number(e.max)||0)*mult):''}`);}
+   else {acc[k].hasValue=true; acc[k].value+=(Number(e.value)||0)*mult; acc[k].parts.push(`${recipe.name} × ${count}：${(Number(e.value)||0)>=0?'+':''}${fmt((Number(e.value)||0)*mult)}${e.unit||''}`);}
+  }
+ }
+ return acc;
+}
+function eqRenderStats(eq){
+ const base=eq?.base_stats||{}; const effMap=eqEffectAccumulator();
+ const keys=eqUnique([...Object.keys(base),...Object.keys(effMap)]);
  const order=['con','str','int','dex','hp','mp','damage','m_attack','def','m_def','fire_attack','ice_attack','lightning_attack','dark_attack','fire_prob','ice_prob','lightning_prob','dark_prob','attack','attack_range','durability','weight','level','clevel'];
  keys.sort((a,b)=>(order.indexOf(a)<0?999:order.indexOf(a))-(order.indexOf(b)<0?999:order.indexOf(b)));
  const left=keys.map(k=>{const o=base[k]; const label=o?.label||eqData().stat_labels?.[k]||k; return `<div class="kv"><div class="k">${esc(label)}</div><div class="v">${esc(eqStatValueText(o)||'-')}</div></div>`}).join('');
- const effMap={}; if(recipe){for(const e of recipe.effects||[]){effMap[e.stat]=e;}}
  const right=keys.map(k=>{
   const o=base[k]; const e=effMap[k]; const label=o?.label||e?.label||eqData().stat_labels?.[k]||k;
   let baseText=eqStatValueText(o)||'0'; let addText=''; let finalText=baseText;
   if(e){
-   const mult=e.stackable!==false?count:1;
-   if(e.min!==undefined||e.max!==undefined){const bm=eqStatNum(o,'min'), bx=eqStatNum(o,'max'); const am=(Number(e.min)||0)*mult, ax=(Number(e.max)||0)*mult; addText=`<div class="eqYellow">+${fmt(am)}${am!==ax?'～'+fmt(ax):''}${e.unit||''}</div>`; finalText=`${fmt(bm+am)}${(bx+ax)!==(bm+am)?'～'+fmt(bx+ax):''}`;}
-   else {const av=(Number(e.value)||0)*mult; addText=`<div class="eqYellow">${av>=0?'+':''}${fmt(av)}${e.unit||''}</div>`; finalText=e.stackable===false?`${baseText} / ${fmt(av)}${e.unit||''}`:fmt(eqStatNum(o,'min')+av);}
+   if(e.hasRange){const bm=eqStatNum(o,'min'), bx=eqStatNum(o,'max'); const am=e.min, ax=e.max; addText=`<div class="eqYellow">+${fmt(am)}${am!==ax?'～'+fmt(ax):''}${e.unit||''}</div>`; finalText=`${fmt(bm+am)}${(bx+ax)!==(bm+am)?'～'+fmt(bx+ax):''}`;}
+   else {const av=e.value; addText=`<div class="eqYellow">${av>=0?'+':''}${fmt(av)}${e.unit||''}</div>`; finalText=e.stackable===false?`${baseText} / ${fmt(av)}${e.unit||''}`:fmt(eqStatNum(o,'min')+av);}
+   if(e.parts.length)addText+=`<div class="rSub">${esc(e.parts.join('、'))}</div>`;
   }
   return `<div class="kv"><div class="k">${esc(label)}</div><div class="v">${esc(finalText)}${addText}</div></div>`;
  }).join('');
- return `<div class="eqPreviewGrid"><div class="card" style="box-shadow:none"><h2 class="eqCompactTitle">裝備能力</h2><div class="eqStatGrid">${left}</div></div><div class="card" style="box-shadow:none"><h2 class="eqCompactTitle">合成後能力</h2><div class="eqSmall">白字為原有能力，黃字為配方增加值。</div><div class="eqStatGrid">${right}</div></div></div>`;
+ return `<div class="eqPreviewGrid"><div class="card" style="box-shadow:none"><h2 class="eqCompactTitle">裝備能力</h2><div class="eqStatGrid">${left}</div></div><div class="card" style="box-shadow:none"><h2 class="eqCompactTitle">合成後能力</h2><div class="eqSmall">白字為原有能力，黃字為所有已勾選配方的累加值。</div><div class="eqStatGrid">${right}</div></div></div>`;
 }
 function eqRenderRecipeArea(){
  const eq=eqSelected(); if(!eq)return '<div class="empty">請先選擇裝備。</div>';
  const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50 / 70']];
- const recipes=eqAllowedRecipes();
- if(!recipes.find(r=>String(r.id)===String(eqState.recipeId)))eqState.recipeId=recipes[0]?.id||'';
- const recipe=eqSelectedRecipe();
- const count=recipe?eqDefaultUse(recipe):1;
- return `<h3>選擇配方</h3><div class="recipeTabs">${groups.map(([k,n])=>`<button class="pageTab ${eqState.recipeGroup===k?'active':''}" data-eq-group="${k}">${n}</button>`).join('')}</div>
- <div class="recipeList">${recipes.map(r=>`<button class="recipeBtn ${String(eqState.recipeId)===String(r.id)?'active':''}" data-eq-recipe="${esc(r.id)}"><b>${esc(r.name)}</b><div class="eqSmall">${esc(r.effect_summary||'')}</div></button>`).join('')||'<div class="muted">這個裝備類型沒有可用配方。</div>'}</div>
- ${recipe?`<div class="notice"><b>${esc(recipe.name)}</b><br>基本介紹：${esc(recipe.group_label||'')}，可用類型：${esc((recipe.display_types||[]).join('、'))}<br>能力：${esc(recipe.effect_summary||'')}<br><label>合成次數</label><input id="eqUseCount" type="number" min="1" value="${esc(count)}"></div><button class="primary" id="eqShowMaterials">產出所需材料清單</button>`:''}`;
+ const all=eqAllowedRecipes();
+ const groupRecipes=(g)=>all.filter(r=>g==='stable_50'?(r.group==='stable_50'||r.group==='stable_70'):r.group===g);
+ return `<h3>選擇配方</h3><div class="notice">可跨安定值勾選多個配方，已勾選的配方會記憶並一起累加到合成後能力與材料清單。</div>
+ ${groups.map(([g,label])=>`<div class="card" style="box-shadow:none"><h3>${esc(label)}</h3><div class="recipeList">${groupRecipes(g).map(r=>{const selected=!!(eqState.recipeCounts||{})[String(r.id)]; const c=eqState.recipeCounts?.[String(r.id)]||eqRecipeDefaultCount(r); return `<button class="recipeBtn ${selected?'active':''}" data-eq-recipe="${esc(r.id)}"><b>${selected?'☑':'☐'} ${esc(r.name)}</b><div class="eqSmall">${esc(r.effect_summary||'')}</div></button>${selected?`<div class="kv"><div class="k">${esc(r.name)} 合成次數</div><div class="v"><input class="eqRecipeCount" data-eq-recipe-count="${esc(r.id)}" type="number" min="1" value="${esc(c)}"></div></div>`:''}`}).join('')||'<div class="muted">這個裝備類型沒有可用配方。</div>'}</div></div>`).join('')}
+ <div class="quick"><button class="primary" id="eqOpenRandom">進入亂數模擬頁<small>可測試每次合成實際骰到的能力值</small></button><button class="primary" id="eqShowMaterials">產出所需材料清單<small>另開材料頁，並可返回</small></button></div>`;
 }
 function renderEquipmentCompoundPage(){
  window.v86LastView='item';
- byId('reader').innerHTML=`<section class="card"><h1>裝備合成模擬</h1><div class="muted">先篩選裝備，再選擇該裝備類型可用的配方。合成後能力會以黃字顯示配方增加值。</div>
- <div class="eqFilterGrid"><div><label>大類</label><select id="eqMain"></select></div><div><label>系列</label><select id="eqSeries"></select></div><div><label>階級 / 等級</label><select id="eqTier"></select></div><div><label>類型 / 部位</label><select id="eqType"></select></div><div><label>裝備名稱 / ID</label><input id="eqQ" value="${esc(eqState.q||'')}" placeholder="例如：宮殤、劍、300"></div><div><label>選擇裝備</label><select id="eqSelect"></select></div></div>
- <div class="results" id="eqList"></div><div id="eqPreview"></div></section>`;
- eqRefreshFilters(); eqRefreshList(); eqRefreshSelect(); eqRenderPreview();
+ byId('reader').innerHTML=`<section class="card"><h1>裝備合成模擬</h1><div class="muted">先篩選裝備，點選裝備後會進入合成模擬頁。</div>
+ <div class="eqFilterGrid"><div><label>種類（武器 / 防具 / 仙器）</label><select id="eqMain"></select></div><div><label>系列</label><select id="eqSeries"></select></div><div><label>階級 / 等級</label><select id="eqTier"></select></div><div><label>類型 / 部位</label><select id="eqType"></select></div><div style="grid-column:1/-1"><label>搜尋裝備名稱 / ID</label><input id="eqQ" value="${esc(eqState.q||'')}" placeholder="例如：宮殤、劍、300"></div></div>
+ <h3>選擇裝備</h3><div class="results" id="eqList"></div></section>`;
+ eqRefreshFilters(); eqRefreshList();
+ closeDrawer();
+ window.scrollTo({top:0,behavior:'smooth'});
 }
-function eqRefreshSelect(){
- const sel=byId('eqSelect'); if(!sel)return; const arr=eqFilteredEquipment();
- sel.innerHTML='<option value="">請選擇裝備</option>'+arr.map(e=>`<option value="${esc(e.uid)}">${esc(e.name)}｜${esc(e.series||e.series_group||'')}｜${esc(e.display_type||'')}</option>`).join('');
- if(eqState.uid && arr.find(e=>e.uid===eqState.uid))sel.value=eqState.uid; else sel.value='';
-}
+function eqRefreshSelect(){}
+function openEquipmentSim(uid){eqState.uid=uid||eqState.uid; eqResetRandom(); eqRenderPreview();}
 function eqRenderPreview(){
- const box=byId('eqPreview'); if(!box)return; const eq=eqSelected();
- if(!eq){box.innerHTML='<div class="empty">請從清單或下拉選單選擇裝備。</div>'; return;}
- const recipe=eqSelectedRecipe();
- box.innerHTML=`<h3>${esc(eq.name)}</h3><div>${['ID '+eq.item_id,eq.main_category,eq.series||eq.series_group,eq.display_type].filter(Boolean).map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>${eqRenderStats(eq,recipe)}${eqRenderRecipeArea()}`;
+ const eq=eqSelected();
+ if(!eq){renderEquipmentCompoundPage();return;}
+ byId('reader').innerHTML=`<section class="card"><button class="backBtn" id="eqBackToList">← 返回裝備篩選</button><h1>裝備合成模擬</h1><h2>${esc(eq.name)}</h2><div>${['ID '+eq.item_id,eq.main_category,eq.series||eq.series_group,eq.display_type].filter(Boolean).map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>${eqRenderStats(eq)}${eqRenderRecipeArea()}</section>`;
+ closeDrawer();
+ window.scrollTo({top:0,behavior:'smooth'});
 }
 function eqMaterials(recipe,count){const map={}; for(const st of recipe?.steps||[]){for(const m of st.materials||[]){const key=m.item_id||m.name; if(!map[key])map[key]={name:m.name||('ID '+m.item_id),item_id:m.item_id,qty:0}; map[key].qty+=(Number(m.qty)||0)*count;}} return Object.values(map);}
+function eqAllMaterials(){const map={}; for(const {recipe,count} of eqSelectedRecipes()){for(const m of eqMaterials(recipe,count)){const key=m.item_id||m.name; if(!map[key])map[key]={name:m.name,item_id:m.item_id,qty:0}; map[key].qty+=m.qty;}} return Object.values(map);}
 function showEquipmentMaterials(){
- const eq=eqSelected(), r=eqSelectedRecipe(); if(!eq||!r){empty('請先選擇裝備與配方');return}
- const count=eqDefaultUse(r), mats=eqMaterials(r,count);
- byId('reader').innerHTML=`<section class="card"><button class="backBtn" id="eqBackToSim">← 返回裝備合成模擬</button><h1>所需材料清單</h1><div class="notice"><b>${esc(eq.name)}</b><br>${esc(r.name)}｜合成次數：${fmt(count)}<br>${esc(r.effect_summary||'')}</div><div class="tableWrap"><table class="eqMatTable"><thead><tr><th>材料</th><th>ID</th><th>數量</th></tr></thead><tbody>${mats.map(m=>`<tr><td>${esc(m.name)}</td><td>${esc(m.item_id||'')}</td><td>${fmt(m.qty)}</td></tr>`).join('')}</tbody></table></div></section>`;
+ const eq=eqSelected(), picks=eqSelectedRecipes(); if(!eq||!picks.length){empty('請先選擇裝備與至少一個配方');return}
+ const mats=eqAllMaterials();
+ const pickText=picks.map(x=>`${x.recipe.name} × ${x.count}`).join('、');
+ byId('reader').innerHTML=`<section class="card"><button class="backBtn" id="eqBackToSim">← 返回裝備合成模擬</button><h1>所需材料清單</h1><div class="notice"><b>${esc(eq.name)}</b><br>${esc(pickText)}</div><div class="tableWrap"><table class="eqMatTable"><thead><tr><th>材料</th><th>ID</th><th>數量</th></tr></thead><tbody>${mats.map(m=>`<tr><td>${esc(m.name)}</td><td>${esc(m.item_id||'')}</td><td>${fmt(m.qty)}</td></tr>`).join('')}</tbody></table></div></section>`;
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+function eqResetRandom(){eqState.simTotals={};eqState.simCount=0;eqState.simRecipeCounts={};}
+function eqRollEffectValue(e){
+ if(e.min!==undefined||e.max!==undefined){const min=Number(e.min)||0,max=Number(e.max)||min; return min+Math.floor(Math.random()*(max-min+1));}
+ return Number(e.value)||0;
+}
+function eqRandomOnce(){
+ if(!eqState.simTotals)eqState.simTotals={};
+ if(!eqState.simRecipeCounts)eqState.simRecipeCounts={};
+ const picks=eqSelectedRecipes(); if(!picks.length)return;
+ for(const {recipe} of picks){
+  eqState.simRecipeCounts[String(recipe.id)]=(Number(eqState.simRecipeCounts[String(recipe.id)])||0)+1;
+  for(const e of recipe.effects||[]){
+   if(e.stackable===false)continue;
+   const k=e.stat,label=e.label||eqData().stat_labels?.[k]||k;
+   if(!eqState.simTotals[k])eqState.simTotals[k]={label,value:0};
+   eqState.simTotals[k].value+=eqRollEffectValue(e);
+  }
+ }
+ eqState.simCount++;
+}
+function eqRandomMaterialRows(){
+ const counts=eqState.simRecipeCounts||{};
+ const map={};
+ for(const [id,c] of Object.entries(counts)){
+  const recipe=eqRecipeById(id); const count=Number(c)||0; if(!recipe||count<=0)continue;
+  for(const m of eqMaterials(recipe,count)){
+   const key=m.item_id||m.name;
+   if(!map[key])map[key]={name:m.name,item_id:m.item_id,qty:0};
+   map[key].qty+=m.qty;
+  }
+ }
+ return Object.values(map);
+}
+function renderEquipmentRandomPage(){
+ const eq=eqSelected(), picks=eqSelectedRecipes(); if(!eq||!picks.length){empty('請先選擇裝備與至少一個配方');return;}
+ const totals=eqState.simTotals||{};
+ const rows=Object.entries(totals).map(([k,o])=>`<tr><td>${esc(o.label)}</td><td>+${fmt(o.value)}</td></tr>`).join('')||'<tr><td colspan="2">尚未模擬，請按「模擬一次」。</td></tr>';
+ const usedRows=picks.map(({recipe})=>{const used=Number((eqState.simRecipeCounts||{})[String(recipe.id)])||0;return `<tr><td>${esc(recipe.name)}</td><td>${fmt(used)}</td></tr>`;}).join('');
+ const mats=eqRandomMaterialRows();
+ const matRows=mats.map(m=>`<tr><td>${esc(m.name)}</td><td>${esc(m.item_id||'')}</td><td>${fmt(m.qty)}</td></tr>`).join('')||'<tr><td colspan="3">尚未模擬，材料數量為 0。</td></tr>';
+ const pickText=picks.map(x=>`${x.recipe.name}`).join('、');
+ byId('reader').innerHTML=`<section class="card"><button class="backBtn" id="eqBackToSim">← 返回裝備合成模擬</button><h1>合成亂數模擬</h1><div class="notice"><b>${esc(eq.name)}</b><br>目前配方：${esc(pickText)}<br>每按一次會依目前勾選配方各骰一次。下方會計數每個配方已用了幾次，材料會依實際模擬次數累加。</div><div class="quick"><button class="primary" id="eqSimOnce">模擬一次<small>隨機產生本次合成增加值，並讓目前勾選配方各 +1 次材料</small></button><button id="eqSimClear" class="ghost">清空重新計算<small>歸零累計次數、能力與材料</small></button></div><div class="kvGrid"><div class="kv"><div class="k">累計模擬次數</div><div class="v">${fmt(eqState.simCount||0)}</div></div></div><h3>配方使用次數</h3><div class="tableWrap"><table><thead><tr><th>配方</th><th>已用次數</th></tr></thead><tbody>${usedRows}</tbody></table></div><h3>累計結果</h3><div class="tableWrap"><table><thead><tr><th>能力</th><th>累計增加</th></tr></thead><tbody>${rows}</tbody></table></div><h3>依模擬次數累計材料</h3><div class="tableWrap"><table class="eqMatTable"><thead><tr><th>材料</th><th>ID</th><th>數量</th></tr></thead><tbody>${matRows}</tbody></table></div></section>`;
  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function renderJiangHome(){
- // v88k：降神主分類只負責展開左側小分類，不在右側顯示重複提示按鈕。
- byId('reader').innerHTML='';
-}
-function openJiangMenuOnly(){
- currentView='jiang';
- document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='jiang'));
- document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
- byId('jiangForm').classList.add('active');
- renderJiangHome();
-}
-function calcSupport(){
- updateSupportOptions();
- window.v86LastView='jiang';
- const picks=[];
- const used=new Set();
- for(let i=0;i<5;i++){
-  const n=byId('jsN'+i)?.value;
-  const s=intOf(byId('jsS'+i)?.value,1);
-  const role=i===0?'主降神':`副降神 ${i}`;
-  const rate=i===0?1:0.1;
-  if(n && !used.has(n)){picks.push({n,s,role,rate});used.add(n);}
- }
- if(!picks.length){empty('請選擇主降神或副降神');return}
-
- const total=Object.fromEntries(STATS.map(s=>[s,0]));
- const rows=[];
- for(const p of picks){
-  const raw=ability(p.n,p.s);
-  const a=scaleAbility(raw,p.rate);
-  rows.push([p.n,p.s,p.role,p.rate,a]);
-  for(const st of STATS)total[st]+=a[st];
- }
- const combos=activeCombos(picks.map(x=>x.n)), bonus=comboBonus(combos);
- for(const st of STATS)total[st]+=bonus[st];
-
- byId('reader').innerHTML=`<section class="card">${backButtonHTML('jiang')}<h1>副降神模擬</h1>
- <div class="muted">${picks.map(p=>`${esc(p.role)}：${esc(p.n)} ${p.s}星 ${p.rate===1?'100%':'10%'}`).join('、')}</div>
- <h3>總能力</h3><div class="kvGrid">${STATS.map(st=>`<div class="kv"><div class="k">${esc(st)}</div><div class="v">${fmt(total[st])}</div></div>`).join('')}</div>
- <h3>成立連結</h3>${combos.length?combos.map(c=>`<div class="notice"><b>${esc(c)}</b><br>${esc((DATA.comboMembers[c]||[]).join('、'))}<br>${esc(comboText(c))}</div>`).join(''):'<div class="empty">沒有成立連結</div>'}
- <h3>各降神能力</h3>${rows.map(([n,s,role,rate,a])=>`<div class="card" style="box-shadow:none"><h2>${esc(role)}｜${esc(n)}｜${s}星｜${rate===1?'100%':'10%'}</h2><div class="kvGrid">${STATS.map(st=>`<div class="kv"><div class="k">${esc(st)}</div><div class="v">${fmt(a[st])}</div></div>`).join('')}</div></div>`).join('')}
- </section>`;
- closeDrawer();
- window.scrollTo({top:0,behavior:'smooth'});
-}
-function calcCompare(){
- window.v86LastView='jiang';
- const a=byId('jsA').value,b=byId('jsB').value;if(!a||!b){empty('請選擇兩位降神');return}
- const as=intOf(byId('jsAS').value,20),bs=intOf(byId('jsBS').value,20),A=ability(a,as),B=ability(b,bs);
- byId('reader').innerHTML=`<section class="card">${backButtonHTML('jiang')}<h1>主降神比較</h1><div class="muted">${esc(a)} ${as}星 vs ${esc(b)} ${bs}星</div><div class="tableWrap"><table><thead><tr><th>能力</th><th>${esc(a)}</th><th>${esc(b)}</th><th>差異</th></tr></thead><tbody>${STATS.map(st=>`<tr><td>${esc(st)}</td><td>${fmt(A[st])}</td><td>${fmt(B[st])}</td><td>${fmt(A[st]-B[st])}</td></tr>`).join('')}</tbody></table></div></section>`;
- closeDrawer();
- window.scrollTo({top:0,behavior:'smooth'});
-}
-function calcStars(){
- window.v86LastView='jiang';
- const n=byId('jsStarName').value||DISPLAY_NAMES[0];
- byId('reader').innerHTML=`<section class="card">${backButtonHTML('jiang')}<h1>${esc(n)}｜0～20 星能力總表</h1>
- <div class="tableWrap"><table><thead><tr><th>星等</th>${STATS.map(st=>`<th>${esc(st)}</th>`).join('')}</tr></thead><tbody>${Array.from({length:21},(_,lv)=>{const a=ability(n,lv);return `<tr><td>${lv} 星</td>${STATS.map(st=>`<td>${fmt(a[st])}</td>`).join('')}</tr>`}).join('')}</tbody></table></div>
- </section>`;
- closeDrawer();
- window.scrollTo({top:0,behavior:'smooth'});
-}
-function calcNeeds(){calcStarAura()}
-
-function setView(view){
- currentView=view;
- document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
- document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
-
- if(view==='home'){
-  renderHome();
-  closeDrawer();
- }
- if(view==='jiang'){
-  openJiangMenuOnly();
- }
- if(view==='monster'){
-  renderMonsterPage();
-  closeDrawer();
-  window.scrollTo({top:0,behavior:'smooth'});
- }
- if(view==='item'){
-  openItemMenuOnly();
- }
- if(view==='reverse'){
-  setItemSub('reverse');
- }
-}
-function setJiang(kind){
- openJiangMenuOnly();
- fillJiangFields(kind);
-}
-
-function calcStarAura(){
- window.v86LastView='jiang';
- const c=intOf(byId('needCur').value);
- const t=intOf(byId('needTar').value);
- const owned=intOf(byId('needOwned').value);
- const rate=Math.max(1,intOf(byId('needRate').value,1));
- let need=0;
- for(let s=c+1;s<=t;s++)need+=Number(DATA.starRequirements[String(s)]?.single||0);
- need=Math.max(0,Math.ceil((need-owned)/rate));
-
- const ac=Math.max(1,intOf(byId('auraCur').value,1));
- const at=Math.max(ac,intOf(byId('auraTar').value,ac));
- let aura=0;
- for(let lv=ac+1;lv<=at;lv++)aura+=Number(DATA.auraTable[String(lv)]?.single||DATA.auraTable[String(lv)]?.total||0);
-
- byId('reader').innerHTML=`<section class="card">${backButtonHTML('jiang')}<h1>星等 / 靈氣計算結果</h1>
- <h3>星等</h3><div class="kvGrid">
-  <div class="kv"><div class="k">目前星等 → 目標星等</div><div class="v">${c} 星 → ${t} 星</div></div>
-  <div class="kv"><div class="k">已有降神魂數量</div><div class="v">${fmt(owned)}</div></div>
-  <div class="kv"><div class="k">降神倍率</div><div class="v">${fmt(rate)}</div></div>
-  <div class="kv"><div class="k">需要的降神數量</div><div class="v">${fmt(need)}</div></div>
- </div>
- <h3>靈氣</h3><div class="kvGrid">
-  <div class="kv"><div class="k">目前等級 → 目標等級</div><div class="v">${ac} → ${at}</div></div>
-  <div class="kv"><div class="k">所需靈氣</div><div class="v">${fmt(aura)}</div></div>
- </div></section>`;
- window.scrollTo({top:0,behavior:'smooth'});
-}
-function calcExpNeed(){
- window.v86LastView='jiang';
- const expCur=Math.max(1,intOf(byId('expCur')?.value,1));
- const expTar=Math.max(expCur,intOf(byId('expTar')?.value,2000));
-
- const curExp=BigInt(DATA.expTable[String(expCur)]||0);
- const tarExp=BigInt(DATA.expTable[String(expTar)]||0);
- const expTotal=tarExp>curExp ? tarExp-curExp : 0n;
-
- const pills=[
-  ['乙太經驗丹（8000億）',800000000000n],
-  ['聖鑽經驗丹（3000億）',300000000000n],
-  ['真元經驗丹（500億）',50000000000n]
- ];
- function group255(n){n=BigInt(n);return [n/255n,n%255n]}
- const rows=pills.map(([name,val])=>{
-  const need=(expTotal+val-1n)/val;
-  const [g,r]=group255(need);
-  return [name,fmt(need),`${fmt(g)} 組 + ${fmt(r)} 顆`];
- });
-
- byId('reader').innerHTML=`<section class="card">${backButtonHTML('jiang')}<h1>等級經驗計算結果</h1>
- <div class="kvGrid">
-  <div class="kv"><div class="k">${expCur} 等 → ${expTar} 等需要的經驗值</div><div class="v">${fmt(expTotal)}</div></div>
- </div>
- <h3>經驗丹換算</h3>
- <div class="tableWrap"><table><thead><tr><th>經驗丹</th><th>需要顆數</th><th>組數</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</tbody></table></div>
- </section>`;
- window.scrollTo({top:0,behavior:'smooth'});
-}
-function calcEatPill(){
- window.v86LastView='jiang';
- const start=Math.max(1,intOf(byId('eatStartLv')?.value,1));
- const unitYi=Math.max(0,intOf(byId('eatUnitYi')?.value,0));
- const count=BigInt(Math.max(0,intOf(byId('eatCount')?.value,0)));
- const expPer=BigInt(unitYi)*100000000n;
- const baseExp=BigInt(DATA.expTable[String(start)]||0);
- let totalExp=baseExp + count*expPer;
- let lv=start;
-
- while(lv<9999){
-  const nextNeed=BigInt(DATA.expTable[String(lv+1)]||0);
-  if(nextNeed<=0n || totalExp<nextNeed)break;
-  lv++;
- }
- const remain=totalExp-BigInt(DATA.expTable[String(lv)]||0);
-
- byId('reader').innerHTML=`<section class="card">${backButtonHTML('jiang')}<h1>經驗丹升等試算結果</h1>
- <div class="kvGrid">
-  <div class="kv"><div class="k">現在等級</div><div class="v">${start}</div></div>
-  <div class="kv"><div class="k">經驗丹單位</div><div class="v">${fmt(unitYi)} 億</div></div>
-  <div class="kv"><div class="k">經驗丹數量</div><div class="v">${fmt(count)}</div></div>
-  <div class="kv"><div class="k">可提升到</div><div class="v">${lv} 等</div></div>
-  <div class="kv"><div class="k">目前等級內剩餘經驗</div><div class="v">${fmt(remain)}</div></div>
- </div></section>`;
- window.scrollTo({top:0,behavior:'smooth'});
-}
 
 function trainingGroupRank(g){
  const order=(TRAINING_DATA&&TRAINING_DATA.groupOrder)||[];
@@ -49641,7 +49531,7 @@ function renderTrainingCalc(){
     </div>
   </div>`;
  }
- byId('reader').innerHTML=`<section class="card"><h1>降神、經驗試算</h1><h2>修練機制</h2>
+ byId('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>修練機制</h2>
  <div class="notice">選擇目前階與目標階，會計算需要材料，以及從目前階提升到目標階增加的能力。計算結果預設隱藏，按下「計算修練」後才會顯示。</div>
  <div class="kvGrid">
   <div class="kv"><div class="k">分類篩選</div><div class="v"><select id="trainGroupFilter">${groupOpts}</select></div></div>
@@ -49809,7 +49699,7 @@ function backLabelFor(view){
  if(view==='monster')return '返回怪物查詢';
  if(view==='item')return '返回道具查詢';
  if(view==='reverse')return '返回掉落反查';
- if(view==='jiang')return '返回降神、經驗試算';
+ if(view==='jiang')return '返回降神、經驗、修練試算';
  return '返回首頁';
 }
 function backButtonHTML(view){
@@ -49819,13 +49709,13 @@ function backButtonHTML(view){
 function initEvents(){
  byId('openMenuBtn').onclick=openDrawer;byId('closeMenuBtn').onclick=closeDrawer;byId('backdrop').onclick=closeDrawer;
  document.addEventListener('change',e=>{if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions(); if(e.target.classList&&(e.target.classList.contains('trainCur')||e.target.classList.contains('trainTar'))){clampTrainingInputs(); updateTrainingNeeds();}});
- document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v){if(v==='jiang')openJiangMenuOnly();else setView(v);}const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);if(window.innerWidth<980)openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo)}const io=e.target.closest('[data-item-open]')?.dataset.itemOpen;if(io){setItemSub(io)}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid)showMonster(mid);const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);const equid=e.target.closest('[data-eq-uid]')?.dataset.eqUid;if(equid){eqState.uid=equid;eqState.recipeId='';eqRenderPreview();byId('eqSelect')&&(byId('eqSelect').value=equid);}const eg=e.target.closest('[data-eq-group]')?.dataset.eqGroup;if(eg){eqState.recipeGroup=eg;eqState.recipeId='';eqState.useCount=null;eqRenderPreview();}const er=e.target.closest('[data-eq-recipe]')?.dataset.eqRecipe;if(er){eqState.recipeId=er;eqState.useCount=null;eqRenderPreview();}if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds();if(e.target.id==='calcStarAura')calcStarAura();if(e.target.id==='calcExpNeed')calcExpNeed();if(e.target.id==='calcEatPill')calcEatPill();if(e.target.id==='calcTraining')calcTraining();if(e.target.id==='eqShowMaterials')showEquipmentMaterials();if(e.target.id==='eqBackToSim')renderEquipmentCompoundPage();if(e.target.id==='trainAllMax')setTrainingAllMax();if(e.target.id==='trainClear')clearTrainingTargets();const et=e.target.closest('[data-exp-tab]');if(et){document.querySelectorAll('.calcTab').forEach(b=>b.classList.remove('active'));et.classList.add('active');byId('expTabNeed').style.display=et.dataset.expTab==='need'?'block':'none';byId('expTabEat').style.display=et.dataset.expTab==='eat'?'block':'none';}});
+ document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v){if(v==='jiang')openJiangMenuOnly();else setView(v);}const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);if(window.innerWidth<980)openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo)}const io=e.target.closest('[data-item-open]')?.dataset.itemOpen;if(io){setItemSub(io)}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid)showMonster(mid);const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);const equid=e.target.closest('[data-eq-uid]')?.dataset.eqUid;if(equid){openEquipmentSim(equid);}const eg=e.target.closest('[data-eq-group]')?.dataset.eqGroup;if(eg){eqRenderPreview();}const er=e.target.closest('[data-eq-recipe]')?.dataset.eqRecipe;if(er){eqToggleRecipe(er);}if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds();if(e.target.id==='calcStarAura')calcStarAura();if(e.target.id==='calcExpNeed')calcExpNeed();if(e.target.id==='calcEatPill')calcEatPill();if(e.target.id==='calcTraining')calcTraining();if(e.target.id==='eqShowMaterials')showEquipmentMaterials();if(e.target.id==='eqBackToSim')eqRenderPreview();if(e.target.id==='eqBackToList')renderEquipmentCompoundPage();if(e.target.id==='eqOpenRandom')renderEquipmentRandomPage();if(e.target.id==='eqSimOnce'){eqRandomOnce();renderEquipmentRandomPage();}if(e.target.id==='eqSimClear'){eqResetRandom();renderEquipmentRandomPage();}if(e.target.id==='trainAllMax')setTrainingAllMax();if(e.target.id==='trainClear')clearTrainingTargets();const et=e.target.closest('[data-exp-tab]');if(et){document.querySelectorAll('.calcTab').forEach(b=>b.classList.remove('active'));et.classList.add('active');byId('expTabNeed').style.display=et.dataset.expTab==='need'?'block':'none';byId('expTabEat').style.display=et.dataset.expTab==='eat'?'block':'none';}});
  ['monsterQ','monsterMin','monsterMax'].forEach(id=>{const el=byId(id); if(el)el.addEventListener('input',searchMonsters);});
  
  
- document.addEventListener('input',e=>{if(e.target.classList&&(e.target.classList.contains('trainCur')||e.target.classList.contains('trainTar'))){updateTrainingNeeds();} if(e.target.id==='eqQ'){eqState.q=e.target.value;eqState.uid='';eqRefreshList();eqRefreshSelect();eqRenderPreview();} if(e.target.id==='eqUseCount'){eqState.useCount=e.target.value;eqRenderPreview();}
+ document.addEventListener('input',e=>{if(e.target.classList&&(e.target.classList.contains('trainCur')||e.target.classList.contains('trainTar'))){updateTrainingNeeds();} if(e.target.id==='eqQ'){eqState.q=e.target.value;eqRefreshList();} if(e.target.classList&&e.target.classList.contains('eqRecipeCount')){eqSetRecipeCount(e.target.dataset.eqRecipeCount,e.target.value);}
  if(['monsterQMain','monsterMinMain','monsterMaxMain','monsterRaceMain','monsterSubtypeMain'].includes(e.target.id))searchMonstersMain();if(['itemQ','itemMin','itemMax'].includes(e.target.id))searchItems();if(e.target.id==='reverseQ')searchReverseItems();});
- document.addEventListener('change',e=>{if(e.target.id==='itemType')searchItems();if(e.target.id==='trainGroupFilter')filterTrainingRows();if(['eqMain','eqSeries','eqTier','eqType'].includes(e.target.id)){eqState[e.target.id.replace('eq','').toLowerCase()]=e.target.value; if(e.target.id==='eqMain'){eqState.series='';eqState.tier='';eqState.type='';} if(e.target.id==='eqSeries'){eqState.tier='';eqState.type='';} if(e.target.id==='eqTier'){eqState.type='';} eqState.uid='';eqState.recipeId='';renderEquipmentCompoundPage();} if(e.target.id==='eqSelect'){eqState.uid=e.target.value;eqState.recipeId='';eqRenderPreview();}});
+ document.addEventListener('change',e=>{if(e.target.id==='itemType')searchItems();if(e.target.id==='trainGroupFilter')filterTrainingRows();if(['eqMain','eqSeries','eqTier','eqType'].includes(e.target.id)){eqState[e.target.id.replace('eq','').toLowerCase()]=e.target.value; if(e.target.id==='eqMain'){eqState.series='';eqState.tier='';eqState.type='';} if(e.target.id==='eqSeries'){eqState.tier='';eqState.type='';} if(e.target.id==='eqTier'){eqState.type='';} eqState.uid='';eqState.recipeId='';renderEquipmentCompoundPage();} if(e.target.id==='eqSelect'){openEquipmentSim(e.target.value);}});
  document.addEventListener('click',e=>{const tab=e.target.closest('[data-item-tab]')?.dataset.itemTab;if(tab){renderItemPage(tab);}});
  byId('manualFiles').addEventListener('change',async e=>{alert('v86 先以自動讀取為主，手動載入下一版再補。')});
 }
