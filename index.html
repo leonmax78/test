@@ -42632,6 +42632,31 @@ function openDrawer(){byId('drawer').classList.add('open');byId('backdrop').clas
 function closeDrawer(){byId('drawer').classList.remove('open');byId('backdrop').classList.remove('open')}
 function setTopStatus(s){byId('topStatus').textContent=s}
 
+function renderJiangHome(){
+ byId('reader').innerHTML='';
+}
+function openJiangMenuOnly(){
+ currentView='jiang';
+ document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='jiang'));
+ document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
+ byId('jiangForm')?.classList.add('active');
+ renderJiangHome();
+}
+function setView(view){
+ currentView=view;
+ document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
+ document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
+ if(view==='home'){renderHome(); closeDrawer();}
+ else if(view==='jiang'){openJiangMenuOnly();}
+ else if(view==='monster'){renderMonsterPage(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
+ else if(view==='item'){openItemMenuOnly();}
+ else if(view==='reverse'){renderItemPage('reverse'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
+}
+function setJiang(kind){
+ openJiangMenuOnly();
+ fillJiangFields(kind);
+}
+
 function renderItemPage(tab='item'){
  const activeItem=tab==='item';
  const activeReverse=tab==='reverse';
