@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>神州降神、經驗、修練試算、掉落查詢系統｜v88ab仙器僅安定值70修正版</title>
+<title>神州降神、經驗、修練試算、掉落查詢系統｜v88ag飾品功能與授權倒計時優化版</title>
 <style>
 :root{
   --bg:#07111f;--panel:#101a2d;--panel2:#0b1527;--line:#263a58;--text:#eaf2ff;--muted:#9fb4d4;
@@ -49485,7 +49485,7 @@ function eqSetRecipeCount(id,val){
 function eqRenderRecipeArea(){
  const eq=eqSelected(); if(!eq)return '<div class="empty">請先選擇裝備。</div>';
  const recipes=eqSortRecipeObjects(eqAllowedRecipes());
- const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50']];
+ const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50 / 70']];
  const groupRecipes=g=>recipes.filter(r=>g==='stable_50'?(r.group==='stable_50'||r.group==='stable_70'):r.group===g);
  const groupSelected=g=>eqSelectedRecipes().filter(x=>g==='stable_50'?(x.recipe.group==='stable_50'||x.recipe.group==='stable_70'):x.recipe.group===g);
  const renderSelected=g=>{
@@ -49493,11 +49493,11 @@ function eqRenderRecipeArea(){
   if(!rows.length)return '<div class="muted" style="margin-top:8px">尚未加入這個安定值的配方。</div>';
   return `<div class="tableWrap" style="margin-top:10px"><table><thead><tr><th>已選配方</th><th>次數</th><th>操作</th></tr></thead><tbody>${rows.map(({recipe,count})=>`<tr><td><b>${esc(recipe.name)}</b><div class="rSub">${esc(recipe.effect_summary||'')}</div></td><td style="width:120px"><input class="eqRecipeCount" data-eq-recipe-count="${esc(recipe.id)}" type="number" min="1" value="${esc(count)}"></td><td style="width:90px"><button class="ghost" data-eq-recipe="${esc(recipe.id)}">移除</button></td></tr>`).join('')}</tbody></table></div>`;
  };
- return `<h3 id="eqRecipeAnchor">選擇配方</h3><div class="notice">配方改為下拉式加入，可跨安定值累加；材料清單會依安定值 1 → 12 → 50 的順序列出。</div>
+ return `<h3 id="eqRecipeAnchor">選擇配方</h3><div class="notice">配方改為下拉式加入，可跨安定值累加；材料清單會依安定值 1 → 12 → 50 / 70 的順序列出。</div>
  ${groups.map(([g,label])=>{const arr=groupRecipes(g);return `<div class="card" style="box-shadow:none"><h3>${esc(label)}</h3><label>加入配方</label><select data-eq-recipe-select="${esc(g)}"><option value="">請選擇要加入的配方</option>${arr.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}${r.effect_summary?'｜'+esc(r.effect_summary):''}</option>`).join('')}</select>${renderSelected(g)}</div>`}).join('')}
  <div class="quick"><button class="primary" id="eqOpenRandom">進入亂數模擬頁<small>進入後再選配方，像骰子一樣累計次數與材料</small></button><button class="primary" id="eqShowMaterials">產出所需材料清單<small>另開材料頁，並可返回</small></button></div>`;
 }
-function renderEquipmentCompoundPage(){
+function renderEquipmentCompoundPage(){function renderEquipmentCompoundPage(){
  window.v86LastView='item';
  byId('reader').innerHTML=`<section class="card"><h1>裝備合成模擬</h1><div class="muted">先篩選裝備，點選裝備後會進入合成模擬頁。</div>
  <div class="eqFilterGrid"><div><label>種類（武器 / 防具 / 仙器）</label><select id="eqMain"></select></div><div><label>系列</label><select id="eqSeries"></select></div><div><label>階級 / 等級</label><select id="eqTier"></select></div><div><label>類型 / 部位</label><select id="eqType"></select></div><div style="grid-column:1/-1"><label>搜尋裝備名稱 / ID</label><input id="eqQ" value="${esc(eqState.q||'')}" placeholder="例如：椒圖、宮殤、劍、300"></div></div>
@@ -49560,7 +49560,7 @@ function eqRandomMaterialRows(){
 }
 function eqRenderRandomRecipePicker(){
  const recipes=eqSortRecipeObjects(eqAllowedRecipes());
- const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50']];
+ const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50 / 70']];
  const groupRecipes=g=>recipes.filter(r=>g==='stable_50'?(r.group==='stable_50'||r.group==='stable_70'):r.group===g);
  const groupSelected=g=>eqSortRecipeObjects(eqSimSelectedRecipes()).filter(r=>g==='stable_50'?(r.group==='stable_50'||r.group==='stable_70'):r.group===g);
  const renderSelected=g=>{
@@ -49570,7 +49570,7 @@ function eqRenderRandomRecipePicker(){
  };
  return `<h3>選擇要模擬的配方</h3><div class="notice">這裡獨立選擇亂數模擬要用的配方，不需要先在上一頁勾好。每按一次「模擬一次」，目前加入的配方各計 1 次材料。</div>${groups.map(([g,label])=>{const arr=groupRecipes(g);return `<div class="card" style="box-shadow:none"><h3>${esc(label)}</h3><label>加入模擬配方</label><select data-eq-sim-recipe-select="${esc(g)}"><option value="">請選擇要加入的配方</option>${arr.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}${r.effect_summary?'｜'+esc(r.effect_summary):''}</option>`).join('')}</select>${renderSelected(g)}</div>`}).join('')}`;
 }
-function renderEquipmentRandomPage(keepScroll=false){
+function renderEquipmentRandomPage(keepScroll=false){function renderEquipmentRandomPage(keepScroll=false){
  const y=window.scrollY||document.documentElement.scrollTop||0;
  const eq=eqSelected(); if(!eq){empty('請先選擇裝備');return;}
  const totals=eqState.simTotals||{};
@@ -49950,7 +49950,7 @@ document.addEventListener('DOMContentLoaded',init);
   };
 
   function eqGroupedRecipeOptions(recipes, activeId){
-    const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50']];
+    const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50 / 70']];
     return groups.map(([g,label])=>{
       const arr=recipes.filter(r=>g==='stable_50'?(r.group==='stable_50'||r.group==='stable_70'):r.group===g);
       if(!arr.length)return '';
@@ -50011,7 +50011,7 @@ document.addEventListener('DOMContentLoaded',init);
 
 
 <script>
-/* v88z 特仕分類修正 + 亂數模擬僅保留安定值1 */
+/* v88ag 飾品功能與授權倒計時優化 */
 (function(){
   function eqSpecialTierOf(e){
     if(!e || e.series_group!=='特仕裝') return '';
@@ -50124,567 +50124,150 @@ document.addEventListener('DOMContentLoaded',init);
 </script>
 
 
+<style>
+/* v88ag 授權倒計時與裝備合成篩選優化 */
+
+.eqFilterHint{font-size:12px;color:var(--muted);font-weight:900;margin-top:4px;line-height:1.5}
+</style>
 <script>
-/* v88ab 修正：主腳本重複 function 導致卡住；安定值 50/仙器70 分流 */
+/* v88ag 飾品清單 + 飾品無合成限制 + 授權倒計時 */
 (function(){
-  function isEqUnderBoot(eq){
-    if(!eq) return false;
-    const txt=[eq.main_category,eq.display_type,eq.item_type_raw,(eq.type_codes||[]).join(','),eq.search_text].filter(Boolean).join(' ');
-    return txt.includes('仙器') || txt.includes('UNDER_BOOT');
-  }
-  function recipeGroupAllowedForEq(recipe, eq){
-    const g=recipe && recipe.group;
-    if(g==='stable_1' || g==='stable_12') return true;
-    if(isEqUnderBoot(eq)) return g==='stable_70';
-    return g==='stable_50';
-  }
-  function recipeGroupLabelForEq(group, eq){
-    if(group==='stable_1') return '安定值 1';
-    if(group==='stable_12') return '安定值 12';
-    if(group==='stable_70') return '安定值 70';
-    if(group==='stable_50') return '安定值 50';
-    return group || '';
-  }
-  const oldAllowed = window.eqAllowedRecipes;
-  window.eqAllowedRecipes=function(){
-    const eq=eqSelected && eqSelected();
-    const base = (typeof oldAllowed==='function') ? oldAllowed() : [];
-    return base.filter(r=>recipeGroupAllowedForEq(r, eq));
-  };
-  window.eqRecipeGroupRank=function(recipe){
-    const g=recipe?.group||'';
-    if(g==='stable_1')return 1;
-    if(g==='stable_12')return 2;
-    if(g==='stable_50')return 3;
-    if(g==='stable_70')return 4;
-    return 99;
-  };
-  window.eqRenderRecipeArea=function(){
-    const eq=eqSelected && eqSelected();
-    if(!eq)return '<div class="empty">請先選擇裝備。</div>';
-    const recipes=eqSortRecipeObjects(eqAllowedRecipes());
-    const groups=isEqUnderBoot(eq)
-      ? [['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_70','安定值 70']]
-      : [['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50']];
-    const groupRecipes=g=>recipes.filter(r=>r.group===g);
-    const groupSelected=g=>eqSelectedRecipes().filter(x=>x.recipe.group===g);
-    const renderSelected=g=>{
-      const rows=groupSelected(g);
-      if(!rows.length)return '<div class="muted" style="margin-top:8px">尚未加入這個安定值的配方。</div>';
-      return '<div class="tableWrap" style="margin-top:10px"><table><thead><tr><th>已選配方</th><th>次數</th><th>操作</th></tr></thead><tbody>'+
-        rows.map(({recipe,count})=>'<tr><td><b>'+esc(recipe.name)+'</b><div class="rSub">'+esc(recipe.effect_summary||'')+'</div></td><td style="width:120px"><input class="eqRecipeCount" data-eq-recipe-count="'+esc(recipe.id)+'" type="number" min="1" value="'+esc(count)+'"></td><td style="width:90px"><button class="ghost" data-eq-recipe="'+esc(recipe.id)+'">移除</button></td></tr>').join('')+
-        '</tbody></table></div>';
-    };
-    const notice=isEqUnderBoot(eq)
-      ? '仙器會使用獨立的安定值 70 配方；配方以安定值 1 → 12 → 70 的順序列出。'
-      : '配方改為下拉式加入，可跨安定值累加；材料清單會依安定值 1 → 12 → 50 的順序列出。';
-    return '<h3 id="eqRecipeAnchor">選擇配方</h3><div class="notice">'+notice+'</div>'+groups.map(([g,label])=>{
-      const arr=groupRecipes(g);
-      return '<div class="card" style="box-shadow:none"><h3>'+esc(label)+'</h3><label>加入配方</label><select data-eq-recipe-select="'+esc(g)+'"><option value="">請選擇要加入的配方</option>'+arr.map(r=>'<option value="'+esc(r.id)+'">'+esc(r.name)+(r.effect_summary?'｜'+esc(r.effect_summary):'')+'</option>').join('')+'</select>'+renderSelected(g)+'</div>';
-    }).join('')+'<div class="quick"><button class="primary" id="eqOpenRandom">進入亂數模擬頁<small>進入後再選配方，像骰子一樣累計次數與材料</small></button><button class="primary" id="eqShowMaterials">產出所需材料清單<small>另開材料頁，並可返回</small></button></div>';
-  };
-  window.showEquipmentMaterials=function(){
-    const eq=eqSelected && eqSelected(), picks=eqSelectedRecipes && eqSelectedRecipes();
-    if(!eq||!picks||!picks.length){empty('請先選擇裝備與至少一個配方');return}
-    const sections=picks.map(({recipe,count})=>{
-      const mats=eqMaterials(recipe,count);
-      return '<h3>'+esc(recipeGroupLabelForEq(recipe.group, eq))+'｜'+esc(recipe.name)+' × '+fmt(count)+'</h3><div class="tableWrap"><table class="eqMatTable"><thead><tr><th>材料</th><th>數量</th></tr></thead><tbody>'+mats.map(m=>'<tr><td>'+esc(m.name)+'</td><td>'+fmt(m.qty)+'</td></tr>').join('')+'</tbody></table></div>';
-    }).join('');
-    byId('reader').innerHTML='<section class="card"><button class="backBtn" id="eqBackToSim">← 返回裝備合成模擬</button><h1>所需材料清單</h1><div class="notice"><b>'+esc(eq.name)+'</b><br>材料依配方分開顯示，並依安定值順序排列。</div>'+sections+'</section>';
-    window.scrollTo({top:0,behavior:'smooth'});
-  };
-})();
-</script>
-<script>
-/* v88ab 修正：仙器只使用安定值70；一般裝備維持 1 / 12 / 50，亂數模擬一般只安定值1、仙器只安定值70 */
-(function(){
-  function isEqUnderBoot88ab(eq){
-    if(!eq) return false;
-    const txt=[eq.main_category,eq.display_type,eq.item_type_raw,(eq.type_codes||[]).join(','),eq.search_text].filter(Boolean).join(' ');
-    return txt.includes('仙器') || txt.includes('UNDER_BOOT');
-  }
-  function recipeGroupAllowed88ab(recipe, eq){
-    const g=recipe && recipe.group;
-    if(isEqUnderBoot88ab(eq)) return g==='stable_70';
-    return g==='stable_1' || g==='stable_12' || g==='stable_50';
-  }
-  function recipeGroupLabel88ab(group){
-    if(group==='stable_1') return '安定值 1';
-    if(group==='stable_12') return '安定值 12';
-    if(group==='stable_50') return '安定值 50';
-    if(group==='stable_70') return '安定值 70';
-    return group || '';
-  }
-  const prevAllowed88ab=window.eqAllowedRecipes;
-  window.eqAllowedRecipes=function(){
-    const eq=(typeof eqSelected==='function') ? eqSelected() : null;
-    const base=(typeof prevAllowed88ab==='function') ? prevAllowed88ab() : [];
-    return base.filter(r=>recipeGroupAllowed88ab(r,eq));
-  };
-  window.eqRecipeGroupRank=function(recipe){
-    const g=recipe?.group||'';
-    if(g==='stable_1')return 1;
-    if(g==='stable_12')return 2;
-    if(g==='stable_50')return 3;
-    if(g==='stable_70')return 4;
-    return 99;
-  };
-  window.eqRenderRecipeArea=function(){
-    const eq=(typeof eqSelected==='function') ? eqSelected() : null;
-    if(!eq)return '<div class="empty">請先選擇裝備。</div>';
-    const recipes=eqSortRecipeObjects(eqAllowedRecipes());
-    const isUnder=isEqUnderBoot88ab(eq);
-    const groups=isUnder ? [['stable_70','安定值 70']] : [['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50']];
-    const groupRecipes=g=>recipes.filter(r=>r.group===g);
-    const groupSelected=g=>eqSelectedRecipes().filter(x=>x.recipe.group===g);
-    const renderSelected=g=>{
-      const rows=groupSelected(g);
-      if(!rows.length)return '<div class="muted" style="margin-top:8px">尚未加入這個安定值的配方。</div>';
-      return '<div class="tableWrap" style="margin-top:10px"><table><thead><tr><th>已選配方</th><th>次數</th><th>操作</th></tr></thead><tbody>'+
-        rows.map(({recipe,count})=>'<tr><td><b>'+esc(recipe.name)+'</b><div class="rSub">'+esc(recipe.effect_summary||'')+'</div></td><td style="width:120px"><input class="eqRecipeCount" data-eq-recipe-count="'+esc(recipe.id)+'" type="number" min="1" value="'+esc(count)+'"></td><td style="width:90px"><button class="ghost" data-eq-recipe="'+esc(recipe.id)+'">移除</button></td></tr>').join('')+
-        '</tbody></table></div>';
-    };
-    const notice=isUnder
-      ? '仙器只使用安定值 70 配方；不顯示安定值 1、安定值 12。'
-      : '配方改為下拉式加入，可跨安定值累加；材料清單會依安定值 1 → 12 → 50 的順序列出。';
-    return '<h3 id="eqRecipeAnchor">選擇配方</h3><div class="notice">'+notice+'</div>'+groups.map(([g,label])=>{
-      const arr=groupRecipes(g);
-      return '<div class="card" style="box-shadow:none"><h3>'+esc(label)+'</h3><label>加入配方</label><select data-eq-recipe-select="'+esc(g)+'"><option value="">請選擇要加入的配方</option>'+arr.map(r=>'<option value="'+esc(r.id)+'">'+esc(r.name)+(r.effect_summary?'｜'+esc(r.effect_summary):'')+'</option>').join('')+'</select>'+renderSelected(g)+'</div>';
-    }).join('')+'<div class="quick"><button class="primary" id="eqOpenRandom">進入亂數模擬頁<small>進入後再選配方，像骰子一樣累計次數與材料</small></button><button class="primary" id="eqShowMaterials">產出所需材料清單<small>另開材料頁，並可返回</small></button></div>';
-  };
-  window.showEquipmentMaterials=function(){
-    const eq=(typeof eqSelected==='function') ? eqSelected() : null;
-    let picks=(typeof eqSelectedRecipes==='function') ? eqSelectedRecipes() : [];
-    if(!eq||!picks||!picks.length){empty('請先選擇裝備與至少一個配方');return;}
-    picks=picks.filter(x=>recipeGroupAllowed88ab(x.recipe,eq)).sort((a,b)=>eqRecipeGroupRank(a.recipe)-eqRecipeGroupRank(b.recipe));
-    const sections=picks.map(({recipe,count})=>{
-      const mats=eqMaterials(recipe,count);
-      return '<h3>'+esc(recipeGroupLabel88ab(recipe.group))+'｜'+esc(recipe.name)+' × '+fmt(count)+'</h3><div class="tableWrap"><table class="eqMatTable"><thead><tr><th>材料</th><th>數量</th></tr></thead><tbody>'+mats.map(m=>'<tr><td>'+esc(m.name)+'</td><td>'+fmt(m.qty)+'</td></tr>').join('')+'</tbody></table></div>';
-    }).join('');
-    byId('reader').innerHTML='<section class="card"><button class="backBtn" id="eqBackToSim">← 返回裝備合成模擬</button><h1>所需材料清單</h1><div class="notice"><b>'+esc(eq.name)+'</b><br>材料依配方分開顯示，並依安定值順序排列。</div>'+sections+'</section>';
-    window.scrollTo({top:0,behavior:'smooth'});
-  };
-  function simGroup88ab(){
-    const eq=(typeof eqSelected==='function') ? eqSelected() : null;
-    return isEqUnderBoot88ab(eq) ? 'stable_70' : 'stable_1';
-  }
-  function simRecipes88ab(){
-    const g=simGroup88ab();
-    return eqSortRecipeObjects(eqAllowedRecipes().filter(r=>r.group===g));
-  }
-  window.eqRenderRandomRecipePicker=function(){
-    const eq=(typeof eqSelected==='function') ? eqSelected() : null;
-    const g=simGroup88ab();
-    const label=recipeGroupLabel88ab(g);
-    const recipes=simRecipes88ab();
-    const active=eqState.simActiveRecipeId||'';
-    const activeRecipe=eqRecipeById(active);
-    const used=activeRecipe ? Number((eqState.simRecipeCounts||{})[String(activeRecipe.id)])||0 : 0;
-    const note=isEqUnderBoot88ab(eq)
-      ? '仙器亂數模擬只保留安定值 70 配方。選一個配方後按「模擬一次」，會自動累計使用次數與材料。'
-      : '亂數模擬只保留安定值 1 配方。選一個配方後按「模擬一次」，每按一次就像骰子一樣產生本次增加值，並自動累計使用次數與材料。';
-    return '<h3>選擇要模擬的配方</h3><div class="notice">'+note+'</div><div class="card" style="box-shadow:none"><label>模擬配方（'+esc(label)+'）</label><select data-eq-sim-recipe-select="single"><option value="">請選擇要模擬的'+esc(label)+'配方</option>'+recipes.map(r=>'<option value="'+esc(r.id)+'" '+(String(active)===String(r.id)?'selected':'')+'>'+esc(r.name)+(r.effect_summary?'｜'+esc(r.effect_summary):'')+'</option>').join('')+'</select>'+(activeRecipe?'<div class="notice" style="margin-top:10px"><b>'+esc(activeRecipe.name)+'</b><br>'+esc(activeRecipe.effect_summary||'')+(activeRecipe.desc?'<br>'+esc(activeRecipe.desc):'')+'<br>目前已模擬使用：'+fmt(used)+' 次</div>':'')+'</div>';
-  };
-  window.eqSimAddRecipe=function(id){
-    const r=eqRecipeById(id); if(!r)return;
-    const g=simGroup88ab();
-    if(r.group!==g){alert('目前裝備的亂數模擬只支援 '+recipeGroupLabel88ab(g)+' 配方');return;}
-    eqState.simActiveRecipeId=String(id);
-    eqState.simSelectedRecipes={};
-    eqState.simSelectedRecipes[String(id)]=true;
-    renderEquipmentRandomPage(true);
-  };
-  window.eqRandomOnce=function(){
-    if(!eqState.simTotals)eqState.simTotals={};
-    if(!eqState.simRecipeCounts)eqState.simRecipeCounts={};
-    if(!eqState.simHistory)eqState.simHistory=[];
-    const recipe=eqRecipeById(eqState.simActiveRecipeId);
-    const g=simGroup88ab();
-    if(!recipe){alert('請先選擇要模擬的 '+recipeGroupLabel88ab(g)+' 配方');return;}
-    if(recipe.group!==g){alert('目前裝備的亂數模擬只支援 '+recipeGroupLabel88ab(g)+' 配方');return;}
-    const rid=String(recipe.id);
-    eqState.simSelectedRecipes={};
-    eqState.simSelectedRecipes[rid]=true;
-    eqState.simRecipeCounts[rid]=(Number(eqState.simRecipeCounts[rid])||0)+1;
-    eqState.simCount=(Number(eqState.simCount)||0)+1;
-    const rolls=[];
-    for(const e of recipe.effects||[]){
-      if(e.stackable===false)continue;
-      const k=e.stat, label=e.label||eqData().stat_labels?.[k]||k;
-      const val=eqRollEffectValue(e);
-      if(!eqState.simTotals[k])eqState.simTotals[k]={label,value:0};
-      eqState.simTotals[k].value+=val;
-      rolls.push({label,value:val,unit:e.unit||''});
-    }
-    eqState.simHistory.push({no:eqState.simCount,recipeId:rid,recipeName:recipe.name,rolls});
-  };
-})();
-</script>
-
-<script>
-
-/* v88ad 合成能力顯示與模擬頁簡化修正 */
-(function(){
-  window.eqRenderStats=function(eq,includeEffects=true){
-    const base=eqBaseStatsWithRaw(eq);
-    const effMap=includeEffects?eqEffectAccumulator():{};
-    const keys=eqUnique([...Object.keys(base),...Object.keys(effMap)]);
-    const order=['level','clevel','con','str','int','dex','hp','mp','damage','m_attack','def','m_def','ice_def','fire_def','lightning_def','dark_def','fire_attack','ice_attack','lightning_attack','dark_attack','fire_prob','ice_prob','lightning_prob','dark_prob','paralysis_res','poison_res','blind_res','silent_res','attack','attack_range','durability','weight'];
-    keys.sort((a,b)=>(order.indexOf(a)<0?999:order.indexOf(a))-(order.indexOf(b)<0?999:order.indexOf(b)) || String(a).localeCompare(String(b),'zh-Hant'));
-    const left=keys.map(k=>{const o=base[k]; const label=eqStatLabel(k,o,null); return `<div class="kv"><div class="k">${esc(label)}</div><div class="v">${esc(eqDisplayStatText(k,o))}</div></div>`}).join('');
-    if(!includeEffects){return `<div class="card" style="box-shadow:none"><h2 class="eqCompactTitle">目前裝備能力</h2><div class="eqStatGrid">${left}</div></div>`;}
-    const right=keys.map(k=>{
-      const o=base[k]; const e=effMap[k]; const label=eqStatLabel(k,o,e);
-      const baseText=eqDisplayStatText(k,o);
-      let addText='';
-      if(e){
-        if(e.hasRange){
-          const am=e.min, ax=e.max;
-          addText=`<span class="eqYellow">（+${fmt(am)}${am!==ax?'～'+fmt(ax):''}${e.unit||''}）</span>`;
-        }else{
-          const av=e.value;
-          addText=`<span class="eqYellow">（${av>=0?'+':''}${fmt(av)}${e.unit||''}）</span>`;
-        }
-        if(e.parts&&e.parts.length)addText+=`<div class="rSub">${esc(e.parts.join('、'))}</div>`;
-      }
-      return `<div class="kv"><div class="k">${esc(label)}</div><div class="v">${esc(baseText)}${addText}</div></div>`;
-    }).join('');
-    return `<div class="eqPreviewGrid"><div class="card" style="box-shadow:none"><h2 class="eqCompactTitle">裝備能力</h2><div class="eqStatGrid">${left}</div></div><div class="card" style="box-shadow:none"><h2 class="eqCompactTitle">合成後能力</h2><div class="eqSmall">白字為原有能力，黃字括號為合成增加值。</div><div class="eqStatGrid">${right}</div></div></div>`;
-  };
-
-  window.renderEquipmentRandomPage=function(keepScroll=false){
-    const y=window.scrollY||document.documentElement.scrollTop||0;
-    const eq=eqSelected(); if(!eq){empty('請先選擇裝備');return;}
-    const history=(eqState.simHistory||[]).slice().reverse();
-    const histRows=history.map(h=>`<tr><td>${fmt(h.no)}</td><td>${esc(h.recipeName)}</td><td>${(h.rolls||[]).map(r=>`${esc(r.label)} +${fmt(r.value)}${esc(r.unit||'')}`).join('、')||'-'}</td></tr>`).join('')||'<tr><td colspan="3">尚未有模擬紀錄。</td></tr>';
-    const materialSections=eqRandomMaterialRows().map(({recipe,count,mats})=>`<h3>${esc(recipe.name)} × ${fmt(count)}</h3><div class="tableWrap"><table class="eqMatTable"><thead><tr><th>材料</th><th>數量</th></tr></thead><tbody>${mats.map(m=>`<tr><td>${esc(m.name)}</td><td>${fmt(m.qty)}</td></tr>`).join('')}</tbody></table></div>`).join('')||'<div class="empty">尚未模擬，材料數量為 0。</div>';
-    byId('reader').innerHTML=`<section class="card"><button class="backBtn" id="eqBackToSim">← 返回裝備合成模擬</button><h1>合成亂數模擬</h1><h2>${esc(eq.name)}</h2>${eqMetaLine(eq)}${eqRenderStats(eq,false)}${eqRenderRandomRecipePicker()}<div class="quick"><button class="primary" id="eqSimOnce">模擬一次<small>隨機產生本次合成增加值，並依配方累計材料</small></button><button id="eqSimClear" class="ghost">清空重新計算<small>歸零累計次數與材料，保留目前選擇的配方</small></button></div><div class="kvGrid"><div class="kv"><div class="k">累計模擬次數</div><div class="v">${fmt(eqState.simCount||0)}</div></div></div><h3>模擬紀錄</h3><div class="tableWrap"><table><thead><tr><th>次數</th><th>配方</th><th>本次結果</th></tr></thead><tbody>${histRows}</tbody></table></div><h3>總計材料數</h3>${materialSections}</section>`;
-    if(keepScroll)setTimeout(()=>window.scrollTo(0,y),0); else window.scrollTo({top:0,behavior:'smooth'});
-  };
-
-  document.addEventListener('click',function(e){
-    if(e.target && e.target.id==='eqSimOnce'){
-      e.preventDefault(); e.stopImmediatePropagation();
-      eqRandomOnce();
-      renderEquipmentRandomPage(true);
-    }
-    if(e.target && e.target.id==='eqSimClear'){
-      e.preventDefault(); e.stopImmediatePropagation();
-      const keep=eqState.simActiveRecipeId||'';
-      eqResetRandom(false);
-      eqState.simActiveRecipeId=keep;
-      renderEquipmentRandomPage(true);
-    }
-  },true);
-})();
-</script>
-
-<script>
-/* v88ae 飾品清單與裝備篩選結構修正 */
-(function(){
-  const ACCESSORY_SEEDS = {"職業": ["獨眼慧珠", "諾亞航令", "誅仙御鐸", "龍之印信"], "五佐": ["金梁天佐鎮", "水嶷天佐針", "火熒天佐徽", "土伏天佐玉", "木篁天佐戒"], "五絕": ["五絕皇器"], "經驗": ["北饕萬餮硯", "謙卑集", "九鼎太清經"], "掉寶": ["天祿銜瑞綴", "萬用鑰匙", "南華題命譜"]};
-  const MAIN_ORDER_88AE = ['武器','防具','飾品','仙器'];
-  const WEAPON_TYPE_ORDER_88AE = ['劍','刀','斧頭','錘','槍','棍','禪杖','拂塵','暗器','盾'];
-  const ARMOR_TYPE_ORDER_88AE = ['頭盔','鎧甲','護腕','靴'];
-  const ACCESSORY_SERIES_ORDER_88AE = ['職業','五佐','五絕','經驗','掉寶'];
-  const ACC_TIER_ORDER_88AE = ['五佐','真五佐','超五佐','極五佐','五絕','真五絕','超五絕','極五絕'];
-  const DEF_JOB_ORDER_88AE = ['劍俠','勇士','術者','道人','僧侶','騰陽','靜月','宿星'];
-  function n88(v){return String(v??'').replace(/\s+/g,'').trim();}
-  function stripAccPrefix88(name){return n88(name).replace(/^(真|超|極)/,'');}
-  function accTierByPrefix88(name,base){
-    const s=n88(name);
-    if(s.startsWith('極'))return '極'+base;
-    if(s.startsWith('超'))return '超'+base;
-    if(s.startsWith('真'))return '真'+base;
-    return base;
-  }
-  function accessoryClassify88(name){
-    const s=n88(name);
-    if(!s)return null;
-    const base=stripAccPrefix88(s);
-    const inList=(cat)=> (ACCESSORY_SEEDS[cat]||[]).some(x=>stripAccPrefix88(x)===base || s.includes(n88(x)) || base.includes(stripAccPrefix88(x)));
-    if(s.includes('天佐') || inList('五佐')) return {series:'五佐', tier:accTierByPrefix88(s,'五佐')};
-    if(s.includes('五絕') || inList('五絕')) return {series:'五絕', tier:accTierByPrefix88(s,'五絕')};
-    for(const cat of ['職業','經驗','掉寶']){
-      if((ACCESSORY_SEEDS[cat]||[]).some(x=>n88(x)===s || s.includes(n88(x)))) return {series:cat, tier:''};
-    }
-    return null;
-  }
-  function rawToBaseStats88(raw){
-    const add=(obj,key,label,value)=>{if(value!==undefined&&value!==null&&value!==''&&String(value)!=='0')obj[key]={label,value:Number(value)||0};};
-    const addRange=(obj,key,label,min,max)=>{if((min!==undefined&&String(min)!=='') || (max!==undefined&&String(max)!==''))obj[key]={label,min:Number(min)||0,max:Number(max??min)||0};};
-    const out={};
-    raw=raw||{};
-    add(out,'level','LEVEL',raw.Level);
-    add(out,'clevel','職等(CL)',raw.CLevel);
-    add(out,'con','體魄',raw.Con);
-    add(out,'str','力量',raw.Str);
-    add(out,'int','智慧',raw.Int);
-    add(out,'dex','敏捷',raw.Dex);
-    add(out,'hp','生命',raw.HP);
-    add(out,'mp','真氣',raw.MP);
-    addRange(out,'damage','傷害',raw.DamageMin,raw.DamageMax);
-    add(out,'m_attack','術法攻擊',raw.MagicAttack);
-    add(out,'def','物理防禦',raw.ExtraDef);
-    add(out,'m_def','術法防禦',raw.MagicDef);
-    add(out,'ice_def','冰防',raw.IceDef);
-    add(out,'fire_def','火防',raw.FireDef);
-    add(out,'lightning_def','雷防',raw.LightningDef);
-    add(out,'dark_def','暗防',raw.DarkDef);
-    add(out,'fire_attack','火傷',raw.FireAttack);
-    add(out,'ice_attack','冰傷',raw.IceAttack);
-    add(out,'lightning_attack','雷傷',raw.LightningAttack);
-    add(out,'dark_attack','暗傷',raw.DarkAttack);
-    add(out,'fire_prob','火傷機率',raw.FireProb);
-    add(out,'ice_prob','冰傷機率',raw.IceProb);
-    add(out,'lightning_prob','雷傷機率',raw.LightningProb);
-    add(out,'dark_prob','暗傷機率',raw.DarkProb);
-    add(out,'paralysis_res','麻痺抗性',raw.ParalysisRes);
-    add(out,'poison_res','中毒抗性',raw.PosionRes ?? raw.PoisonRes);
-    add(out,'blind_res','盲目抗性',raw.BlindRes);
-    add(out,'silent_res','封咒抗性',raw.SilentRes);
-    add(out,'attack','命中',raw.Attack);
-    add(out,'attack_range','攻擊距離',raw.AttackRange);
-    add(out,'durability','耐久',raw.Durabulity ?? raw.Durability);
-    add(out,'weight','重量',raw.Weight);
-    return out;
-  }
-  function itemByName88(name){
-    const s=n88(name);
-    if(!s || !Array.isArray(window.items||items))return null;
-    return (items||[]).find(it=>n88(it.Name)===s) || null;
-  }
-  function typeHasOrnament88(it){
-    const t=String(it?.Type||'');
-    return t.split(',').map(x=>x.trim()).includes('ORNAMENT') || t==='ORNAMENT';
-  }
-  let accessoryCacheKey88='', accessoryCache88=[];
-  function makeAccessoryEntry88(name, cls, raw, idx){
-    raw=raw||itemByName88(name)||{};
-    const nm=String(raw.Name||name||'').trim();
-    const id=raw.ID||('acc_'+idx);
-    const tier=cls.tier||'';
-    return {
-      uid:'acc_'+String(id)+'_'+n88(nm),
-      item_id: raw.ID || '',
-      name:nm,
-      base_name:nm.replace(/^(真|超|極)/,''),
-      display_type:'飾品',
-      main_category:'飾品',
-      type_codes:['ORNAMENT'],
-      item_type_raw:'ORNAMENT',
-      source_section:'飾品',
-      source_name:nm,
-      is_variant:/^(真|超|極)/.test(n88(nm)),
-      variant_label:(n88(nm).match(/^(真|超|極)/)||[])[1]||null,
-      series_group:cls.series,
-      series_grade:tier,
-      tier:tier,
-      accessory_series:cls.series,
-      accessory_tier:tier,
-      base_stats:rawToBaseStats88(raw),
-      raw_item:raw.ID?raw:{},
-      matched_item_ini:!!raw.ID,
-      series:cls.series+(tier?'('+tier+')':''),
-      search_text:[nm,'飾品',cls.series,tier,raw.ID||'',raw.Type||''].filter(Boolean).join(' ')
-    };
-  }
-  function dynamicAccessoryEquipment88(){
-    const key=(items||[]).length+'|'+Object.keys(itemIndex||{}).length;
-    if(key===accessoryCacheKey88)return accessoryCache88;
-    const map=new Map();
-    let idx=0;
-    for(const [cat,names] of Object.entries(ACCESSORY_SEEDS)){
-      for(const nm of names){
-        const cls=accessoryClassify88(nm)||{series:cat,tier:''};
-        map.set(n88(nm),makeAccessoryEntry88(nm,cls,itemByName88(nm),++idx));
+  const ACCESSORY_ROWS = [
+    {series:'職業', tier:'術攻', names:['獨眼慧珠']},
+    {series:'職業', tier:'物攻', names:['諾亞航令']},
+    {series:'職業', tier:'術防', names:['誅仙御鐸']},
+    {series:'職業', tier:'血精', names:['龍之印信']},
+    {series:'五佐', tier:'五佐', names:['金梁天佐鎮','水嶷天佐針','火熒天佐徽','土伏天佐玉','木篁天佐戒']},
+    {series:'五佐', tier:'真五佐', names:['真金梁天佐鎮','真水嶷天佐針','真火熒天佐徽','真土伏天佐玉','真木篁天佐戒']},
+    {series:'五佐', tier:'超五佐', names:['超金梁天佐鎮','超水嶷天佐針','超火熒天佐徽','超土伏天佐玉','超木篁天佐戒']},
+    {series:'五佐', tier:'極五佐', names:['極金梁天佐鎮','極水嶷天佐針','極火熒天佐徽','極土伏天佐玉','極木篁天佐戒']},
+    {series:'五絕', tier:'五絕', names:['五絕皇器','謙卑集','九鼎太清經']},
+    {series:'五絕', tier:'真五絕', names:['真五絕皇器','真謙卑集','真九鼎太清經']},
+    {series:'五絕', tier:'超五絕', names:['超五絕皇器','超謙卑集','超九鼎太清經']},
+    {series:'五絕', tier:'極五絕', names:['極五絕皇器','極謙卑集','極九鼎太清經']},
+    {series:'經驗', tier:'經驗', names:['北饕萬餮硯','萬用鑰匙','南華題命譜']},
+    {series:'掉寶', tier:'掉寶', names:['天祿銜瑞綴']}
+  ];
+  function normName(x){return String(x||'').replace(/[s　]+/g,'').replace(/[‧•]/g,'');}
+  function ensureAccessoryEquipment(){
+    if(!window.EQUIP_COMPOUND_DATA || !Array.isArray(EQUIP_COMPOUND_DATA.equipment))return;
+    const data=EQUIP_COMPOUND_DATA;
+    if(!data.type_order.includes('飾品')) data.type_order.push('飾品');
+    if(data.type_map && !data.type_map['飾品']) data.type_map['飾品']=['ORNAMENT'];
+    // 盾歸類為武器
+    data.equipment.forEach(e=>{ if(e.display_type==='盾'){ e.main_category='武器'; e.source_section='武器與盾'; e.search_text=(e.search_text||'')+' 武器 盾'; } });
+    const have=new Set(data.equipment.map(e=>normName(e.name)));
+    let seq=1;
+    for(const row of ACCESSORY_ROWS){
+      for(const name of row.names){
+        if(have.has(normName(name))) continue;
+        data.equipment.push({
+          uid:'acc_v88ag_'+(seq++), item_id:'', name, base_name:name, display_type:'飾品', main_category:'飾品',
+          type_codes:['ORNAMENT'], item_type_raw:'ORNAMENT', source_section:'飾品', source_name:name,
+          is_variant:/^(真|超|極)/.test(name), variant_label:(name.match(/^(真|超|極)/)||[])[1]||null,
+          series_group:row.series, series_grade:row.tier, series:row.series+(row.tier&&row.tier!==row.series?'('+row.tier+')':''), tier:row.tier,
+          base_stats:{}, raw_item:{Type:'ORNAMENT'}, matched_item_ini:false,
+          search_text:[name,'飾品',row.series,row.tier,'ORNAMENT'].join(' ')
+        });
+        have.add(normName(name));
       }
     }
-    for(const it of (items||[])){
-      if(!typeHasOrnament88(it))continue;
-      const cls=accessoryClassify88(it.Name);
-      if(!cls)continue;
-      map.set(n88(it.Name),makeAccessoryEntry88(it.Name,cls,it,++idx));
-    }
-    accessoryCacheKey88=key;
-    accessoryCache88=[...map.values()].sort((a,b)=>{
-      const sa=ACCESSORY_SERIES_ORDER_88AE.indexOf(a.series_group), sb=ACCESSORY_SERIES_ORDER_88AE.indexOf(b.series_group);
-      const ta=ACC_TIER_ORDER_88AE.indexOf(a.accessory_tier||''), tb=ACC_TIER_ORDER_88AE.indexOf(b.accessory_tier||'');
-      return (sa<0?99:sa)-(sb<0?99:sb) || (ta<0?99:ta)-(tb<0?99:tb) || String(a.name).localeCompare(String(b.name),'zh-Hant');
-    });
-    return accessoryCache88;
   }
-  const originalEqEquipList88 = window.eqEquipList || eqEquipList;
-  window.eqEquipList=function(){
-    const base=(typeof originalEqEquipList88==='function'?originalEqEquipList88():((eqData().equipment)||[]));
-    const acc=dynamicAccessoryEquipment88();
-    const seen=new Set();
-    return [...base,...acc].filter(e=>{
-      const k=e.uid||String(e.name);
-      if(seen.has(k))return false;
-      seen.add(k); return true;
-    });
-  };
-  function eqKind88(e){
-    if(!e)return '';
-    if(e.main_category==='飾品'||e.display_type==='飾品')return '飾品';
-    if(e.main_category==='仙器'||e.display_type==='仙器')return '仙器';
-    if(e.display_type==='盾')return '武器';
-    if(e.main_category==='武器')return '武器';
-    if(e.main_category==='防具')return '防具';
-    return e.main_category||'';
-  }
-  function displayJob88(e){
-    if(e.series_group==='特仕裝'){
-      if(e.job==='狂陽')return '騰陽';
-      if(e.job==='靜月')return '靜月';
-      if(e.job==='宿星')return '宿星';
-      const nm=String(e.name||e.base_name||'');
-      if(nm.startsWith('騰陽'))return '騰陽';
-      if(nm.startsWith('凜月')||nm.startsWith('靜月'))return '靜月';
-      if(nm.startsWith('舞星')||nm.startsWith('宿星'))return '宿星';
-    }
-    return e.job||e.series_grade||e.tier||'';
-  }
-  function eqSeriesVal88(e){
-    const k=eqKind88(e);
-    if(k==='仙器')return '';
-    if(k==='飾品')return e.series_group||'';
-    if(k==='防具')return e.series_group||'';
-    if(k==='武器')return e.series_group||'';
+  const MAIN_ORDER=['武器','防具','飾品','仙器'];
+  const WEAPON_SERIES=['職業裝','世貿裝'];
+  const ARMOR_SERIES=['職業裝','特仕裝'];
+  const ACC_SERIES=['職業','五佐','五絕','經驗','掉寶'];
+  const ACC_TIERS={職業:['術攻','物攻','術防','血精'],五佐:['五佐','真五佐','超五佐','極五佐'],五絕:['五絕','真五絕','超五絕','極五絕'],經驗:['經驗'],掉寶:['掉寶']};
+  function unique(a){return [...new Set(a.filter(v=>v!==undefined&&v!==null&&String(v).trim()!==''))];}
+  function fill(id,vals,label,cur){const el=document.getElementById(id); if(!el)return; el.innerHTML='<option value="">'+(window.esc?esc(label):label)+'</option>'+vals.map(v=>'<option value="'+(window.esc?esc(v):v)+'">'+(window.esc?esc(v):v)+'</option>').join(''); el.value=cur||'';}
+  function displaySeries(e){
+    if(e.main_category==='防具' && ['騰陽','靜月','宿星','狂陽'].includes(String(e.series_grade||e.tier||''))) return '特仕裝';
     return e.series_group||'';
   }
-  function eqTierVal88(e){
-    const k=eqKind88(e);
-    if(k==='飾品')return e.accessory_tier||e.series_grade||e.tier||'';
-    if(k==='防具'){
-      if(e.series_group==='職業裝')return e.job||'';
-      if(e.series_group==='特仕裝')return displayJob88(e);
-      return '';
-    }
-    if(k==='武器'){
-      if(e.series_group==='職業裝')return e.series_grade||e.tier||'';
-      if(e.series_group==='世貿裝')return e.tier||'';
+  function displayTier(e){
+    if(e.main_category==='防具' && displaySeries(e)==='特仕裝'){
+      const t=String(e.series_grade||e.tier||e.name||'');
+      if(t.includes('騰陽')||t.includes('狂陽'))return '騰陽';
+      if(t.includes('靜月')||t.includes('凜月'))return '靜月';
+      if(t.includes('宿星')||t.includes('舞星'))return '宿星';
     }
     return e.tier||e.series_grade||'';
   }
-  function eqTypeVal88(e){
-    const k=eqKind88(e);
-    if(k==='飾品')return '飾品';
-    if(k==='仙器')return '仙器';
-    return e.display_type||'';
-  }
-  function orderValues88(vals,order){
-    return eqUnique(vals).sort((a,b)=>{
-      const ia=order.indexOf(a), ib=order.indexOf(b);
-      return (ia<0?999:ia)-(ib<0?999:ib) || String(a).localeCompare(String(b),'zh-Hant',{numeric:true});
-    });
-  }
-  function setEqFilterLabels88(){
-    const labels=[...document.querySelectorAll('.eqFilterGrid label')];
-    if(labels[0])labels[0].textContent='種類（武器 / 防具 / 飾品 / 仙器）';
-    if(labels[1])labels[1].textContent='系列';
-    if(labels[2]){
-      if(eqState.main==='武器' && eqState.series==='世貿裝')labels[2].textContent='等級';
-      else if(eqState.main==='防具')labels[2].textContent=eqState.series==='職業裝'?'職業':'種類';
-      else if(eqState.main==='飾品')labels[2].textContent=(eqState.series==='五佐'||eqState.series==='五絕')?'分類':'細項';
-      else labels[2].textContent='階級 / 等級';
-    }
-    if(labels[3])labels[3].textContent=eqState.main==='防具'?'部位':(eqState.main==='武器'?'部位':'類型');
-  }
   window.eqRefreshFilters=function(){
-    const all=eqEquipList();
-    eqFillSelect('eqMain',MAIN_ORDER_88AE,'全部種類',eqState.main);
-    const a1=all.filter(e=>!eqState.main||eqKind88(e)===eqState.main);
+    ensureAccessoryEquipment();
+    const all=(window.eqEquipList?eqEquipList():(EQUIP_COMPOUND_DATA?.equipment||[]));
+    fill('eqMain',MAIN_ORDER,'全部種類',eqState.main);
     let series=[];
-    if(eqState.main==='武器')series=['職業裝','世貿裝'];
-    else if(eqState.main==='防具')series=['職業裝','特仕裝'];
-    else if(eqState.main==='飾品')series=ACCESSORY_SERIES_ORDER_88AE.filter(s=>a1.some(e=>eqSeriesVal88(e)===s));
-    else series=eqUnique(a1.map(eqSeriesVal88)).filter(Boolean);
-    eqFillSelect('eqSeries',series,'全部系列',eqState.series);
-    const a2=a1.filter(e=>!eqState.series||eqSeriesVal88(e)===eqState.series);
-    let tiers=eqUnique(a2.map(eqTierVal88)).filter(Boolean);
-    if(eqState.main==='防具'&&eqState.series==='特仕裝')tiers=['騰陽','靜月','宿星'].filter(t=>a2.some(e=>eqTierVal88(e)===t));
-    else if(eqState.main==='防具'&&eqState.series==='職業裝')tiers=orderValues88(tiers,DEF_JOB_ORDER_88AE);
-    else if(eqState.main==='飾品'&&(eqState.series==='五佐'||eqState.series==='五絕'))tiers=orderValues88(tiers,ACC_TIER_ORDER_88AE);
-    else tiers=tiers.sort((a,b)=>{const na=Number(a),nb=Number(b); if(!isNaN(na)&&!isNaN(nb))return na-nb; return String(a).localeCompare(String(b),'zh-Hant',{numeric:true});});
-    eqFillSelect('eqTier',tiers, eqState.main==='武器'&&eqState.series==='世貿裝'?'全部等級':'全部階級 / 分類', eqState.tier);
-    const a3=a2.filter(e=>!eqState.tier||String(eqTierVal88(e))===String(eqState.tier));
-    let order=eqState.main==='防具'?ARMOR_TYPE_ORDER_88AE:(eqState.main==='武器'?WEAPON_TYPE_ORDER_88AE:['飾品','仙器']);
-    let types=orderValues88(a3.map(eqTypeVal88).filter(Boolean),order);
-    if(eqState.main==='飾品')types=[];
-    eqFillSelect('eqType',types,'全部部位 / 類型',eqState.type);
-    const typeBox=byId('eqType')?.closest('div');
-    if(typeBox)typeBox.style.display=(eqState.main==='飾品')?'none':'';
-    setEqFilterLabels88();
+    if(eqState.main==='武器') series=WEAPON_SERIES;
+    else if(eqState.main==='防具') series=ARMOR_SERIES;
+    else if(eqState.main==='飾品') series=ACC_SERIES;
+    else series=unique(all.filter(e=>!eqState.main||e.main_category===eqState.main).map(displaySeries));
+    fill('eqSeries',series,'全部系列',eqState.series);
+    let tiers=[];
+    if(eqState.main==='飾品' && eqState.series) tiers=ACC_TIERS[eqState.series]||[];
+    else {
+      const a=all.filter(e=>(!eqState.main||e.main_category===eqState.main)&&(!eqState.series||displaySeries(e)===eqState.series));
+      tiers=unique(a.map(displayTier)).sort((a,b)=>{const na=Number(a),nb=Number(b); if(!isNaN(na)&&!isNaN(nb))return na-nb; return String(a).localeCompare(String(b),'zh-Hant')});
+    }
+    fill('eqTier',tiers,'全部階級 / 等級',eqState.tier);
+    const a2=all.filter(e=>(!eqState.main||e.main_category===eqState.main)&&(!eqState.series||displaySeries(e)===eqState.series)&&(!eqState.tier||String(displayTier(e))===String(eqState.tier)));
+    const typeOrder=(EQUIP_COMPOUND_DATA?.type_order||[]);
+    let types=unique(a2.map(e=>e.display_type)).sort((a,b)=>{let ia=typeOrder.indexOf(a),ib=typeOrder.indexOf(b); if(ia<0)ia=999;if(ib<0)ib=999; return ia-ib;});
+    if(eqState.main==='飾品') types=['飾品'];
+    fill('eqType',types,'全部類型 / 部位',eqState.type);
   };
   window.eqFilteredEquipment=function(){
-    const q=(eqState.q||'').trim().toLowerCase();
-    return eqEquipList().filter(e=>{
-      if(eqState.main&&eqKind88(e)!==eqState.main)return false;
-      if(eqState.series&&eqSeriesVal88(e)!==eqState.series)return false;
-      if(eqState.tier&&String(eqTierVal88(e))!==String(eqState.tier))return false;
-      if(eqState.type&&eqTypeVal88(e)!==eqState.type)return false;
-      if(q&&!String(e.search_text||e.name||'').toLowerCase().includes(q))return false;
-      return true;
+    ensureAccessoryEquipment();
+    const q=String(eqState.q||'').trim().toLowerCase();
+    return (eqEquipList?eqEquipList():(EQUIP_COMPOUND_DATA?.equipment||[])).filter(e=>{
+      return (!eqState.main||e.main_category===eqState.main)
+        &&(!eqState.series||displaySeries(e)===eqState.series)
+        &&(!eqState.tier||String(displayTier(e))===String(eqState.tier))
+        &&(!eqState.type||e.display_type===eqState.type)
+        &&(!q||String(e.search_text||e.name||'').toLowerCase().includes(q));
     }).slice(0,200);
   };
-  window.eqRefreshList=function(){
-    const box=byId('eqList'); if(!box)return;
-    const arr=eqFilteredEquipment();
-    box.innerHTML=arr.map(e=>`<button class="resultItem" data-eq-uid="${esc(e.uid)}"><div class="rName">${esc(e.name)}</div><div class="rSub">${esc(eqKind88(e)||'')}｜${esc(eqSeriesVal88(e)||e.series||'')}｜${esc(eqTierVal88(e)||'')}｜${esc(eqTypeVal88(e)||'')}｜Lv.${esc(e.base_stats?.level?.value||e.base_stats?.level||e.raw_item?.Level||'')}｜${e.item_id?('ID '+esc(e.item_id)):''}</div></button>`).join('') || '<div class="empty">請調整篩選條件，或找不到裝備。</div>';
+  const oldAllowed=window.eqAllowedRecipes;
+  window.eqAllowedRecipes=function(){
+    const eq=eqSelected&&eqSelected(); if(!eq)return [];
+    const all=(EQUIP_COMPOUND_DATA?.recipes||[]);
+    if(eq.main_category==='飾品') return all.filter(r=>r.group!=='stable_70');
+    if(typeof oldAllowed==='function') return oldAllowed();
+    return all.filter(r=>(r.display_types||[]).includes(eq.display_type));
   };
-  window.eqSelected=function(){return eqEquipList().find(e=>e.uid===eqState.uid)||null;};
-  const oldEqBaseStatsWithRaw88 = window.eqBaseStatsWithRaw || eqBaseStatsWithRaw;
-  window.eqBaseStatsWithRaw=function(eq){
-    if(eq && eq.main_category==='飾品' && (!eq.raw_item || !eq.raw_item.ID)){
-      const it=itemByName88(eq.name);
-      if(it){ eq.raw_item=it; eq.base_stats=rawToBaseStats88(it); eq.item_id=it.ID; eq.matched_item_ini=true; }
+  function parseExpiryFromKey(key){
+    if(!key)return null;
+    const tries=[key];
+    try{tries.push(atob(key));}catch(e){}
+    for(const raw of tries){
+      try{
+        const obj=JSON.parse(raw);
+        const v=obj.exp||obj.expires||obj.expiry||obj.expiresAt||obj.validUntil||obj.until||obj.end;
+        if(v){const t=typeof v==='number'?(v<2e10?v*1000:v):Date.parse(v); if(t&&!isNaN(t))return t;}
+      }catch(e){}
+      const m=String(raw).match(/(?:exp|expires|expiry|until|end|validUntil)[=:s]+([0-9]{10,13}|[0-9]{4}-[0-9]{2}-[0-9]{2}[^,;s]*)/i);
+      if(m){const t=/^[0-9]+$/.test(m[1])?Number(m[1])*(m[1].length===10?1000:1):Date.parse(m[1]); if(t&&!isNaN(t))return t;}
     }
-    const base=oldEqBaseStatsWithRaw88(eq);
-    const raw=eq?.raw_item||{};
-    const extra=rawToBaseStats88(raw);
-    for(const [k,v] of Object.entries(extra)){ if(base[k]===undefined)base[k]=v; }
-    return base;
-  };
-  window.eqMetaLine=function(eq){
-    const base=eqBaseStatsWithRaw(eq);
-    const level=base.level?.value||eq?.raw_item?.Level||'';
-    const clevel=base.clevel?.value??eq?.raw_item?.CLevel??'';
-    const main=['LEVEL '+(level||'-'),'職等(CL) '+eqCLevelText(clevel)];
-    const rest=[eq.item_id?('ID '+eq.item_id):'',eqKind88(eq),eqSeriesVal88(eq)||eq.series_group,eqTierVal88(eq),eqTypeVal88(eq)].filter(Boolean);
-    return `<div class="eqTopMeta">${main.map(x=>`<span class="pill" style="font-size:14px;border-color:#60a5fa;color:#e0f2fe">${esc(x)}</span>`).join('')}${rest.map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>`;
-  };
-  window.renderEquipmentCompoundPage=function(){
-    window.v86LastView='item';
-    byId('reader').innerHTML=`<section class="card"><h1>裝備合成模擬</h1><div class="muted">先依種類篩選裝備，點選裝備後會進入合成模擬頁。</div>
-    <div class="eqFilterGrid"><div><label>種類（武器 / 防具 / 飾品 / 仙器）</label><select id="eqMain"></select></div><div><label>系列</label><select id="eqSeries"></select></div><div><label>階級 / 等級</label><select id="eqTier"></select></div><div><label>部位 / 類型</label><select id="eqType"></select></div><div style="grid-column:1/-1"><label>搜尋裝備名稱 / ID</label><input id="eqQ" value="${esc(eqState.q||'')}" placeholder="例如：椒圖、宮殤、五佐、飾品、300"></div></div>
-    <h3>選擇裝備</h3><div class="results" id="eqList"></div></section>`;
-    eqRefreshFilters(); eqRefreshList();
-    closeDrawer();
-    window.scrollTo({top:0,behavior:'smooth'});
-  };
-  document.addEventListener('change',function(e){
-    const id=e.target&&e.target.id;
-    if(id==='eqMain'){
-      eqState.main=e.target.value; eqState.series=''; eqState.tier=''; eqState.type='';
-      eqRefreshFilters(); eqRefreshList();
-    }
-    if(id==='eqSeries'){
-      eqState.series=e.target.value; eqState.tier=''; eqState.type='';
-      eqRefreshFilters(); eqRefreshList();
-    }
-    if(id==='eqTier'){
-      eqState.tier=e.target.value; eqState.type='';
-      eqRefreshFilters(); eqRefreshList();
-    }
-    if(id==='eqType'){
-      eqState.type=e.target.value;
-      eqRefreshFilters(); eqRefreshList();
-    }
-  },true);
+    return null;
+  }
+  function updateLicenseCountdown(){
+    if(!false)return;
+    const el=document.getElementById('topStatus'); if(!el)return;
+    el.style.display='block';
+    const key=localStorage.getItem('combined_manual_tool_license_key')||localStorage.getItem('license_key')||'';
+    const exp=parseExpiryFromKey(key);
+    if(!exp){el.textContent='授權已啟用';return;}
+    const diff=exp-Date.now();
+    if(diff<=0){el.textContent='授權已到期';return;}
+    const d=Math.floor(diff/86400000), h=Math.floor(diff%86400000/3600000), m=Math.floor(diff%3600000/60000);
+    el.textContent='授權剩餘：'+d+'天 '+h+'小時 '+m+'分';
+  }
+  const oldLoadAll=window.loadAllData;
+  if(typeof oldLoadAll==='function'){
+    window.loadAllData=async function(){const r=await oldLoadAll.apply(this,arguments); ensureAccessoryEquipment(); updateLicenseCountdown(); return r;};
+  }
+  document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{ensureAccessoryEquipment(); updateLicenseCountdown();},500); setInterval(updateLicenseCountdown,60000);});
 })();
 </script>
-
 </body>
 </html>
