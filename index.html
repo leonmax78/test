@@ -49570,7 +49570,7 @@ function eqRenderRandomRecipePicker(){
  };
  return `<h3>選擇要模擬的配方</h3><div class="notice">這裡獨立選擇亂數模擬要用的配方，不需要先在上一頁勾好。每按一次「模擬一次」，目前加入的配方各計 1 次材料。</div>${groups.map(([g,label])=>{const arr=groupRecipes(g);return `<div class="card" style="box-shadow:none"><h3>${esc(label)}</h3><label>加入模擬配方</label><select data-eq-sim-recipe-select="${esc(g)}"><option value="">請選擇要加入的配方</option>${arr.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}${r.effect_summary?'｜'+esc(r.effect_summary):''}</option>`).join('')}</select>${renderSelected(g)}</div>`}).join('')}`;
 }
-function renderEquipmentRandomPage(keepScroll=false){function renderEquipmentRandomPage(keepScroll=false){
+function renderEquipmentRandomPage(keepScroll=false){
  const y=window.scrollY||document.documentElement.scrollTop||0;
  const eq=eqSelected(); if(!eq){empty('請先選擇裝備');return;}
  const totals=eqState.simTotals||{};
