@@ -50625,6 +50625,9 @@ document.addEventListener('DOMContentLoaded',init);
       if(eqState.series&&eqSeriesVal88(e)!==eqState.series)return false;
       if(eqState.tier&&String(eqTierVal88(e))!==String(eqState.tier))return false;
       if(eqState.type&&eqTypeVal88(e)!==eqState.type)return false;
+      // v88ai：隱藏只有系列種子、沒有實際 ITEM 資料的飾品基礎項目。
+      // 例如「誅仙御鐸」若實際裝備從「誅仙御鐸Ⅰ」開始，清單不顯示無 ID / 無 Lv 的基礎項。
+      if(eqKind88(e)==='飾品' && !(e.item_id || e.raw_item?.ID || e.matched_item_ini))return false;
       if(q&&!String(e.search_text||e.name||'').toLowerCase().includes(q))return false;
       return true;
     }).slice(0,200);
