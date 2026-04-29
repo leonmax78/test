@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>神州降神、經驗、修練試算、掉落查詢系統｜v88r怪物種族子分類搜尋修正版</title>
+<title>神州降神、經驗、修練試算、掉落查詢系統｜v88z特仕篩選與安定值1模擬修正版</title>
 <style>
 :root{
   --bg:#07111f;--panel:#101a2d;--panel2:#0b1527;--line:#263a58;--text:#eaf2ff;--muted:#9fb4d4;
@@ -49333,9 +49333,42 @@ function eqAllowedRecipes(){
 function eqRecipeById(id){return (eqData().recipes||[]).find(r=>String(r.id)===String(id))||null}
 function eqSelectedRecipes(){
  const allowed=new Set(eqAllowedRecipes().map(r=>String(r.id)));
- return Object.entries(eqState.recipeCounts||{}).filter(([id,c])=>allowed.has(String(id)) && Number(c)>0).map(([id,c])=>({recipe:eqRecipeById(id),count:Math.max(1,intOf(c,1))})).filter(x=>x.recipe);
+ return eqSortRecipePicks(Object.entries(eqState.recipeCounts||{}).filter(([id,c])=>allowed.has(String(id)) && Number(c)>0).map(([id,c])=>({recipe:eqRecipeById(id),count:Math.max(1,intOf(c,1))})).filter(x=>x.recipe));
 }
 function eqRecipeDefaultCount(recipe){return Math.max(1,intOf(recipe?.default_use_count,1)||1)}
+function eqRecipeGroupRank(recipe){
+ const g=recipe?.group||'';
+ if(g==='stable_1')return 1;
+ if(g==='stable_12')return 2;
+ if(g==='stable_50')return 3;
+ if(g==='stable_70')return 4;
+ return 99;
+}
+function eqRecipeOrderIndex(recipe){
+ const arr=eqData().recipes||[];
+ const i=arr.findIndex(r=>String(r.id)===String(recipe?.id));
+ return i<0?99999:i;
+}
+function eqSortRecipeObjects(arr){
+ return (arr||[]).slice().sort((a,b)=>eqRecipeGroupRank(a)-eqRecipeGroupRank(b)||eqRecipeOrderIndex(a)-eqRecipeOrderIndex(b)||String(a.name||'').localeCompare(String(b.name||''),'zh-Hant'));
+}
+function eqSortRecipePicks(arr){
+ return (arr||[]).slice().sort((a,b)=>eqRecipeGroupRank(a.recipe)-eqRecipeGroupRank(b.recipe)||eqRecipeOrderIndex(a.recipe)-eqRecipeOrderIndex(b.recipe)||String(a.recipe?.name||'').localeCompare(String(b.recipe?.name||''),'zh-Hant'));
+}
+function eqAddRecipe(id){
+ const r=eqRecipeById(id); if(!r)return;
+ eqState.recipeCounts=eqState.recipeCounts||{};
+ if(!eqState.recipeCounts[String(id)]) eqState.recipeCounts[String(id)]=eqRecipeDefaultCount(r);
+ eqResetRandom(false);
+ eqRenderPreview(true);
+}
+function eqSimAddRecipe(id){
+ const r=eqRecipeById(id); if(!r)return;
+ eqState.simSelectedRecipes=eqState.simSelectedRecipes||{};
+ eqState.simSelectedRecipes[String(id)]=true;
+ renderEquipmentRandomPage(true);
+}
+
 function eqToggleRecipe(id){
  const r=eqRecipeById(id); if(!r)return;
  eqState.recipeCounts=eqState.recipeCounts||{};
@@ -49443,17 +49476,28 @@ function eqToggleRecipe(id){
 }
 function eqSetRecipeCount(id,val){
  eqState.recipeCounts=eqState.recipeCounts||{};
- if(eqState.recipeCounts[String(id)]!==undefined){eqState.recipeCounts[String(id)]=Math.max(1,intOf(val,1)); eqResetRandom(false); eqRenderPreview(true);}
+ if(eqState.recipeCounts[String(id)]!==undefined){
+  eqState.recipeCounts[String(id)]=Math.max(1,intOf(val,1));
+  eqResetRandom(false);
+  eqRenderPreview(true);
+ }
 }
 function eqRenderRecipeArea(){
  const eq=eqSelected(); if(!eq)return '<div class="empty">請先選擇裝備。</div>';
- const recipes=eqAllowedRecipes(); const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50 / 70']];
+ const recipes=eqSortRecipeObjects(eqAllowedRecipes());
+ const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50 / 70']];
  const groupRecipes=g=>recipes.filter(r=>g==='stable_50'?(r.group==='stable_50'||r.group==='stable_70'):r.group===g);
- return `<h3 id="eqRecipeAnchor">選擇配方</h3><div class="notice">可跨安定值勾選多個配方，已勾選的配方會記憶並一起累加到合成後能力與材料清單。</div>
- ${groups.map(([g,label])=>`<div class="card" style="box-shadow:none"><h3>${esc(label)}</h3><div class="recipeList">${groupRecipes(g).map(r=>{const selected=!!(eqState.recipeCounts||{})[String(r.id)]; const c=eqState.recipeCounts?.[String(r.id)]||eqRecipeDefaultCount(r); return `<button class="recipeBtn ${selected?'active':''}" data-eq-recipe="${esc(r.id)}"><b>${selected?'☑':'☐'} ${esc(r.name)}</b><div class="eqSmall">${esc(r.effect_summary||'')}</div></button>${selected?`<div class="kv"><div class="k">${esc(r.name)} 合成次數</div><div class="v"><input class="eqRecipeCount" data-eq-recipe-count="${esc(r.id)}" type="number" min="1" value="${esc(c)}"></div></div>`:''}`}).join('')||'<div class="muted">這個裝備類型沒有可用配方。</div>'}</div></div>`).join('')}
+ const groupSelected=g=>eqSelectedRecipes().filter(x=>g==='stable_50'?(x.recipe.group==='stable_50'||x.recipe.group==='stable_70'):x.recipe.group===g);
+ const renderSelected=g=>{
+  const rows=groupSelected(g);
+  if(!rows.length)return '<div class="muted" style="margin-top:8px">尚未加入這個安定值的配方。</div>';
+  return `<div class="tableWrap" style="margin-top:10px"><table><thead><tr><th>已選配方</th><th>次數</th><th>操作</th></tr></thead><tbody>${rows.map(({recipe,count})=>`<tr><td><b>${esc(recipe.name)}</b><div class="rSub">${esc(recipe.effect_summary||'')}</div></td><td style="width:120px"><input class="eqRecipeCount" data-eq-recipe-count="${esc(recipe.id)}" type="number" min="1" value="${esc(count)}"></td><td style="width:90px"><button class="ghost" data-eq-recipe="${esc(recipe.id)}">移除</button></td></tr>`).join('')}</tbody></table></div>`;
+ };
+ return `<h3 id="eqRecipeAnchor">選擇配方</h3><div class="notice">配方改為下拉式加入，可跨安定值累加；材料清單會依安定值 1 → 12 → 50 / 70 的順序列出。</div>
+ ${groups.map(([g,label])=>{const arr=groupRecipes(g);return `<div class="card" style="box-shadow:none"><h3>${esc(label)}</h3><label>加入配方</label><select data-eq-recipe-select="${esc(g)}"><option value="">請選擇要加入的配方</option>${arr.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}${r.effect_summary?'｜'+esc(r.effect_summary):''}</option>`).join('')}</select>${renderSelected(g)}</div>`}).join('')}
  <div class="quick"><button class="primary" id="eqOpenRandom">進入亂數模擬頁<small>進入後再選配方，像骰子一樣累計次數與材料</small></button><button class="primary" id="eqShowMaterials">產出所需材料清單<small>另開材料頁，並可返回</small></button></div>`;
 }
-function renderEquipmentCompoundPage(){
+function renderEquipmentCompoundPage(){function renderEquipmentCompoundPage(){
  window.v86LastView='item';
  byId('reader').innerHTML=`<section class="card"><h1>裝備合成模擬</h1><div class="muted">先篩選裝備，點選裝備後會進入合成模擬頁。</div>
  <div class="eqFilterGrid"><div><label>種類（武器 / 防具 / 仙器）</label><select id="eqMain"></select></div><div><label>系列</label><select id="eqSeries"></select></div><div><label>階級 / 等級</label><select id="eqTier"></select></div><div><label>類型 / 部位</label><select id="eqType"></select></div><div style="grid-column:1/-1"><label>搜尋裝備名稱 / ID</label><input id="eqQ" value="${esc(eqState.q||'')}" placeholder="例如：椒圖、宮殤、劍、300"></div></div>
@@ -49512,14 +49556,21 @@ function eqRandomMaterialRows(){
   const recipe=eqRecipeById(id); const count=Number(c)||0; if(!recipe||count<=0)continue;
   byRecipe.push({recipe,count,mats:eqMaterials(recipe,count)});
  }
- return byRecipe;
+ return byRecipe.sort((a,b)=>eqRecipeGroupRank(a.recipe)-eqRecipeGroupRank(b.recipe)||eqRecipeOrderIndex(a.recipe)-eqRecipeOrderIndex(b.recipe));
 }
 function eqRenderRandomRecipePicker(){
- const recipes=eqAllowedRecipes(); const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50 / 70']];
+ const recipes=eqSortRecipeObjects(eqAllowedRecipes());
+ const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50 / 70']];
  const groupRecipes=g=>recipes.filter(r=>g==='stable_50'?(r.group==='stable_50'||r.group==='stable_70'):r.group===g);
- return `<h3>選擇要模擬的配方</h3><div class="notice">這裡獨立選擇亂數模擬要用的配方，不需要先在上一頁勾好。每按一次「模擬一次」，目前勾選的配方各計 1 次材料。</div>${groups.map(([g,label])=>`<div class="card" style="box-shadow:none"><h3>${esc(label)}</h3><div class="recipeList">${groupRecipes(g).map(r=>{const selected=!!(eqState.simSelectedRecipes||{})[String(r.id)]; const used=Number((eqState.simRecipeCounts||{})[String(r.id)])||0; return `<button class="recipeBtn ${selected?'active':''}" data-eq-sim-recipe="${esc(r.id)}"><b>${selected?'☑':'☐'} ${esc(r.name)}</b><div class="eqSmall">${esc(r.effect_summary||'')}｜已用 ${fmt(used)} 次</div></button>`}).join('')||'<div class="muted">這個裝備類型沒有可用配方。</div>'}</div></div>`).join('')}`;
+ const groupSelected=g=>eqSortRecipeObjects(eqSimSelectedRecipes()).filter(r=>g==='stable_50'?(r.group==='stable_50'||r.group==='stable_70'):r.group===g);
+ const renderSelected=g=>{
+  const rows=groupSelected(g);
+  if(!rows.length)return '<div class="muted" style="margin-top:8px">尚未加入這個安定值的模擬配方。</div>';
+  return `<div class="tableWrap" style="margin-top:10px"><table><thead><tr><th>已選配方</th><th>已用次數</th><th>操作</th></tr></thead><tbody>${rows.map(recipe=>{const used=Number((eqState.simRecipeCounts||{})[String(recipe.id)])||0;return `<tr><td><b>${esc(recipe.name)}</b><div class="rSub">${esc(recipe.effect_summary||'')}</div></td><td>${fmt(used)}</td><td><button class="ghost" data-eq-sim-recipe="${esc(recipe.id)}">移除</button></td></tr>`}).join('')}</tbody></table></div>`;
+ };
+ return `<h3>選擇要模擬的配方</h3><div class="notice">這裡獨立選擇亂數模擬要用的配方，不需要先在上一頁勾好。每按一次「模擬一次」，目前加入的配方各計 1 次材料。</div>${groups.map(([g,label])=>{const arr=groupRecipes(g);return `<div class="card" style="box-shadow:none"><h3>${esc(label)}</h3><label>加入模擬配方</label><select data-eq-sim-recipe-select="${esc(g)}"><option value="">請選擇要加入的配方</option>${arr.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}${r.effect_summary?'｜'+esc(r.effect_summary):''}</option>`).join('')}</select>${renderSelected(g)}</div>`}).join('')}`;
 }
-function renderEquipmentRandomPage(keepScroll=false){
+function renderEquipmentRandomPage(keepScroll=false){function renderEquipmentRandomPage(keepScroll=false){
  const y=window.scrollY||document.documentElement.scrollTop||0;
  const eq=eqSelected(); if(!eq){empty('請先選擇裝備');return;}
  const totals=eqState.simTotals||{};
@@ -49812,7 +49863,7 @@ function initEvents(){
  
  document.addEventListener('input',e=>{if(e.target.classList&&(e.target.classList.contains('trainCur')||e.target.classList.contains('trainTar'))){updateTrainingNeeds();} if(e.target.id==='eqQ'){eqState.q=e.target.value;eqRefreshList();} if(e.target.classList&&e.target.classList.contains('eqRecipeCount')){eqSetRecipeCount(e.target.dataset.eqRecipeCount,e.target.value);}
  if(['monsterQMain','monsterMinMain','monsterMaxMain','monsterRaceMain','monsterSubtypeMain'].includes(e.target.id))searchMonstersMain();if(['itemQ','itemMin','itemMax'].includes(e.target.id))searchItems();if(e.target.id==='reverseQ')searchReverseItems();});
- document.addEventListener('change',e=>{if(e.target.id==='itemType')searchItems();if(e.target.id==='trainGroupFilter')filterTrainingRows();if(['eqMain','eqSeries','eqTier','eqType'].includes(e.target.id)){eqState[e.target.id.replace('eq','').toLowerCase()]=e.target.value; if(e.target.id==='eqMain'){eqState.series='';eqState.tier='';eqState.type='';} if(e.target.id==='eqSeries'){eqState.tier='';eqState.type='';} if(e.target.id==='eqTier'){eqState.type='';} eqState.uid='';eqState.recipeId='';renderEquipmentCompoundPage();} if(e.target.id==='eqSelect'){openEquipmentSim(e.target.value);}});
+ document.addEventListener('change',e=>{if(e.target.id==='itemType')searchItems();if(e.target.id==='trainGroupFilter')filterTrainingRows();if(['eqMain','eqSeries','eqTier','eqType'].includes(e.target.id)){eqState[e.target.id.replace('eq','').toLowerCase()]=e.target.value; if(e.target.id==='eqMain'){eqState.series='';eqState.tier='';eqState.type='';} if(e.target.id==='eqSeries'){eqState.tier='';eqState.type='';} if(e.target.id==='eqTier'){eqState.type='';} eqState.uid='';eqState.recipeId='';renderEquipmentCompoundPage();} if(e.target.id==='eqSelect'){openEquipmentSim(e.target.value);} if(e.target.matches('[data-eq-recipe-select]')&&e.target.value){eqAddRecipe(e.target.value);} if(e.target.matches('[data-eq-sim-recipe-select]')&&e.target.value){eqSimAddRecipe(e.target.value);}});
  document.addEventListener('click',e=>{const tab=e.target.closest('[data-item-tab]')?.dataset.itemTab;if(tab){renderItemPage(tab);}});
  byId('manualFiles').addEventListener('change',async e=>{alert('v86 先以自動讀取為主，手動載入下一版再補。')});
 }
@@ -49820,5 +49871,257 @@ function initAuth(){ if(!AUTH_REQUIRED)return true; try{const key=localStorage.g
 function init(){initEvents();renderHome(); const ok=initAuth(); if(ok)loadAllData();}
 document.addEventListener('DOMContentLoaded',init);
 </script>
+<script>
+/* v88y 裝備等級/職等顯示修正 + 亂數模擬直覺化 */
+(function(){
+  function eqPrimitiveLabel(k){
+    if(k==='m_attack')return '術法攻擊';
+    if(k==='def')return '物理防禦';
+    if(k==='m_def')return '術法防禦';
+    if(k==='level')return 'LEVEL';
+    if(k==='clevel')return '職等(CL)';
+    const labels=(typeof eqData==='function' && eqData().stat_labels)||{};
+    return labels[k]||k;
+  }
+  window.eqBaseStatsWithRaw=function(eq){
+    const base=Object.assign({},eq?.base_stats||{});
+    Object.keys(base).forEach(k=>{
+      const v=base[k];
+      if(v!==null && typeof v!=='object'){
+        base[k]={label:eqPrimitiveLabel(k),value:Number(v)||0};
+      }else if(v && typeof v==='object' && v.value===undefined && v.min===undefined && v.max===undefined && v.label!==undefined){
+        // 保留未知格式，避免被顯示成空白
+        base[k]={label:v.label||eqPrimitiveLabel(k),value:Number(v.value||0)||0};
+      }
+    });
+    const raw=eq?.raw_item||{};
+    const add=(key,label,value)=>{if(value!==undefined&&value!==null&&value!==''&&base[key]===undefined)base[key]={label,value:Number(value)||0};};
+    const addRange=(key,label,min,max)=>{if((min!==undefined||max!==undefined)&&base[key]===undefined)base[key]={label,min:Number(min)||0,max:Number(max??min)||0};};
+    add('m_attack','術法攻擊',raw.MagicAttack);
+    add('def','物理防禦',raw.ExtraDef);
+    add('m_def','術法防禦',raw.MagicDef);
+    add('ice_def','冰防',raw.IceDef);
+    add('fire_def','火防',raw.FireDef);
+    add('lightning_def','雷防',raw.LightningDef);
+    add('dark_def','暗防',raw.DarkDef);
+    add('paralysis_res','抗定身',raw.ParalysisRes);
+    add('poison_res','抗毒',raw.PosionRes ?? raw.PoisonRes);
+    add('blind_res','抗盲目',raw.BlindRes);
+    add('silent_res','抗禁咒',raw.SilentRes);
+    addRange('damage','傷害',raw.DamageMin,raw.DamageMax);
+    add('level','LEVEL',raw.Level ?? eq?.base_stats?.level);
+    add('clevel','職等(CL)',raw.CLevel ?? eq?.base_stats?.clevel);
+    return base;
+  };
+
+  window.eqMetaLine=function(eq){
+    const base=eqBaseStatsWithRaw(eq);
+    const level=base.level?.value||eq?.raw_item?.Level||'';
+    const clevel=base.clevel?.value??eq?.raw_item?.CLevel??'';
+    const main=['LEVEL '+(level||'-'),'職等(CL) '+eqCLevelText(clevel)];
+    const rest=['ID '+eq.item_id,eq.main_category,eq.series||eq.series_group,eq.display_type].filter(Boolean);
+    return `<div class="eqTopMeta">${main.map(x=>`<span class="pill" style="font-size:14px;border-color:#60a5fa;color:#e0f2fe">${esc(x)}</span>`).join('')}${rest.map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>`;
+  };
+
+  window.eqSimAddRecipe=function(id){
+    const r=eqRecipeById(id); if(!r)return;
+    eqState.simActiveRecipeId=String(id);
+    eqState.simSelectedRecipes=eqState.simSelectedRecipes||{};
+    eqState.simSelectedRecipes[String(id)]=true;
+    renderEquipmentRandomPage(true);
+  };
+
+  window.eqSimToggleRecipe=function(id){
+    const sid=String(id||'');
+    if(eqState.simActiveRecipeId===sid)eqState.simActiveRecipeId='';
+    if(eqState.simSelectedRecipes)delete eqState.simSelectedRecipes[sid];
+    renderEquipmentRandomPage(true);
+  };
+
+  window.eqResetRandom=function(clearSelection=true){
+    eqState.simTotals={};
+    eqState.simCount=0;
+    eqState.simRecipeCounts={};
+    eqState.simHistory=[];
+    if(clearSelection){
+      eqState.simSelectedRecipes={};
+      eqState.simActiveRecipeId='';
+    }
+  };
+
+  function eqGroupedRecipeOptions(recipes, activeId){
+    const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50 / 70']];
+    return groups.map(([g,label])=>{
+      const arr=recipes.filter(r=>g==='stable_50'?(r.group==='stable_50'||r.group==='stable_70'):r.group===g);
+      if(!arr.length)return '';
+      return `<optgroup label="${esc(label)}">${arr.map(r=>`<option value="${esc(r.id)}" ${String(activeId||'')===String(r.id)?'selected':''}>${esc(r.name)}${r.effect_summary?'｜'+esc(r.effect_summary):''}</option>`).join('')}</optgroup>`;
+    }).join('');
+  }
+
+  window.eqRandomOnce=function(){
+    if(!eqState.simTotals)eqState.simTotals={};
+    if(!eqState.simRecipeCounts)eqState.simRecipeCounts={};
+    if(!eqState.simHistory)eqState.simHistory=[];
+    const recipe=eqRecipeById(eqState.simActiveRecipeId);
+    if(!recipe){alert('請先選擇要模擬的配方');return;}
+    const rid=String(recipe.id);
+    eqState.simSelectedRecipes=eqState.simSelectedRecipes||{};
+    eqState.simSelectedRecipes[rid]=true;
+    eqState.simRecipeCounts[rid]=(Number(eqState.simRecipeCounts[rid])||0)+1;
+    eqState.simCount=(Number(eqState.simCount)||0)+1;
+    const rolls=[];
+    for(const e of recipe.effects||[]){
+      if(e.stackable===false)continue;
+      const k=e.stat, label=e.label||eqData().stat_labels?.[k]||k;
+      const val=eqRollEffectValue(e);
+      if(!eqState.simTotals[k])eqState.simTotals[k]={label,value:0};
+      eqState.simTotals[k].value+=val;
+      rolls.push({label,value:val,unit:e.unit||''});
+    }
+    eqState.simHistory.push({no:eqState.simCount,recipeId:rid,recipeName:recipe.name,rolls});
+  };
+
+  window.eqRenderRandomRecipePicker=function(){
+    const recipes=eqSortRecipeObjects(eqAllowedRecipes());
+    const active=eqState.simActiveRecipeId||'';
+    const activeRecipe=eqRecipeById(active);
+    const used=activeRecipe ? Number((eqState.simRecipeCounts||{})[String(activeRecipe.id)])||0 : 0;
+    return `<h3>選擇要模擬的配方</h3>
+    <div class="notice">選一個配方後按「模擬一次」，每按一次就像骰子一樣產生本次增加值，並自動累計使用次數與材料。</div>
+    <div class="card" style="box-shadow:none">
+      <label>模擬配方</label>
+      <select data-eq-sim-recipe-select="single"><option value="">請選擇要模擬的配方</option>${eqGroupedRecipeOptions(recipes, active)}</select>
+      ${activeRecipe?`<div class="notice" style="margin-top:10px"><b>${esc(activeRecipe.name)}</b><br>${esc(activeRecipe.effect_summary||'')}${activeRecipe.desc?`<br>${esc(activeRecipe.desc)}`:''}<br>目前已模擬使用：${fmt(used)} 次</div>`:''}
+    </div>`;
+  };
+
+  window.renderEquipmentRandomPage=function(keepScroll=false){
+    const y=window.scrollY||document.documentElement.scrollTop||0;
+    const eq=eqSelected(); if(!eq){empty('請先選擇裝備');return;}
+    const totals=eqState.simTotals||{};
+    const totalRows=Object.entries(totals).map(([k,o])=>`<tr><td>${esc(o.label)}</td><td>+${fmt(o.value)}</td></tr>`).join('')||'<tr><td colspan="2">尚未模擬，請先選配方再按「模擬一次」。</td></tr>';
+    const history=(eqState.simHistory||[]).slice().reverse();
+    const histRows=history.map(h=>`<tr><td>${fmt(h.no)}</td><td>${esc(h.recipeName)}</td><td>${h.rolls.map(r=>`${esc(r.label)} +${fmt(r.value)}${esc(r.unit||'')}`).join('、')||'-'}</td></tr>`).join('')||'<tr><td colspan="3">尚未有模擬紀錄。</td></tr>';
+    const materialSections=eqRandomMaterialRows().map(({recipe,count,mats})=>`<h3>${esc(recipe.name)} × ${fmt(count)}</h3><div class="tableWrap"><table class="eqMatTable"><thead><tr><th>材料</th><th>數量</th></tr></thead><tbody>${mats.map(m=>`<tr><td>${esc(m.name)}</td><td>${fmt(m.qty)}</td></tr>`).join('')}</tbody></table></div>`).join('')||'<div class="empty">尚未模擬，材料數量為 0。</div>';
+    byId('reader').innerHTML=`<section class="card"><button class="backBtn" id="eqBackToSim">← 返回裝備合成模擬</button><h1>合成亂數模擬</h1><h2>${esc(eq.name)}</h2>${eqMetaLine(eq)}${eqRenderStats(eq,false)}${eqRenderRandomRecipePicker()}<div class="quick"><button class="primary" id="eqSimOnce">模擬一次<small>隨機產生本次合成增加值，並依配方累計材料</small></button><button id="eqSimClear" class="ghost">清空重新計算<small>歸零累計次數、能力與材料，保留目前選擇的配方</small></button></div><div class="kvGrid"><div class="kv"><div class="k">累計模擬次數</div><div class="v">${fmt(eqState.simCount||0)}</div></div></div><h3>本次模擬紀錄</h3><div class="tableWrap"><table><thead><tr><th>次數</th><th>配方</th><th>本次增加</th></tr></thead><tbody>${histRows}</tbody></table></div><h3>累計結果</h3><div class="tableWrap"><table><thead><tr><th>能力</th><th>累計增加</th></tr></thead><tbody>${totalRows}</tbody></table></div><h3>依模擬次數累計材料</h3>${materialSections}</section>`;
+    if(keepScroll)setTimeout(()=>window.scrollTo(0,y),0); else window.scrollTo({top:0,behavior:'smooth'});
+  };
+})();
+</script>
+
+
+<script>
+/* v88z 特仕分類修正 + 亂數模擬僅保留安定值1 */
+(function(){
+  function eqSpecialTierOf(e){
+    if(!e || e.series_group!=='特仕裝') return '';
+    const txt=[e.job,e.name,e.base_name,e.search_text].filter(Boolean).join(' ');
+    if(txt.includes('騰陽')) return '騰陽';
+    if(txt.includes('狂陽')) return '騰陽';
+    if(txt.includes('靜月')) return '靜月';
+    if(txt.includes('宿星')) return '宿星';
+    return e.job || '';
+  }
+  function eqTierValueForFilter(e){
+    if(e && e.series_group==='特仕裝') return eqSpecialTierOf(e);
+    return e?.tier ?? e?.series_grade ?? '';
+  }
+  function eqMatchTierForFilter(e,tier){
+    if(!tier) return true;
+    return String(eqTierValueForFilter(e))===String(tier);
+  }
+  function eqOptionSort(vals){
+    const special=['騰陽','靜月','宿星'];
+    return (vals||[]).slice().sort((a,b)=>{
+      const ia=special.indexOf(a), ib=special.indexOf(b);
+      if(ia>=0 || ib>=0) return (ia<0?999:ia)-(ib<0?999:ib);
+      const na=Number(a), nb=Number(b);
+      if(!isNaN(na)&&!isNaN(nb))return na-nb;
+      return String(a).localeCompare(String(b),'zh-Hant');
+    });
+  }
+  window.eqFilteredEquipment=function(){
+    const q=(eqState.q||'').trim().toLowerCase();
+    return eqEquipList().filter(e=>(!eqState.main||e.main_category===eqState.main)
+      &&(!eqState.series||e.series_group===eqState.series)
+      &&eqMatchTierForFilter(e,eqState.tier)
+      &&(!eqState.type||e.display_type===eqState.type)
+      &&(!q||String(e.search_text||e.name||'').toLowerCase().includes(q))
+    ).slice(0,160);
+  };
+  window.eqRefreshFilters=function(){
+    const all=eqEquipList();
+    eqFillSelect('eqMain',eqUnique(all.map(e=>e.main_category)),'全部種類',eqState.main);
+    const a1=all.filter(e=>!eqState.main||e.main_category===eqState.main);
+    eqFillSelect('eqSeries',eqUnique(a1.map(e=>e.series_group)),'全部系列',eqState.series);
+    const a2=a1.filter(e=>!eqState.series||e.series_group===eqState.series);
+    const tiers=eqOptionSort(eqUnique(a2.map(e=>eqTierValueForFilter(e))));
+    eqFillSelect('eqTier',tiers,'全部階級 / 等級 / 種類',eqState.tier);
+    const typeOrder=eqData().type_order||[];
+    const types=eqUnique(a2.filter(e=>eqMatchTierForFilter(e,eqState.tier)).map(e=>e.display_type)).sort((a,b)=>{let ia=typeOrder.indexOf(a),ib=typeOrder.indexOf(b); if(ia<0)ia=999;if(ib<0)ib=999; return ia-ib;});
+    eqFillSelect('eqType',types,'全部類型 / 部位',eqState.type);
+  };
+  window.eqRefreshList=function(){
+    const box=byId('eqList'); if(!box)return;
+    const arr=eqFilteredEquipment();
+    box.innerHTML=arr.map(e=>{
+      const tier=e.series_group==='特仕裝'?eqSpecialTierOf(e):(e.tier||e.series_grade||'');
+      const series=e.series_group==='特仕裝'?`特仕裝(${tier||''})`:(e.series||e.series_group||'');
+      return `<button class="resultItem" data-eq-uid="${esc(e.uid)}"><div class="rName">${esc(e.name)}</div><div class="rSub">${esc(e.main_category||'')}｜${esc(series)}｜${esc(e.display_type||'')}｜Lv.${esc(e.base_stats?.level||e.raw_item?.Level||'')}｜ID ${esc(e.item_id||'')}</div></button>`;
+    }).join('') || '<div class="empty">請調整篩選條件，或找不到裝備。</div>';
+  };
+  function stable1Recipes(){
+    return eqSortRecipeObjects(eqAllowedRecipes().filter(r=>r.group==='stable_1'));
+  }
+  function stable1Options(recipes, activeId){
+    return recipes.map(r=>`<option value="${esc(r.id)}" ${String(activeId||'')===String(r.id)?'selected':''}>${esc(r.name)}${r.effect_summary?'｜'+esc(r.effect_summary):''}</option>`).join('');
+  }
+  window.eqRenderRandomRecipePicker=function(){
+    const recipes=stable1Recipes();
+    const active=eqState.simActiveRecipeId||'';
+    const activeRecipe=eqRecipeById(active);
+    const used=activeRecipe ? Number((eqState.simRecipeCounts||{})[String(activeRecipe.id)])||0 : 0;
+    return `<h3>選擇要模擬的配方</h3>
+    <div class="notice">亂數模擬只保留安定值 1 配方。選一個配方後按「模擬一次」，每按一次就像骰子一樣產生本次增加值，並自動累計使用次數與材料。</div>
+    <div class="card" style="box-shadow:none">
+      <label>模擬配方（安定值 1）</label>
+      <select data-eq-sim-recipe-select="single"><option value="">請選擇要模擬的安定值 1 配方</option>${stable1Options(recipes, active)}</select>
+      ${activeRecipe?`<div class="notice" style="margin-top:10px"><b>${esc(activeRecipe.name)}</b><br>${esc(activeRecipe.effect_summary||'')}${activeRecipe.desc?`<br>${esc(activeRecipe.desc)}`:''}<br>目前已模擬使用：${fmt(used)} 次</div>`:''}
+    </div>`;
+  };
+  window.eqSimAddRecipe=function(id){
+    const r=eqRecipeById(id); if(!r)return;
+    if(r.group!=='stable_1'){alert('亂數模擬只支援安定值 1 配方');return;}
+    eqState.simActiveRecipeId=String(id);
+    eqState.simSelectedRecipes={};
+    eqState.simSelectedRecipes[String(id)]=true;
+    renderEquipmentRandomPage(true);
+  };
+  window.eqRandomOnce=function(){
+    if(!eqState.simTotals)eqState.simTotals={};
+    if(!eqState.simRecipeCounts)eqState.simRecipeCounts={};
+    if(!eqState.simHistory)eqState.simHistory=[];
+    const recipe=eqRecipeById(eqState.simActiveRecipeId);
+    if(!recipe){alert('請先選擇要模擬的安定值 1 配方');return;}
+    if(recipe.group!=='stable_1'){alert('亂數模擬只支援安定值 1 配方');return;}
+    const rid=String(recipe.id);
+    eqState.simSelectedRecipes={};
+    eqState.simSelectedRecipes[rid]=true;
+    eqState.simRecipeCounts[rid]=(Number(eqState.simRecipeCounts[rid])||0)+1;
+    eqState.simCount=(Number(eqState.simCount)||0)+1;
+    const rolls=[];
+    for(const e of recipe.effects||[]){
+      if(e.stackable===false)continue;
+      const k=e.stat, label=e.label||eqData().stat_labels?.[k]||k;
+      const val=eqRollEffectValue(e);
+      if(!eqState.simTotals[k])eqState.simTotals[k]={label,value:0};
+      eqState.simTotals[k].value+=val;
+      rolls.push({label,value:val,unit:e.unit||''});
+    }
+    eqState.simHistory.push({no:eqState.simCount,recipeId:rid,recipeName:recipe.name,rolls});
+  };
+})();
+</script>
+
 </body>
 </html>
