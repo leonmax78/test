@@ -473,7 +473,7 @@ const EQUIP_COMPOUND_DATA={
     "hp": "生命",
     "mp": "真氣",
     "damage": "傷害",
-    "m_attack": "術攻",
+    "m_attack": "術法攻擊",
     "def": "物防",
     "m_def": "術防",
     "fire_attack": "火傷",
@@ -49360,15 +49360,70 @@ function eqEffectAccumulator(){
  }
  return acc;
 }
-function eqRenderStats(eq){
- const base=eq?.base_stats||{}; const effMap=eqEffectAccumulator();
+function eqBaseStatsWithRaw(eq){
+ const base=Object.assign({},eq?.base_stats||{});
+ const raw=eq?.raw_item||{};
+ const add=(key,label,value)=>{if(value!==undefined&&value!==null&&value!==''&&base[key]===undefined)base[key]={label,value:Number(value)||0};};
+ const addRange=(key,label,min,max)=>{if((min!==undefined||max!==undefined)&&base[key]===undefined)base[key]={label,min:Number(min)||0,max:Number(max??min)||0};};
+ add('m_attack','術法攻擊',raw.MagicAttack);
+ add('def','物理防禦',raw.ExtraDef);
+ add('m_def','術法防禦',raw.MagicDef);
+ add('ice_def','冰防',raw.IceDef);
+ add('fire_def','火防',raw.FireDef);
+ add('lightning_def','雷防',raw.LightningDef);
+ add('dark_def','暗防',raw.DarkDef);
+ add('paralysis_res','抗定身',raw.ParalysisRes);
+ add('poison_res','抗毒',raw.PosionRes ?? raw.PoisonRes);
+ add('blind_res','抗盲目',raw.BlindRes);
+ add('silent_res','抗禁咒',raw.SilentRes);
+ addRange('damage','傷害',raw.DamageMin,raw.DamageMax);
+ add('level','LEVEL',raw.Level);
+ add('clevel','職等(CL)',raw.CLevel);
+ return base;
+}
+function eqCLevelText(v){
+ const n=Number(v);
+ const map={0:'無',1:'一轉',2:'二轉',3:'三轉',4:'四轉',5:'五轉'};
+ return map[n]||String(v||'');
+}
+function eqStatLabel(k,o,e){
+ if(k==='m_attack')return '術法攻擊';
+ if(k==='def')return '物理防禦';
+ if(k==='m_def')return '術法防禦';
+ if(k==='ice_def')return '冰防';
+ if(k==='fire_def')return '火防';
+ if(k==='lightning_def')return '雷防';
+ if(k==='dark_def')return '暗防';
+ if(k==='paralysis_res')return '抗定身';
+ if(k==='poison_res')return '抗毒';
+ if(k==='blind_res')return '抗盲目';
+ if(k==='silent_res')return '抗禁咒';
+ if(k==='level')return 'LEVEL';
+ if(k==='clevel')return '職等(CL)';
+ return o?.label||e?.label||eqData().stat_labels?.[k]||k;
+}
+function eqDisplayStatText(k,o){
+ if(k==='clevel' && o)return eqCLevelText(o.value);
+ return eqStatValueText(o)||'-';
+}
+function eqMetaLine(eq){
+ const base=eqBaseStatsWithRaw(eq);
+ const level=base.level?.value||eq?.raw_item?.Level||'';
+ const clevel=base.clevel?.value??eq?.raw_item?.CLevel??'';
+ const main=['LEVEL '+(level||'-'),'職等(CL) '+eqCLevelText(clevel)];
+ const rest=['ID '+eq.item_id,eq.main_category,eq.series||eq.series_group,eq.display_type].filter(Boolean);
+ return `<div class="eqTopMeta">${main.map(x=>`<span class="pill" style="font-size:14px;border-color:#60a5fa;color:#e0f2fe">${esc(x)}</span>`).join('')}${rest.map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>`;
+}
+function eqRenderStats(eq,includeEffects=true){
+ const base=eqBaseStatsWithRaw(eq); const effMap=includeEffects?eqEffectAccumulator():{};
  const keys=eqUnique([...Object.keys(base),...Object.keys(effMap)]);
- const order=['con','str','int','dex','hp','mp','damage','m_attack','def','m_def','fire_attack','ice_attack','lightning_attack','dark_attack','fire_prob','ice_prob','lightning_prob','dark_prob','attack','attack_range','durability','weight','level','clevel'];
- keys.sort((a,b)=>(order.indexOf(a)<0?999:order.indexOf(a))-(order.indexOf(b)<0?999:order.indexOf(b)));
- const left=keys.map(k=>{const o=base[k]; const label=o?.label||eqData().stat_labels?.[k]||k; return `<div class="kv"><div class="k">${esc(label)}</div><div class="v">${esc(eqStatValueText(o)||'-')}</div></div>`}).join('');
+ const order=['level','clevel','con','str','int','dex','hp','mp','damage','m_attack','def','m_def','ice_def','fire_def','lightning_def','dark_def','fire_attack','ice_attack','lightning_attack','dark_attack','fire_prob','ice_prob','lightning_prob','dark_prob','paralysis_res','poison_res','blind_res','silent_res','attack','attack_range','durability','weight'];
+ keys.sort((a,b)=>(order.indexOf(a)<0?999:order.indexOf(a))-(order.indexOf(b)<0?999:order.indexOf(b)) || String(a).localeCompare(String(b),'zh-Hant'));
+ const left=keys.map(k=>{const o=base[k]; const label=eqStatLabel(k,o,null); return `<div class="kv"><div class="k">${esc(label)}</div><div class="v">${esc(eqDisplayStatText(k,o))}</div></div>`}).join('');
+ if(!includeEffects){return `<div class="card" style="box-shadow:none"><h2 class="eqCompactTitle">目前裝備能力</h2><div class="eqStatGrid">${left}</div></div>`;}
  const right=keys.map(k=>{
-  const o=base[k]; const e=effMap[k]; const label=o?.label||e?.label||eqData().stat_labels?.[k]||k;
-  let baseText=eqStatValueText(o)||'0'; let addText=''; let finalText=baseText;
+  const o=base[k]; const e=effMap[k]; const label=eqStatLabel(k,o,e);
+  let baseText=eqDisplayStatText(k,o); let addText=''; let finalText=baseText;
   if(e){
    if(e.hasRange){const bm=eqStatNum(o,'min'), bx=eqStatNum(o,'max'); const am=e.min, ax=e.max; addText=`<div class="eqYellow">+${fmt(am)}${am!==ax?'～'+fmt(ax):''}${e.unit||''}</div>`; finalText=`${fmt(bm+am)}${(bx+ax)!==(bm+am)?'～'+fmt(bx+ax):''}`;}
    else {const av=e.value; addText=`<div class="eqYellow">${av>=0?'+':''}${fmt(av)}${e.unit||''}</div>`; finalText=e.stackable===false?`${baseText} / ${fmt(av)}${e.unit||''}`:fmt(eqStatNum(o,'min')+av);}
@@ -49378,52 +49433,68 @@ function eqRenderStats(eq){
  }).join('');
  return `<div class="eqPreviewGrid"><div class="card" style="box-shadow:none"><h2 class="eqCompactTitle">裝備能力</h2><div class="eqStatGrid">${left}</div></div><div class="card" style="box-shadow:none"><h2 class="eqCompactTitle">合成後能力</h2><div class="eqSmall">白字為原有能力，黃字為所有已勾選配方的累加值。</div><div class="eqStatGrid">${right}</div></div></div>`;
 }
+function eqToggleRecipe(id){
+ const r=eqRecipeById(id); if(!r)return;
+ eqState.recipeCounts=eqState.recipeCounts||{};
+ if(eqState.recipeCounts[String(id)]) delete eqState.recipeCounts[String(id)];
+ else eqState.recipeCounts[String(id)]=eqRecipeDefaultCount(r);
+ eqResetRandom(false);
+ eqRenderPreview(true);
+}
+function eqSetRecipeCount(id,val){
+ eqState.recipeCounts=eqState.recipeCounts||{};
+ if(eqState.recipeCounts[String(id)]!==undefined){eqState.recipeCounts[String(id)]=Math.max(1,intOf(val,1)); eqResetRandom(false); eqRenderPreview(true);}
+}
 function eqRenderRecipeArea(){
  const eq=eqSelected(); if(!eq)return '<div class="empty">請先選擇裝備。</div>';
- const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50 / 70']];
- const all=eqAllowedRecipes();
- const groupRecipes=(g)=>all.filter(r=>g==='stable_50'?(r.group==='stable_50'||r.group==='stable_70'):r.group===g);
- return `<h3>選擇配方</h3><div class="notice">可跨安定值勾選多個配方，已勾選的配方會記憶並一起累加到合成後能力與材料清單。</div>
+ const recipes=eqAllowedRecipes(); const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50 / 70']];
+ const groupRecipes=g=>recipes.filter(r=>g==='stable_50'?(r.group==='stable_50'||r.group==='stable_70'):r.group===g);
+ return `<h3 id="eqRecipeAnchor">選擇配方</h3><div class="notice">可跨安定值勾選多個配方，已勾選的配方會記憶並一起累加到合成後能力與材料清單。</div>
  ${groups.map(([g,label])=>`<div class="card" style="box-shadow:none"><h3>${esc(label)}</h3><div class="recipeList">${groupRecipes(g).map(r=>{const selected=!!(eqState.recipeCounts||{})[String(r.id)]; const c=eqState.recipeCounts?.[String(r.id)]||eqRecipeDefaultCount(r); return `<button class="recipeBtn ${selected?'active':''}" data-eq-recipe="${esc(r.id)}"><b>${selected?'☑':'☐'} ${esc(r.name)}</b><div class="eqSmall">${esc(r.effect_summary||'')}</div></button>${selected?`<div class="kv"><div class="k">${esc(r.name)} 合成次數</div><div class="v"><input class="eqRecipeCount" data-eq-recipe-count="${esc(r.id)}" type="number" min="1" value="${esc(c)}"></div></div>`:''}`}).join('')||'<div class="muted">這個裝備類型沒有可用配方。</div>'}</div></div>`).join('')}
- <div class="quick"><button class="primary" id="eqOpenRandom">進入亂數模擬頁<small>可測試每次合成實際骰到的能力值</small></button><button class="primary" id="eqShowMaterials">產出所需材料清單<small>另開材料頁，並可返回</small></button></div>`;
+ <div class="quick"><button class="primary" id="eqOpenRandom">進入亂數模擬頁<small>進入後再選配方，像骰子一樣累計次數與材料</small></button><button class="primary" id="eqShowMaterials">產出所需材料清單<small>另開材料頁，並可返回</small></button></div>`;
 }
 function renderEquipmentCompoundPage(){
  window.v86LastView='item';
  byId('reader').innerHTML=`<section class="card"><h1>裝備合成模擬</h1><div class="muted">先篩選裝備，點選裝備後會進入合成模擬頁。</div>
- <div class="eqFilterGrid"><div><label>種類（武器 / 防具 / 仙器）</label><select id="eqMain"></select></div><div><label>系列</label><select id="eqSeries"></select></div><div><label>階級 / 等級</label><select id="eqTier"></select></div><div><label>類型 / 部位</label><select id="eqType"></select></div><div style="grid-column:1/-1"><label>搜尋裝備名稱 / ID</label><input id="eqQ" value="${esc(eqState.q||'')}" placeholder="例如：宮殤、劍、300"></div></div>
+ <div class="eqFilterGrid"><div><label>種類（武器 / 防具 / 仙器）</label><select id="eqMain"></select></div><div><label>系列</label><select id="eqSeries"></select></div><div><label>階級 / 等級</label><select id="eqTier"></select></div><div><label>類型 / 部位</label><select id="eqType"></select></div><div style="grid-column:1/-1"><label>搜尋裝備名稱 / ID</label><input id="eqQ" value="${esc(eqState.q||'')}" placeholder="例如：椒圖、宮殤、劍、300"></div></div>
  <h3>選擇裝備</h3><div class="results" id="eqList"></div></section>`;
  eqRefreshFilters(); eqRefreshList();
  closeDrawer();
  window.scrollTo({top:0,behavior:'smooth'});
 }
 function eqRefreshSelect(){}
-function openEquipmentSim(uid){eqState.uid=uid||eqState.uid; eqResetRandom(); eqRenderPreview();}
-function eqRenderPreview(){
+function openEquipmentSim(uid){eqState.uid=uid||eqState.uid; eqResetRandom(false); eqRenderPreview();}
+function eqRenderPreview(keepScroll=false){
+ const y=window.scrollY||document.documentElement.scrollTop||0;
  const eq=eqSelected();
  if(!eq){renderEquipmentCompoundPage();return;}
- byId('reader').innerHTML=`<section class="card"><button class="backBtn" id="eqBackToList">← 返回裝備篩選</button><h1>裝備合成模擬</h1><h2>${esc(eq.name)}</h2><div>${['ID '+eq.item_id,eq.main_category,eq.series||eq.series_group,eq.display_type].filter(Boolean).map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>${eqRenderStats(eq)}${eqRenderRecipeArea()}</section>`;
+ byId('reader').innerHTML=`<section class="card"><button class="backBtn" id="eqBackToList">← 返回裝備篩選</button><h1>裝備合成模擬</h1><h2>${esc(eq.name)}</h2>${eqMetaLine(eq)}${eqRenderStats(eq,true)}${eqRenderRecipeArea()}</section>`;
  closeDrawer();
- window.scrollTo({top:0,behavior:'smooth'});
+ if(keepScroll)setTimeout(()=>window.scrollTo(0,y),0); else window.scrollTo({top:0,behavior:'smooth'});
 }
 function eqMaterials(recipe,count){const map={}; for(const st of recipe?.steps||[]){for(const m of st.materials||[]){const key=m.item_id||m.name; if(!map[key])map[key]={name:m.name||('ID '+m.item_id),item_id:m.item_id,qty:0}; map[key].qty+=(Number(m.qty)||0)*count;}} return Object.values(map);}
 function eqAllMaterials(){const map={}; for(const {recipe,count} of eqSelectedRecipes()){for(const m of eqMaterials(recipe,count)){const key=m.item_id||m.name; if(!map[key])map[key]={name:m.name,item_id:m.item_id,qty:0}; map[key].qty+=m.qty;}} return Object.values(map);}
 function showEquipmentMaterials(){
  const eq=eqSelected(), picks=eqSelectedRecipes(); if(!eq||!picks.length){empty('請先選擇裝備與至少一個配方');return}
- const mats=eqAllMaterials();
- const pickText=picks.map(x=>`${x.recipe.name} × ${x.count}`).join('、');
- byId('reader').innerHTML=`<section class="card"><button class="backBtn" id="eqBackToSim">← 返回裝備合成模擬</button><h1>所需材料清單</h1><div class="notice"><b>${esc(eq.name)}</b><br>${esc(pickText)}</div><div class="tableWrap"><table class="eqMatTable"><thead><tr><th>材料</th><th>ID</th><th>數量</th></tr></thead><tbody>${mats.map(m=>`<tr><td>${esc(m.name)}</td><td>${esc(m.item_id||'')}</td><td>${fmt(m.qty)}</td></tr>`).join('')}</tbody></table></div></section>`;
+ const sections=picks.map(({recipe,count})=>{const mats=eqMaterials(recipe,count); return `<h3>${esc(recipe.name)} × ${fmt(count)}</h3><div class="tableWrap"><table class="eqMatTable"><thead><tr><th>材料</th><th>數量</th></tr></thead><tbody>${mats.map(m=>`<tr><td>${esc(m.name)}</td><td>${fmt(m.qty)}</td></tr>`).join('')}</tbody></table></div>`;}).join('');
+ byId('reader').innerHTML=`<section class="card"><button class="backBtn" id="eqBackToSim">← 返回裝備合成模擬</button><h1>所需材料清單</h1><div class="notice"><b>${esc(eq.name)}</b><br>材料依配方分開顯示，方便核對。</div>${sections}</section>`;
  window.scrollTo({top:0,behavior:'smooth'});
 }
-function eqResetRandom(){eqState.simTotals={};eqState.simCount=0;eqState.simRecipeCounts={};}
+function eqResetRandom(clearSelection=true){eqState.simTotals={};eqState.simCount=0;eqState.simRecipeCounts={}; if(clearSelection)eqState.simSelectedRecipes={};}
 function eqRollEffectValue(e){
  if(e.min!==undefined||e.max!==undefined){const min=Number(e.min)||0,max=Number(e.max)||min; return min+Math.floor(Math.random()*(max-min+1));}
  return Number(e.value)||0;
 }
+function eqSimToggleRecipe(id){eqState.simSelectedRecipes=eqState.simSelectedRecipes||{}; if(eqState.simSelectedRecipes[String(id)])delete eqState.simSelectedRecipes[String(id)]; else eqState.simSelectedRecipes[String(id)]=true; renderEquipmentRandomPage(true);}
+function eqSimSelectedRecipes(){
+ const allowed=new Set(eqAllowedRecipes().map(r=>String(r.id)));
+ return Object.keys(eqState.simSelectedRecipes||{}).filter(id=>allowed.has(String(id))).map(id=>eqRecipeById(id)).filter(Boolean);
+}
 function eqRandomOnce(){
  if(!eqState.simTotals)eqState.simTotals={};
  if(!eqState.simRecipeCounts)eqState.simRecipeCounts={};
- const picks=eqSelectedRecipes(); if(!picks.length)return;
- for(const {recipe} of picks){
+ const picks=eqSimSelectedRecipes(); if(!picks.length){alert('請先在亂數模擬頁勾選至少一個配方');return;}
+ for(const recipe of picks){
   eqState.simRecipeCounts[String(recipe.id)]=(Number(eqState.simRecipeCounts[String(recipe.id)])||0)+1;
   for(const e of recipe.effects||[]){
    if(e.stackable===false)continue;
@@ -49436,27 +49507,28 @@ function eqRandomOnce(){
 }
 function eqRandomMaterialRows(){
  const counts=eqState.simRecipeCounts||{};
- const map={};
+ const byRecipe=[];
  for(const [id,c] of Object.entries(counts)){
   const recipe=eqRecipeById(id); const count=Number(c)||0; if(!recipe||count<=0)continue;
-  for(const m of eqMaterials(recipe,count)){
-   const key=m.item_id||m.name;
-   if(!map[key])map[key]={name:m.name,item_id:m.item_id,qty:0};
-   map[key].qty+=m.qty;
-  }
+  byRecipe.push({recipe,count,mats:eqMaterials(recipe,count)});
  }
- return Object.values(map);
+ return byRecipe;
 }
-function renderEquipmentRandomPage(){
- const eq=eqSelected(), picks=eqSelectedRecipes(); if(!eq||!picks.length){empty('請先選擇裝備與至少一個配方');return;}
+function eqRenderRandomRecipePicker(){
+ const recipes=eqAllowedRecipes(); const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50 / 70']];
+ const groupRecipes=g=>recipes.filter(r=>g==='stable_50'?(r.group==='stable_50'||r.group==='stable_70'):r.group===g);
+ return `<h3>選擇要模擬的配方</h3><div class="notice">這裡獨立選擇亂數模擬要用的配方，不需要先在上一頁勾好。每按一次「模擬一次」，目前勾選的配方各計 1 次材料。</div>${groups.map(([g,label])=>`<div class="card" style="box-shadow:none"><h3>${esc(label)}</h3><div class="recipeList">${groupRecipes(g).map(r=>{const selected=!!(eqState.simSelectedRecipes||{})[String(r.id)]; const used=Number((eqState.simRecipeCounts||{})[String(r.id)])||0; return `<button class="recipeBtn ${selected?'active':''}" data-eq-sim-recipe="${esc(r.id)}"><b>${selected?'☑':'☐'} ${esc(r.name)}</b><div class="eqSmall">${esc(r.effect_summary||'')}｜已用 ${fmt(used)} 次</div></button>`}).join('')||'<div class="muted">這個裝備類型沒有可用配方。</div>'}</div></div>`).join('')}`;
+}
+function renderEquipmentRandomPage(keepScroll=false){
+ const y=window.scrollY||document.documentElement.scrollTop||0;
+ const eq=eqSelected(); if(!eq){empty('請先選擇裝備');return;}
  const totals=eqState.simTotals||{};
  const rows=Object.entries(totals).map(([k,o])=>`<tr><td>${esc(o.label)}</td><td>+${fmt(o.value)}</td></tr>`).join('')||'<tr><td colspan="2">尚未模擬，請按「模擬一次」。</td></tr>';
- const usedRows=picks.map(({recipe})=>{const used=Number((eqState.simRecipeCounts||{})[String(recipe.id)])||0;return `<tr><td>${esc(recipe.name)}</td><td>${fmt(used)}</td></tr>`;}).join('');
- const mats=eqRandomMaterialRows();
- const matRows=mats.map(m=>`<tr><td>${esc(m.name)}</td><td>${esc(m.item_id||'')}</td><td>${fmt(m.qty)}</td></tr>`).join('')||'<tr><td colspan="3">尚未模擬，材料數量為 0。</td></tr>';
- const pickText=picks.map(x=>`${x.recipe.name}`).join('、');
- byId('reader').innerHTML=`<section class="card"><button class="backBtn" id="eqBackToSim">← 返回裝備合成模擬</button><h1>合成亂數模擬</h1><div class="notice"><b>${esc(eq.name)}</b><br>目前配方：${esc(pickText)}<br>每按一次會依目前勾選配方各骰一次。下方會計數每個配方已用了幾次，材料會依實際模擬次數累加。</div><div class="quick"><button class="primary" id="eqSimOnce">模擬一次<small>隨機產生本次合成增加值，並讓目前勾選配方各 +1 次材料</small></button><button id="eqSimClear" class="ghost">清空重新計算<small>歸零累計次數、能力與材料</small></button></div><div class="kvGrid"><div class="kv"><div class="k">累計模擬次數</div><div class="v">${fmt(eqState.simCount||0)}</div></div></div><h3>配方使用次數</h3><div class="tableWrap"><table><thead><tr><th>配方</th><th>已用次數</th></tr></thead><tbody>${usedRows}</tbody></table></div><h3>累計結果</h3><div class="tableWrap"><table><thead><tr><th>能力</th><th>累計增加</th></tr></thead><tbody>${rows}</tbody></table></div><h3>依模擬次數累計材料</h3><div class="tableWrap"><table class="eqMatTable"><thead><tr><th>材料</th><th>ID</th><th>數量</th></tr></thead><tbody>${matRows}</tbody></table></div></section>`;
- window.scrollTo({top:0,behavior:'smooth'});
+ const usedRecipes=eqAllowedRecipes().filter(r=>Number((eqState.simRecipeCounts||{})[String(r.id)])>0);
+ const usedRows=usedRecipes.map(recipe=>{const used=Number((eqState.simRecipeCounts||{})[String(recipe.id)])||0;return `<tr><td>${esc(recipe.name)}</td><td>${fmt(used)}</td></tr>`;}).join('')||'<tr><td colspan="2">尚未使用任何配方。</td></tr>';
+ const materialSections=eqRandomMaterialRows().map(({recipe,count,mats})=>`<h3>${esc(recipe.name)} × ${fmt(count)}</h3><div class="tableWrap"><table class="eqMatTable"><thead><tr><th>材料</th><th>數量</th></tr></thead><tbody>${mats.map(m=>`<tr><td>${esc(m.name)}</td><td>${fmt(m.qty)}</td></tr>`).join('')}</tbody></table></div>`).join('')||'<div class="empty">尚未模擬，材料數量為 0。</div>';
+ byId('reader').innerHTML=`<section class="card"><button class="backBtn" id="eqBackToSim">← 返回裝備合成模擬</button><h1>合成亂數模擬</h1><h2>${esc(eq.name)}</h2>${eqMetaLine(eq)}${eqRenderStats(eq,false)}${eqRenderRandomRecipePicker()}<div class="quick"><button class="primary" id="eqSimOnce">模擬一次<small>隨機產生本次合成增加值，並依配方累計材料</small></button><button id="eqSimClear" class="ghost">清空重新計算<small>歸零累計次數、能力與材料，保留目前勾選配方</small></button></div><div class="kvGrid"><div class="kv"><div class="k">累計模擬次數</div><div class="v">${fmt(eqState.simCount||0)}</div></div></div><h3>配方使用次數</h3><div class="tableWrap"><table><thead><tr><th>配方</th><th>已用次數</th></tr></thead><tbody>${usedRows}</tbody></table></div><h3>累計結果</h3><div class="tableWrap"><table><thead><tr><th>能力</th><th>累計增加</th></tr></thead><tbody>${rows}</tbody></table></div><h3>依模擬次數累計材料</h3>${materialSections}</section>`;
+ if(keepScroll)setTimeout(()=>window.scrollTo(0,y),0); else window.scrollTo({top:0,behavior:'smooth'});
 }
 
 
@@ -49734,7 +49806,7 @@ function backButtonHTML(view){
 function initEvents(){
  byId('openMenuBtn').onclick=openDrawer;byId('closeMenuBtn').onclick=closeDrawer;byId('backdrop').onclick=closeDrawer;
  document.addEventListener('change',e=>{if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions(); if(e.target.classList&&(e.target.classList.contains('trainCur')||e.target.classList.contains('trainTar'))){clampTrainingInputs(); updateTrainingNeeds();}});
- document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v){if(v==='jiang')openJiangMenuOnly();else setView(v);}const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);if(window.innerWidth<980)openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo)}const io=e.target.closest('[data-item-open]')?.dataset.itemOpen;if(io){setItemSub(io)}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid)showMonster(mid);const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);const equid=e.target.closest('[data-eq-uid]')?.dataset.eqUid;if(equid){openEquipmentSim(equid);}const eg=e.target.closest('[data-eq-group]')?.dataset.eqGroup;if(eg){eqRenderPreview();}const er=e.target.closest('[data-eq-recipe]')?.dataset.eqRecipe;if(er){eqToggleRecipe(er);}if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds();if(e.target.id==='calcStarAura')calcStarAura();if(e.target.id==='calcExpNeed')calcExpNeed();if(e.target.id==='calcEatPill')calcEatPill();if(e.target.id==='calcTraining')calcTraining();if(e.target.id==='eqShowMaterials')showEquipmentMaterials();if(e.target.id==='eqBackToSim')eqRenderPreview();if(e.target.id==='eqBackToList')renderEquipmentCompoundPage();if(e.target.id==='eqOpenRandom')renderEquipmentRandomPage();if(e.target.id==='eqSimOnce'){eqRandomOnce();renderEquipmentRandomPage();}if(e.target.id==='eqSimClear'){eqResetRandom();renderEquipmentRandomPage();}if(e.target.id==='trainAllMax')setTrainingAllMax();if(e.target.id==='trainClear')clearTrainingTargets();const et=e.target.closest('[data-exp-tab]');if(et){document.querySelectorAll('.calcTab').forEach(b=>b.classList.remove('active'));et.classList.add('active');byId('expTabNeed').style.display=et.dataset.expTab==='need'?'block':'none';byId('expTabEat').style.display=et.dataset.expTab==='eat'?'block':'none';}});
+ document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v){if(v==='jiang')openJiangMenuOnly();else setView(v);}const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);if(window.innerWidth<980)openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo)}const io=e.target.closest('[data-item-open]')?.dataset.itemOpen;if(io){setItemSub(io)}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid)showMonster(mid);const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);const equid=e.target.closest('[data-eq-uid]')?.dataset.eqUid;if(equid){openEquipmentSim(equid);}const eg=e.target.closest('[data-eq-group]')?.dataset.eqGroup;if(eg){eqRenderPreview();}const er=e.target.closest('[data-eq-recipe]')?.dataset.eqRecipe;if(er){eqToggleRecipe(er);}const esr=e.target.closest('[data-eq-sim-recipe]')?.dataset.eqSimRecipe;if(esr){eqSimToggleRecipe(esr);}if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds();if(e.target.id==='calcStarAura')calcStarAura();if(e.target.id==='calcExpNeed')calcExpNeed();if(e.target.id==='calcEatPill')calcEatPill();if(e.target.id==='calcTraining')calcTraining();if(e.target.id==='eqShowMaterials')showEquipmentMaterials();if(e.target.id==='eqBackToSim')eqRenderPreview();if(e.target.id==='eqBackToList')renderEquipmentCompoundPage();if(e.target.id==='eqOpenRandom')renderEquipmentRandomPage();if(e.target.id==='eqSimOnce'){eqRandomOnce();renderEquipmentRandomPage();}if(e.target.id==='eqSimClear'){const keep=Object.assign({},eqState.simSelectedRecipes||{});eqResetRandom(false);eqState.simSelectedRecipes=keep;renderEquipmentRandomPage(true);}if(e.target.id==='trainAllMax')setTrainingAllMax();if(e.target.id==='trainClear')clearTrainingTargets();const et=e.target.closest('[data-exp-tab]');if(et){document.querySelectorAll('.calcTab').forEach(b=>b.classList.remove('active'));et.classList.add('active');byId('expTabNeed').style.display=et.dataset.expTab==='need'?'block':'none';byId('expTabEat').style.display=et.dataset.expTab==='eat'?'block':'none';}});
  ['monsterQ','monsterMin','monsterMax'].forEach(id=>{const el=byId(id); if(el)el.addEventListener('input',searchMonsters);});
  
  
