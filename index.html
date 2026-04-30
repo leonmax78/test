@@ -42933,6 +42933,20 @@ function showMonsterDropPage(id){
  byId('reader').innerHTML=`<section class="card monsterDropPage"><button class="backBtn" type="button" onclick="showMonster('${esc(id)}')">← 返回怪物資料</button><h1>${esc(nameOf(m))}｜掉落資訊</h1>${monsterDropsTableHTML(drops)}</section>`;
  closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});
 }
+
+function compactWan(n){
+ n=Math.max(0,Math.round(Number(n)||0));
+ if(n>=10000){let v=n/10000; return (Math.round(v*10)/10).toString().replace(/\.0$/,'')+'萬';}
+ return String(n);
+}
+function breakSuggestText(def){
+ const d=Number(def)||0; if(!d)return '';
+ const r=52845/62797; // 依玩家參考值：力 62797 / 敏 52845
+ const s=d/(2+r/2), x=s*r;
+ const ar=38612/60583; // 暗器 / 術者參考：力 38612 / 敏 60583
+ const ax=d/(2+ar/2), as=ax*ar;
+ return compactWan(s)+'力 / '+compactWan(x)+'敏；暗器約 '+compactWan(as)+'力 / '+compactWan(ax)+'敏';
+}
 function showMonster(id){
  window.v86LastView='monster';
  history.pushState({app:'detail',view:'monster'},'','#monster-'+id);
@@ -42947,7 +42961,7 @@ function showMonster(id){
   ['體魄',m.Con],['力量',m.Str],['智慧',m.Int],['靈敏',m.Dex]
  ];
  const defenseFields=[
-  ['物理防禦',m.ExtraDef],['術法攻擊',m.MagicAttack],['術法防禦',m.MagicDef],
+  ['物理防禦',hasVal(m.ExtraDef)?String(m.ExtraDef)+'｜建議：'+breakSuggestText(m.ExtraDef):m.ExtraDef],['術法攻擊',m.MagicAttack],['術法防禦',m.MagicDef],
   ['冰防',m.IceDef],['火防',m.FireDef],['雷防',m.LightningDef],['冥防',m.DarkDef],
   ['抗定身',m.ParalysisRes],['抗毒',m.PosionRes],['抗盲目',m.BlindRes],['抗禁咒',m.SilentRes]
  ];
@@ -49434,7 +49448,7 @@ function eqBaseStatsWithRaw(eq){
  add('blind_res','抗盲目',raw.BlindRes);
  add('silent_res','抗禁咒',raw.SilentRes);
  addRange('damage','傷害',raw.DamageMin,raw.DamageMax);
- add('level','LEVEL',raw.Level);
+ add('level','等級',raw.Level);
  add('clevel','職等(CL)',raw.CLevel);
  return base;
 }
@@ -49455,7 +49469,7 @@ function eqStatLabel(k,o,e){
  if(k==='poison_res')return '抗毒';
  if(k==='blind_res')return '抗盲目';
  if(k==='silent_res')return '抗禁咒';
- if(k==='level')return 'LEVEL';
+ if(k==='level')return '等級';
  if(k==='clevel')return '職等(CL)';
  return o?.label||e?.label||eqData().stat_labels?.[k]||k;
 }
@@ -49467,7 +49481,7 @@ function eqMetaLine(eq){
  const base=eqBaseStatsWithRaw(eq);
  const level=base.level?.value||eq?.raw_item?.Level||'';
  const clevel=base.clevel?.value??eq?.raw_item?.CLevel??'';
- const main=['LEVEL '+(level||'-'),'職等(CL) '+eqCLevelText(clevel)];
+ const main=['等級 '+(level||'-'),'職等(CL) '+eqCLevelText(clevel)];
  const rest=['ID '+eq.item_id,eq.main_category,eq.series||eq.series_group,eq.display_type].filter(Boolean);
  return `<div class="eqTopMeta">${main.map(x=>`<span class="pill" style="font-size:14px;border-color:#60a5fa;color:#e0f2fe">${esc(x)}</span>`).join('')}${rest.map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>`;
 }
@@ -49902,7 +49916,7 @@ document.addEventListener('DOMContentLoaded',init);
     if(k==='m_attack')return '術法攻擊';
     if(k==='def')return '物理防禦';
     if(k==='m_def')return '術法防禦';
-    if(k==='level')return 'LEVEL';
+    if(k==='level')return '等級';
     if(k==='clevel')return '職等(CL)';
     const labels=(typeof eqData==='function' && eqData().stat_labels)||{};
     return labels[k]||k;
@@ -49942,7 +49956,7 @@ document.addEventListener('DOMContentLoaded',init);
     const base=eqBaseStatsWithRaw(eq);
     const level=base.level?.value||eq?.raw_item?.Level||'';
     const clevel=base.clevel?.value??eq?.raw_item?.CLevel??'';
-    const main=['LEVEL '+(level||'-'),'職等(CL) '+eqCLevelText(clevel)];
+    const main=['等級 '+(level||'-'),'職等(CL) '+eqCLevelText(clevel)];
     const rest=['ID '+eq.item_id,eq.main_category,eq.series||eq.series_group,eq.display_type].filter(Boolean);
     return `<div class="eqTopMeta">${main.map(x=>`<span class="pill" style="font-size:14px;border-color:#60a5fa;color:#e0f2fe">${esc(x)}</span>`).join('')}${rest.map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>`;
   };
@@ -50439,14 +50453,14 @@ document.addEventListener('DOMContentLoaded',init);
     const addRange=(obj,key,label,min,max)=>{if((min!==undefined&&String(min)!=='') || (max!==undefined&&String(max)!==''))obj[key]={label,min:Number(min)||0,max:Number(max??min)||0};};
     const out={};
     raw=raw||{};
-    add(out,'level','LEVEL',raw.Level);
+    add(out,'level','等級',raw.Level);
     add(out,'clevel','職等(CL)',raw.CLevel);
     add(out,'con','體魄',raw.Con);
     add(out,'str','力量',raw.Str);
     add(out,'int','智慧',raw.Int);
     add(out,'dex','敏捷',raw.Dex);
     add(out,'hp','生命',raw.HP);
-    add(out,'mp','真氣',raw.MP);
+    add(out,'mp','精力',raw.MP);
     addRange(out,'damage','傷害',raw.DamageMin,raw.DamageMax);
     add(out,'m_attack','術法攻擊',raw.MagicAttack);
     add(out,'def','物理防禦',raw.ExtraDef);
@@ -50678,7 +50692,7 @@ document.addEventListener('DOMContentLoaded',init);
     const base=eqBaseStatsWithRaw(eq);
     const level=base.level?.value||eq?.raw_item?.Level||'';
     const clevel=base.clevel?.value??eq?.raw_item?.CLevel??'';
-    const main=['LEVEL '+(level||'-'),'職等(CL) '+eqCLevelText(clevel)];
+    const main=['等級 '+(level||'-'),'職等(CL) '+eqCLevelText(clevel)];
     const rest=[eq.item_id?('ID '+eq.item_id):'',eqKind88(eq),eqSeriesVal88(eq)||eq.series_group,eqTierVal88(eq),eqTypeVal88(eq)].filter(Boolean);
     return `<div class="eqTopMeta">${main.map(x=>`<span class="pill" style="font-size:14px;border-color:#60a5fa;color:#e0f2fe">${esc(x)}</span>`).join('')}${rest.map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>`;
   };
@@ -51011,6 +51025,53 @@ document.addEventListener('DOMContentLoaded',init);
 })();
 </script>
 
+
+<script id="v88au-break-defense-and-license-fix">
+(function(){
+  function by(id){return document.getElementById(id)}
+  function decodeMaybe(s){try{s=String(s||'').trim().replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return decodeURIComponent(escape(atob(s)))}catch(e){try{return atob(s)}catch(_){return ''}}}
+  function parseExpFromKey(key){
+    key=String(key||'').trim(); if(!key)return 0;
+    const rawCandidates=[key];
+    const parts=key.split('.'); if(parts.length>=2)rawCandidates.push(parts[1]);
+    for(const c of rawCandidates){
+      const texts=[c, decodeMaybe(c)].filter(Boolean);
+      for(const txt of texts){
+        try{const o=JSON.parse(txt); const v=o.exp||o.expires||o.expiry||o.expiresAt||o.expireAt||o.validUntil||o.until||o.end||o.deadline; if(v){const n=Number(v); if(Number.isFinite(n))return n<20000000000?n*1000:n; const d=Date.parse(v); if(Number.isFinite(d))return d;}}catch(e){}
+        const m=String(txt).match(/(20\d{2})[-\/]?(0[1-9]|1[0-2])[-\/]?([0-2]\d|3[01])(?:[ T]([0-2]\d):?([0-5]\d)?)?/);
+        if(m){const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]),Number(m[4]||23),Number(m[5]||59),59).getTime(); if(Number.isFinite(d))return d;}
+      }
+    }
+    return 0;
+  }
+  function fallbackExp(key){
+    if(!key)return 0;
+    let exp=Number(localStorage.getItem('combined_manual_tool_license_fallback_exp')||0);
+    if(exp>Date.now())return exp;
+    exp=Date.now()+180*86400000;
+    localStorage.setItem('combined_manual_tool_license_fallback_exp',String(exp));
+    return exp;
+  }
+  function update(){
+    if(typeof AUTH_REQUIRED==='undefined'||!AUTH_REQUIRED)return;
+    const el=by('topStatus'); if(!el)return;
+    el.style.setProperty('display','block','important');
+    const key=localStorage.getItem('combined_manual_tool_license_key')||localStorage.getItem('license_key')||'';
+    if(!key){el.textContent='未授權';return;}
+    let exp=parseExpFromKey(key)||fallbackExp(key);
+    const diff=exp-Date.now();
+    if(diff<=0){el.textContent='授權已到期';return;}
+    const d=Math.floor(diff/86400000), h=Math.floor((diff%86400000)/3600000), m=Math.floor((diff%3600000)/60000);
+    el.textContent='授權剩餘：'+d+'天 '+h+'小時 '+m+'分';
+  }
+  window.v88auUpdateLicenseCountdown=update;
+  document.addEventListener('DOMContentLoaded',update);
+  if(document.readyState!=='loading')setTimeout(update,50);
+  setInterval(update,60000);
+  document.addEventListener('click',function(e){if(e.target&&e.target.id==='licenseSubmit')setTimeout(update,200)},true);
+})();
+</script>
+
 </body>
 </html>
 <script id="v88an-first-click-guard">
@@ -51051,7 +51112,7 @@ document.addEventListener('DOMContentLoaded',init);
     byId('reader').innerHTML=`<section class="card monsterCompact itemCompact"><button class="backBtn" type="button" onclick="goBackToPrevious()">← 返回查詢</button><h1>${_esc(nameOf(it))}</h1><div class="monsterGrid"><div class="monsterPanel"><h3>道具資料</h3>${kvHtml(dataRows,'itemDataGrid')}</div>${abilityRows.length?`<div class="monsterPanel"><h3>道具能力</h3>${kvHtml(abilityRows,'itemAbilityGrid')}</div>`:''}</div><div class="quick"><button type="button" data-reverse-item="${_esc(it.ID)}">反查哪些怪物掉落這個道具<small>查看怪物與掉落機率</small></button></div></section>`;
     closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});
   };
-  function eqLabel(k,o,e){ if(k==='attack')return '攻速'; if(k==='dark_attack')return '冥傷'; if(k==='dark_def')return '冥防'; if(k==='dark_prob')return '冥傷機率'; if(k==='lightning_def')return '雷防'; if(k==='m_attack')return '術法攻擊'; if(k==='def')return '物理防禦'; if(k==='m_def')return '術法防禦'; return (typeof eqStatLabel==='function')?eqStatLabel(k,o,e):(o?.label||e?.label||k); }
+  function eqLabel(k,o,e){ if(k==='level')return '等級'; if(k==='mp')return '精力'; if(k==='attack')return '攻速'; if(k==='dark_attack')return '冥傷'; if(k==='dark_def')return '冥防'; if(k==='dark_prob')return '冥傷機率'; if(k==='lightning_def')return '雷防'; if(k==='m_attack')return '術法攻擊'; if(k==='def')return '物理防禦'; if(k==='m_def')return '術法防禦'; return (typeof eqStatLabel==='function')?eqStatLabel(k,o,e):(o?.label||e?.label||k); }
   function eqText(k,o){ if(k==='attack')return attackSpeedText(o&&(o.value??o.min??'')); if(k==='clevel')return cLevelText(o&&(o.value??o.min??'')); return (typeof eqDisplayStatText==='function')?eqDisplayStatText(k,o):String(o?.value??''); }
   window.eqRenderStats=function(eq,includeEffects=true){
     const base=eqBaseStatsWithRaw(eq), effMap=includeEffects?eqEffectAccumulator():{};
