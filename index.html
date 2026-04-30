@@ -326,8 +326,8 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
         <button class="navBtn sub" data-item-open="item">道具查詢 <span>›</span></button>
         <button class="navBtn sub" data-item-open="reverse">掉落反查 <span>›</span></button>
         <button class="navBtn sub" data-item-open="compound">裝備合成模擬 <span>›</span></button>
-        <button class="navBtn sub" data-item-open="soul">武魂能力試算 <span>›</span></button>
       </div>
+      <button class="navBtn major" data-view="soul">武魂能力試算 <span>›</span></button>
     </div>
     <div class="navGroup" id="manualGroup" style="display:none">
       <div class="navTitle">備用手動載入</div>
@@ -42651,6 +42651,13 @@ function setView(view){
  else if(view==='jiang'){openJiangMenuOnly();}
  else if(view==='monster'){renderMonsterPage(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
  else if(view==='item'){openItemMenuOnly();}
+ else if(view==='soul'){
+  currentView='soul';
+  document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='soul'));
+  document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
+  if(typeof window.renderSoulCalcPage==='function') window.renderSoulCalcPage();
+  closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});
+ }
  else if(view==='reverse'){renderItemPage('reverse'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
 }
 function setJiang(kind){
@@ -50820,7 +50827,7 @@ document.addEventListener('DOMContentLoaded',init);
     const savedCount=Math.max(1,N(window.soulCount||1,1));
     const options=SOUL_DATA.map(x=>'<option value="'+E(x.ID)+'" '+(String(x.ID)===String(savedId)?'selected':'')+'>'+E(x.Name)+'</option>').join('');
     const reader=by('reader'); if(!reader)return;
-    reader.innerHTML='<section class="card"><h1>武魂能力試算</h1><div class="muted">選擇武魂與總收藏武魂數，會自動計算收藏加成。第 1 隻為原始能力，第 2 隻開始每多 1 隻增加 2.5%。</div><div class="kvGrid"><div class="kv"><div class="k">武魂</div><div class="v"><select id="soulSelect">'+options+'</select></div></div><div class="kv"><div class="k">總收藏武魂數</div><div class="v"><input id="soulCount" type="number" min="1" value="'+E(savedCount)+'"><div class="soulQuick"><button type="button" data-soul-count="1">1</button><button type="button" data-soul-count="2">2</button><button type="button" data-soul-count="3">3</button><button type="button" data-soul-count="5">5</button><button type="button" data-soul-count="10">10</button><button type="button" data-soul-count="20">20</button><button type="button" data-soul-count="'+MAX_SOUL_COUNT+'">滿收藏</button></div></div></div></div><div id="soulResult"></div></section>';
+    reader.innerHTML='<section class="card"><h1>武魂能力試算</h1><div class="muted">可直接搜尋 / 選擇武魂，輸入總收藏數後自動計算收藏加成。第 1 隻為原始能力，第 2 隻開始每多 1 隻增加 2.5%。</div><div class="kvGrid"><div class="kv"><div class="k">武魂</div><div class="v"><select id="soulSelect">'+options+'</select></div></div><div class="kv"><div class="k">總收藏武魂數</div><div class="v"><input id="soulCount" type="number" min="1" value="'+E(savedCount)+'"><div class="soulQuick"><button type="button" data-soul-count="1">1</button><button type="button" data-soul-count="2">2</button><button type="button" data-soul-count="3">3</button><button type="button" data-soul-count="5">5</button><button type="button" data-soul-count="10">10</button><button type="button" data-soul-count="20">20</button><button type="button" data-soul-count="'+MAX_SOUL_COUNT+'">滿收藏</button></div></div></div></div><div id="soulResult"></div></section>';
     bindSoulCalc();
     updateSoulCalc();
     if(window.innerWidth<980) closeDrawerSafe();
@@ -50853,15 +50860,7 @@ document.addEventListener('DOMContentLoaded',init);
   function openItemMenuKeep(){
     try{ if(typeof openItemMenuOnly==='function') openItemMenuOnly(); }catch(e){}
   }
-  function installSoulMenu(){
-    const itemForm=by('itemForm');
-    if(itemForm && !itemForm.querySelector('[data-item-open="soul"]')){
-      const btn=document.createElement('button');
-      btn.className='navBtn sub'; btn.setAttribute('data-item-open','soul');
-      btn.innerHTML='武魂能力試算 <span>›</span>';
-      itemForm.appendChild(btn);
-    }
-  }
+  function installSoulMenu(){return;}
   function patchSetItemSub(){
     const old=window.setItemSub;
     window.setItemSub=function(kind){
