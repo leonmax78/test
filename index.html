@@ -51941,12 +51941,11 @@ loadSiteConfigV105();
 
 
 
+
 <script>
-// V112：道具篩選穩定版。
-// 修正某些合成式下拉選項造成頁面卡死：
-// 1. 建立裝備 ID -> 裝備清單索引，搜尋時不再每筆道具都掃整份裝備清單。
-// 2. 下拉連動改成一次建立完整選項，不反覆重算。
-// 3. 搜尋結果依 ID 去重。
+// V113：道具篩選精簡版。
+// 保留：文字搜尋、類型、等級、系列快選、專剋。
+// 移除：全部種類、階級 / 等級、部位 / 類型。
 (function(){
   function id(x){return document.getElementById(x)}
   function h(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -51977,10 +51976,7 @@ loadSiteConfigV105();
     return [];
   }
   function eid(eq){return s(eq?.item_id||eq?.Item||eq?.ID)}
-  function emain(eq){return s(eq?.main_category)}
   function eseries(eq){return s(eq?.series_group||eq?.series)}
-  function etier(eq){return s(eq?.tier||eq?.series_grade)}
-  function etype(eq){return s(eq?.display_type)}
   function uniq(arr){return [...new Set((arr||[]).map(s).filter(Boolean))]}
   function opt(values, selected, label){
     return '<option value="">'+h(label)+'</option>'+values.map(v=>'<option value="'+h(v)+'" '+(String(v)===String(selected)?'selected':'')+'>'+h(v)+'</option>').join('');
@@ -51998,57 +51994,32 @@ loadSiteConfigV105();
   function buildCache(){
     const eqs=rows();
     const byId=new Map();
-    const mains=[], series=[], tiers=[], types=[];
+    const series=[];
     for(const eq of eqs){
       const idd=eid(eq);
       if(idd){
         if(!byId.has(idd))byId.set(idd,[]);
-        byId.get(idd).push({
-          main:emain(eq),
-          series:eseries(eq),
-          tier:etier(eq),
-          type:etype(eq)
-        });
+        byId.get(idd).push({series:eseries(eq)});
       }
-      mains.push(emain(eq)); series.push(eseries(eq)); tiers.push(etier(eq)); types.push(etype(eq));
+      series.push(eseries(eq));
     }
-    cache={
-      byId,
-      mains:uniq(mains),
-      series:uniq(series),
-      tiers:uniq(tiers),
-      types:uniq(types)
-    };
+    cache={byId, series:uniq(series)};
     return cache;
   }
   function getCache(){return cache||buildCache()}
-  function f(){
-    return {
-      main:id('itemEqMain')?.value||'',
-      series:id('itemEqSeries')?.value||'',
-      tier:id('itemEqTier')?.value||'',
-      type:id('itemEqType')?.value||''
-    }
-  }
-  function hasF(x){return !!(x.main||x.series||x.tier||x.type)}
-  function matchMeta(meta,x){
-    return (!x.main||meta.main===x.main)&&(!x.series||meta.series===x.series)&&(!x.tier||meta.tier===x.tier)&&(!x.type||meta.type===x.type);
-  }
-  function itemMatchEq(it,x){
-    if(!hasF(x))return true;
+  function selectedSeries(){return id('itemEqSeries')?.value||''}
+  function itemMatchSeries(it, series){
+    if(!series)return true;
     const list=getCache().byId.get(s(it?.ID));
     if(!list||!list.length)return false;
-    return list.some(m=>matchMeta(m,x));
+    return list.some(m=>m.series===series);
   }
   function latest(limit=320){
     return dedup((items||[]).slice().reverse().filter(it=>n(it))).slice(0,limit).map(it=>'<button type="button" class="resultItem" data-item="'+h(it.ID)+'"><div class="rName">'+h(n(it))+'</div><div class="rSub">Lv.'+h(it.Level||'')+'｜'+h(tname(it.Type)||it.Type||'')+'｜'+(kname(it)?'專剋 '+h(kname(it))+'｜':'')+'ID '+h(it.ID||'')+'</div></button>').join('') || '<div class="muted">沒有道具資料</div>';
   }
   function fill(){
     const c=getCache();
-    if(id('itemEqMain'))id('itemEqMain').innerHTML=opt(c.mains,window.v110ItemEqMain||'','全部種類');
     if(id('itemEqSeries'))id('itemEqSeries').innerHTML=opt(c.series,window.v110ItemEqSeries||'','全部系列');
-    if(id('itemEqTier'))id('itemEqTier').innerHTML=opt(c.tiers,window.v110ItemEqTier||'','全部階級 / 等級');
-    if(id('itemEqType'))id('itemEqType').innerHTML=opt(c.types,window.v110ItemEqType||'','全部部位 / 類型');
     const kindSel=id('itemKind');
     if(kindSel){
       const kinds=uniq((items||[]).map(it=>kname(it))).sort((a,b)=>a.localeCompare(b,'zh-Hant'));
@@ -52068,16 +52039,13 @@ loadSiteConfigV105();
         <div class="latestMainPane">
           <div class="kvGrid">
             <div class="kv"><div class="k">道具名稱 / ID / 類型</div><div class="v"><input id="itemQ" placeholder="例如：宮殤、277、火傷、吸血" value="${h(window.v86ItemQ||'')}"></div></div>
-            <div class="kv"><div class="k">原始類型</div><div class="v"><select id="itemType"></select></div></div>
+            <div class="kv"><div class="k">類型</div><div class="v"><select id="itemType"></select></div></div>
             <div class="kv"><div class="k">等級起</div><div class="v"><input id="itemMin" type="number" value="${h(window.v86ItemMin||'')}"></div></div>
             <div class="kv"><div class="k">等級迄</div><div class="v"><input id="itemMax" type="number" value="${h(window.v86ItemMax||'')}"></div></div>
-            <div class="kv"><div class="k">裝備種類</div><div class="v"><select id="itemEqMain"></select></div></div>
-            <div class="kv"><div class="k">系列</div><div class="v"><select id="itemEqSeries"></select></div></div>
-            <div class="kv"><div class="k">階級 / 等級</div><div class="v"><select id="itemEqTier"></select></div></div>
-            <div class="kv"><div class="k">部位 / 類型</div><div class="v"><select id="itemEqType"></select></div></div>
+            <div class="kv"><div class="k">系列快選</div><div class="v"><select id="itemEqSeries"></select></div></div>
             <div class="kv"><div class="k">專剋屬性</div><div class="v"><select id="itemKind"></select></div></div>
           </div>
-          <div class="notice" style="font-size:12px">這版下拉篩選採穩定模式：各下拉不再互相縮限，避免大量資料組合造成卡死。</div>
+          <div class="notice" style="font-size:12px">系列快選依合成模擬清單建立；類型則依 ITEM.INI 原始 Type 欄位篩選。</div>
           <div class="results" id="itemResults"></div>
         </div>
         <aside class="latestSidePane">
@@ -52087,21 +52055,19 @@ loadSiteConfigV105();
         </aside>
       </div>
     </section>`;
+
     const sel=id('itemType');
     if(sel){
-      sel.innerHTML='<option value="">全部原始類型</option>'+Object.entries(ITEM_TYPE_MAP||{}).map(([k,v])=>`<option value="${h(k)}" ${String(k)===String(window.v86ItemType||'')?'selected':''}>${h(v)}</option>`).join('');
+      sel.innerHTML='<option value="">全部類型</option>'+Object.entries(ITEM_TYPE_MAP||{}).map(([k,v])=>`<option value="${h(k)}" ${String(k)===String(window.v86ItemType||'')?'selected':''}>${h(v)}</option>`).join('');
       sel.value=window.v86ItemType||'';
     }
     fill();
 
-    ['itemQ','itemType','itemMin','itemMax','itemEqMain','itemEqSeries','itemEqTier','itemEqType','itemKind'].forEach(x=>{
+    ['itemQ','itemType','itemMin','itemMax','itemEqSeries','itemKind'].forEach(x=>{
       const el=id(x); if(!el)return;
       el.addEventListener(el.tagName==='INPUT'?'input':'change',()=>{
         window.v86ItemType=id('itemType')?.value||'';
-        window.v110ItemEqMain=id('itemEqMain')?.value||'';
         window.v110ItemEqSeries=id('itemEqSeries')?.value||'';
-        window.v110ItemEqTier=id('itemEqTier')?.value||'';
-        window.v110ItemEqType=id('itemEqType')?.value||'';
         window.v110ItemKind=id('itemKind')?.value||'';
         searchItems();
       });
@@ -52116,10 +52082,7 @@ loadSiteConfigV105();
       window.v86ItemType=id('itemType')?.value||'';
       window.v86ItemMin=id('itemMin')?.value||'';
       window.v86ItemMax=id('itemMax')?.value||'';
-      window.v110ItemEqMain=id('itemEqMain')?.value||'';
       window.v110ItemEqSeries=id('itemEqSeries')?.value||'';
-      window.v110ItemEqTier=id('itemEqTier')?.value||'';
-      window.v110ItemEqType=id('itemEqType')?.value||'';
       window.v110ItemKind=id('itemKind')?.value||'';
 
       const q=window.v86ItemQ.trim().toLowerCase();
@@ -52127,8 +52090,8 @@ loadSiteConfigV105();
       const min=window.v86ItemMin?num(window.v86ItemMin):null;
       const max=window.v86ItemMax?num(window.v86ItemMax):null;
       const kind=window.v110ItemKind;
-      const fx=f();
-      const has=!!(q||type||window.v86ItemMin||window.v86ItemMax||kind||hasF(fx));
+      const series=selectedSeries();
+      const has=!!(q||type||window.v86ItemMin||window.v86ItemMax||kind||series);
       const box=id('itemResults'); if(!box)return;
       if(!has){box.innerHTML='';return;}
 
@@ -52138,12 +52101,12 @@ loadSiteConfigV105();
         (min===null||num(it.Level)>=min) &&
         (max===null||num(it.Level)<=max) &&
         (!kind||kname(it)===kind) &&
-        itemMatchEq(it,fx)
+        itemMatchSeries(it,series)
       )).slice(0,180);
 
       box.innerHTML=arr.map(it=>'<button type="button" class="resultItem" data-item="'+h(it.ID)+'"><div class="rName">'+h(n(it))+'</div><div class="rSub">Lv.'+h(it.Level||'')+'｜'+h(tname(it.Type)||it.Type||'')+'｜'+(kname(it)?'專剋 '+h(kname(it))+'｜':'')+'ID '+h(it.ID||'')+'</div></button>').join('')||'<div class="muted">找不到道具</div>';
     }catch(e){
-      console.error('V112 searchItems failed',e);
+      console.error('V113 searchItems failed',e);
       const box=id('itemResults'); if(box)box.innerHTML='<div class="muted">篩選發生錯誤，請回報這組條件。</div>';
     }
   };
@@ -52151,6 +52114,84 @@ loadSiteConfigV105();
 </script>
 
 
+
+
+
+<script>
+// V113：選單事件統一修正。
+// 避免第一次點怪物 / 道具 / 降神時被舊事件重設回首頁。
+(function(){
+  function by(id){return document.getElementById(id)}
+  function closeD(){
+    try{ if(typeof closeDrawer==='function') closeDrawer(); }catch(e){}
+    by('drawer')?.classList.remove('open');
+    by('backdrop')?.classList.remove('open');
+  }
+  function activeView(v){
+    document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+  }
+  document.addEventListener('click',function(e){
+    const viewBtn=e.target.closest&&e.target.closest('.navBtn[data-view]');
+    if(viewBtn){
+      const v=viewBtn.dataset.view;
+      if(['home','jiang','monster','item','soul'].includes(v)){
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        currentView=v;
+        activeView(v);
+
+        if(v==='jiang'){
+          document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
+          by('jiangForm')?.classList.add('active');
+          return;
+        }
+
+        document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
+        if(v==='item'){
+          by('itemForm')?.classList.add('active');
+          if(typeof renderItemPage==='function')renderItemPage('item');
+          closeD(); window.scrollTo({top:0,behavior:'smooth'});
+          return;
+        }
+        if(v==='monster'){
+          if(typeof renderMonsterSearch==='function')renderMonsterSearch();
+          else if(typeof renderMonster==='function')renderMonster();
+          closeD(); window.scrollTo({top:0,behavior:'smooth'});
+          return;
+        }
+        if(v==='soul'){
+          if(typeof renderSoulCalc==='function')renderSoulCalc();
+          closeD(); window.scrollTo({top:0,behavior:'smooth'});
+          return;
+        }
+        if(v==='home'){
+          if(typeof renderHome==='function')renderHome();
+          else by('reader').innerHTML='';
+          closeD(); window.scrollTo({top:0,behavior:'smooth'});
+          return;
+        }
+      }
+    }
+
+    const jiangBtn=e.target.closest&&e.target.closest('.navBtn[data-jiang]');
+    if(jiangBtn){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      const k=jiangBtn.dataset.jiang;
+      currentView='jiang';
+      activeView('jiang');
+      try{
+        if(typeof setJiangSub==='function')setJiangSub(k);
+        else if(typeof renderJiangPage==='function')renderJiangPage(k);
+      }catch(err){console.warn('jiang click failed',err)}
+      closeD(); window.scrollTo({top:0,behavior:'smooth'});
+    }
+  },true);
+})();
+</script>
 
 </body>
 </html>
