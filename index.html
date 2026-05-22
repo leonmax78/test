@@ -51943,9 +51943,9 @@ loadSiteConfigV105();
 
 
 <script>
-// V113：道具篩選精簡版。
-// 保留：文字搜尋、類型、等級、系列快選、專剋。
-// 移除：全部種類、階級 / 等級、部位 / 類型。
+// V115：安全恢復版。
+// 以 V112 為基底，不再攔截主選單，避免怪物查詢 / 掉落反查 / 武魂消失。
+// 只修改道具查詢欄位：保留名稱、類型、等級、系列快選、專剋。
 (function(){
   function id(x){return document.getElementById(x)}
   function h(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -52027,9 +52027,11 @@ loadSiteConfigV105();
     }
   }
 
+  // 只覆蓋「道具查詢」頁；reverse/compound 一律交回原本 renderItemPage。
+  const oldRender = window.renderItemPage;
   window.renderItemPage=function(tab='item'){
     if(tab!=='item'){
-      if(typeof oldRenderItemPage==='function')return oldRenderItemPage(tab);
+      if(typeof oldRender==='function')return oldRender(tab);
       return;
     }
     buildCache();
@@ -52106,7 +52108,7 @@ loadSiteConfigV105();
 
       box.innerHTML=arr.map(it=>'<button type="button" class="resultItem" data-item="'+h(it.ID)+'"><div class="rName">'+h(n(it))+'</div><div class="rSub">Lv.'+h(it.Level||'')+'｜'+h(tname(it.Type)||it.Type||'')+'｜'+(kname(it)?'專剋 '+h(kname(it))+'｜':'')+'ID '+h(it.ID||'')+'</div></button>').join('')||'<div class="muted">找不到道具</div>';
     }catch(e){
-      console.error('V113 searchItems failed',e);
+      console.error('V115 searchItems failed',e);
       const box=id('itemResults'); if(box)box.innerHTML='<div class="muted">篩選發生錯誤，請回報這組條件。</div>';
     }
   };
@@ -52115,130 +52117,6 @@ loadSiteConfigV105();
 
 
 
-
-
-<script>
-// V113：選單事件統一修正。
-// 避免第一次點怪物 / 道具 / 降神時被舊事件重設回首頁。
-(function(){
-  function by(id){return document.getElementById(id)}
-  function closeD(){
-    try{ if(typeof closeDrawer==='function') closeDrawer(); }catch(e){}
-    by('drawer')?.classList.remove('open');
-    by('backdrop')?.classList.remove('open');
-  }
-  function activeView(v){
-    document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
-  }
-  document.addEventListener('click',function(e){
-    const viewBtn=e.target.closest&&e.target.closest('.navBtn[data-view]');
-    if(viewBtn){
-      const v=viewBtn.dataset.view;
-      if(['home','jiang','monster','item','soul'].includes(v)){
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-
-        currentView=v;
-        activeView(v);
-
-        if(v==='jiang'){
-          document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
-          by('jiangForm')?.classList.add('active');
-          return;
-        }
-
-        document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
-        if(v==='item'){
-          by('itemForm')?.classList.add('active');
-          if(typeof renderItemPage==='function')renderItemPage('item');
-          closeD(); window.scrollTo({top:0,behavior:'smooth'});
-          return;
-        }
-        if(v==='monster'){
-          if(typeof renderMonsterSearch==='function')renderMonsterSearch();
-          else if(typeof renderMonster==='function')renderMonster();
-          closeD(); window.scrollTo({top:0,behavior:'smooth'});
-          return;
-        }
-        if(v==='soul'){
-          if(typeof renderSoulCalc==='function')renderSoulCalc();
-          closeD(); window.scrollTo({top:0,behavior:'smooth'});
-          return;
-        }
-        if(v==='home'){
-          if(typeof renderHome==='function')renderHome();
-          else by('reader').innerHTML='';
-          closeD(); window.scrollTo({top:0,behavior:'smooth'});
-          return;
-        }
-      }
-    }
-
-    const jiangBtn=e.target.closest&&e.target.closest('.navBtn[data-jiang]');
-    if(jiangBtn){
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      const k=jiangBtn.dataset.jiang;
-      currentView='jiang';
-      activeView('jiang');
-      try{
-        if(typeof setJiangSub==='function')setJiangSub(k);
-        else if(typeof renderJiangPage==='function')renderJiangPage(k);
-      }catch(err){console.warn('jiang click failed',err)}
-      closeD(); window.scrollTo({top:0,behavior:'smooth'});
-    }
-  },true);
-})();
-</script>
-
-
-<script>
-// V114：修正道具反查入口被 V113 選單攔截後消失 / 無法進入。
-// 明確接管 data-item-open="item|reverse|compound"。
-(function(){
-  function by(id){return document.getElementById(id)}
-  function closeD(){
-    try{ if(typeof closeDrawer==='function') closeDrawer(); }catch(e){}
-    by('drawer')?.classList.remove('open');
-    by('backdrop')?.classList.remove('open');
-  }
-  function openItemMenu(){
-    currentView='item';
-    document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='item'));
-    document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
-    by('itemForm')?.classList.add('active');
-  }
-  function goItemSub(kind){
-    openItemMenu();
-    if(kind==='item'){
-      if(typeof renderItemPage==='function')renderItemPage('item');
-    }else if(kind==='reverse'){
-      if(typeof oldRenderItemPage==='function')oldRenderItemPage('reverse');
-      else if(typeof renderItemPage==='function')renderItemPage('reverse');
-    }else if(kind==='compound'){
-      if(typeof renderEquipmentCompoundPage==='function')renderEquipmentCompoundPage();
-      else if(typeof oldRenderItemPage==='function')oldRenderItemPage('compound');
-    }
-    closeD();
-    window.scrollTo({top:0,behavior:'smooth'});
-  }
-
-  window.setItemSub=function(kind){
-    goItemSub(kind);
-  };
-
-  document.addEventListener('click',function(e){
-    const btn=e.target.closest&&e.target.closest('[data-item-open]');
-    if(!btn)return;
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-    goItemSub(btn.dataset.itemOpen);
-  },true);
-})();
-</script>
 
 </body>
 </html>
