@@ -52193,5 +52193,52 @@ loadSiteConfigV105();
 })();
 </script>
 
+
+<script>
+// V114：修正道具反查入口被 V113 選單攔截後消失 / 無法進入。
+// 明確接管 data-item-open="item|reverse|compound"。
+(function(){
+  function by(id){return document.getElementById(id)}
+  function closeD(){
+    try{ if(typeof closeDrawer==='function') closeDrawer(); }catch(e){}
+    by('drawer')?.classList.remove('open');
+    by('backdrop')?.classList.remove('open');
+  }
+  function openItemMenu(){
+    currentView='item';
+    document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='item'));
+    document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
+    by('itemForm')?.classList.add('active');
+  }
+  function goItemSub(kind){
+    openItemMenu();
+    if(kind==='item'){
+      if(typeof renderItemPage==='function')renderItemPage('item');
+    }else if(kind==='reverse'){
+      if(typeof oldRenderItemPage==='function')oldRenderItemPage('reverse');
+      else if(typeof renderItemPage==='function')renderItemPage('reverse');
+    }else if(kind==='compound'){
+      if(typeof renderEquipmentCompoundPage==='function')renderEquipmentCompoundPage();
+      else if(typeof oldRenderItemPage==='function')oldRenderItemPage('compound');
+    }
+    closeD();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  window.setItemSub=function(kind){
+    goItemSub(kind);
+  };
+
+  document.addEventListener('click',function(e){
+    const btn=e.target.closest&&e.target.closest('[data-item-open]');
+    if(!btn)return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    goItemSub(btn.dataset.itemOpen);
+  },true);
+})();
+</script>
+
 </body>
 </html>
