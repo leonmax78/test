@@ -1,35 +1,36 @@
 {
-  "version": "V200 全模組框架版",
+  "version": "V201 monster模組拆分版",
   "base": "V116b",
   "index_html": "只保留 HTML 框架與 script/css 引用",
   "css": [
     "css/main.css"
   ],
   "js_load_order": [
-    "app-core.js",
-    "patch-02.js",
-    "patch-03.js",
-    "patch-04.js",
-    "patch-05.js",
-    "patch-06.js",
-    "patch-07.js",
-    "patch-08.js",
-    "patch-09.js",
-    "patch-10.js",
-    "patch-11.js",
-    "patch-12.js",
-    "patch-13.js",
-    "patch-14.js",
-    "patch-15.js",
-    "patch-16.js",
-    "patch-17.js",
-    "patch-18.js",
-    "patch-19.js",
-    "patch-20.js",
-    "config-loader.js",
-    "latest-list.js",
-    "item-search.js",
-    "reverse-search-dedupe.js"
+    "js/app-core.js",
+    "js/monster.js",
+    "js/patch-02.js",
+    "js/patch-03.js",
+    "js/patch-04.js",
+    "js/patch-05.js",
+    "js/patch-06.js",
+    "js/patch-07.js",
+    "js/patch-08.js",
+    "js/patch-09.js",
+    "js/patch-10.js",
+    "js/patch-11.js",
+    "js/patch-12.js",
+    "js/patch-13.js",
+    "js/patch-14.js",
+    "js/patch-15.js",
+    "js/patch-16.js",
+    "js/patch-17.js",
+    "js/patch-18.js",
+    "js/patch-19.js",
+    "js/patch-20.js",
+    "js/config-loader.js",
+    "js/latest-list.js",
+    "js/item-search.js",
+    "js/reverse-search-dedupe.js"
   ],
   "data": [
     "data/config.json",
@@ -45,5 +46,10 @@
     "reverse.html",
     "soul.html"
   ],
-  "note": "此版先做安全外部化：功能邏輯完整保留，但從 index.html 拆到 js/*.js；下一階段可再把 app-core.js 依功能語意拆成 monster/item/reverse/compound/soul/jiangshen。"
+  "note": "此版先做安全外部化：功能邏輯完整保留，但從 index.html 拆到 js/*.js；下一階段可再把 app-core.js 依功能語意拆成 monster/item/reverse/compound/soul/jiangshen。",
+  "changes_v201": [
+    "Created js/monster.js",
+    "Moved monster search/detail/drop functions out of js/app-core.js",
+    "index.html now loads js/monster.js after js/app-core.js"
+  ]
 }
