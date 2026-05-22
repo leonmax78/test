@@ -298,7 +298,7 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
 <div id="mainShell">
 <header class="topbar"><div class="topline">
   <button class="menuBtn" id="openMenuBtn">☰</button>
-  <div class="brand"><div class="brandTitle" id="siteTitle">讀取網站設定中...</div></div>
+  <div class="brand"><div class="brandTitle" id="siteTitle">神州降神、經驗、修練試算、掉落查詢系統</div></div>
   <div class="maker" id="siteMaker">讀取署名中...</div>
   <div class="status" id="topStatus">準備中</div>
 </div></header>
@@ -49363,7 +49363,6 @@ function parseChangeBodyIniBlocks(text){
   if(!line||line.startsWith('//')||line.startsWith(';'))continue;
   if(line.startsWith('[')&&line.endsWith(']')){push();cur={};continue}
 
-也就是刪掉：
 
   const p=line.indexOf('='); if(p<0)continue;
   const k=line.slice(0,p).trim(),v=line.slice(p+1).trim();
@@ -51810,9 +51809,9 @@ document.addEventListener('DOMContentLoaded',init);
 
 
 <script>
-// V108：讀取 data/config.json，讓標題、署名、授權設定不用再寫死在 index.html
+// V105：讀取 data/config.json，讓標題、署名、授權設定不用再寫死在 index.html
 window.SZO_SITE_CONFIG = window.SZO_SITE_CONFIG || {};
-async function loadSiteConfigV108(){
+async function loadSiteConfigV105(){
   try{
     const res = await fetch('data/config.json?ts=' + Date.now(), {cache:'no-store'});
     if(!res.ok) return;
@@ -51845,7 +51844,8 @@ async function loadSiteConfigV108(){
     console.warn('config.json 讀取失敗，改用 index 內建設定', err);
   }
 }
-loadSiteConfigV108();
+loadSiteConfigV105();
 </script>
+
 </body>
 </html>
