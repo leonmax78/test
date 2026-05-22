@@ -293,6 +293,14 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
 @media(max-width:760px){.eqFilterGrid,.eqPreviewGrid,.recipeList{grid-template-columns:1fr}.eqStatGrid{grid-template-columns:1fr}.recipeTabs{grid-template-columns:1fr}.eqCompactTitle{font-size:18px}.drawer .formBox .navBtn.sub{font-size:15px}}
 
 </style>
+
+<style>
+/* V110 item advanced filters */
+.itemAdvancedSearchPage .kvGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (min-width:1180px){.itemAdvancedSearchPage .kvGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){.itemAdvancedSearchPage .kvGrid{grid-template-columns:1fr}}
+</style>
+
 </head>
 <body>
 <div id="mainShell">
@@ -51926,6 +51934,203 @@ loadSiteConfigV105();
     if(!(q||type||window.v86ItemMin||window.v86ItemMax)){box.innerHTML='';return;}
     const arr=items.filter(it=>(!q||itemSearchText(it).includes(q))&&(!type||it.Type===type)&&(min===null||intOf(it.Level)>=min)&&(max===null||intOf(it.Level)<=max)).slice(0,150);
     box.innerHTML=arr.map(it=>`<button type="button" class="resultItem" data-item="${_e(it.ID)}"><div class="rName">${_e(_safeName(it))}</div><div class="rSub">Lv.${_e(it.Level||'')}｜${_e((typeof itemTypeName==='function'?itemTypeName(it.Type):it.Type)||it.Type||'')}｜ID ${_e(it.ID||'')}</div></button>`).join('')||'<div class="muted">找不到道具</div>';
+  };
+})();
+</script>
+
+
+<script>
+// V110：道具查詢增加「合成式下拉篩選」與「專剋屬性篩選」。
+// 不改原本合成頁，只加強道具查詢頁。
+(function(){
+  function id(x){return document.getElementById(x)}
+  function h(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+  function nm(it){return (typeof nameOf==='function'?nameOf(it):(it?.Name||''))||''}
+  function iN(v){return typeof intOf==='function'?intOf(v):(parseInt(v,10)||0)}
+  function typeName(t){return (typeof itemTypeName==='function'?itemTypeName(t):'')||t||''}
+  function kindName(it){try{return (typeof itemKind==='function'?itemKind(it):'')||''}catch(e){return ''}}
+  function safeItemSearchText(it){
+    let base='';
+    try{base=typeof itemSearchText==='function'?itemSearchText(it):''}catch(e){}
+    return (base+' '+nm(it)+' '+(it?.ID||'')+' '+(it?.Level||'')+' '+(it?.Type||'')+' '+typeName(it?.Type)+' '+kindName(it)+' '+(it?.Help||'')).toLowerCase();
+  }
+  function equipRows(){
+    try{
+      if(typeof eqEquipList==='function')return eqEquipList()||[];
+      if(typeof eqData==='function')return (eqData().equipment||[]);
+    }catch(e){}
+    try{return (EQUIP_COMPOUND_DATA&&EQUIP_COMPOUND_DATA.equipment)||[]}catch(e){}
+    return [];
+  }
+  function uniq(arr){
+    return [...new Set(arr.map(v=>String(v??'').trim()).filter(Boolean))];
+  }
+  function eqId(eq){return String(eq.item_id||eq.Item||'').trim()}
+  function eqMain(eq){return String(eq.main_category||'').trim()}
+  function eqSeries(eq){return String(eq.series_group||eq.series||'').trim()}
+  function eqTier(eq){return String(eq.tier||eq.series_grade||'').trim()}
+  function eqType(eq){return String(eq.display_type||'').trim()}
+  function selectedEqFilters(){
+    return {
+      main:id('itemEqMain')?.value||'',
+      series:id('itemEqSeries')?.value||'',
+      tier:id('itemEqTier')?.value||'',
+      eqType:id('itemEqType')?.value||''
+    };
+  }
+  function hasEqFilter(f){return !!(f.main||f.series||f.tier||f.eqType)}
+  function eqMatch(eq,f){
+    return (!f.main||eqMain(eq)===f.main) &&
+           (!f.series||eqSeries(eq)===f.series) &&
+           (!f.tier||eqTier(eq)===f.tier) &&
+           (!f.eqType||eqType(eq)===f.eqType);
+  }
+  function itemMatchesEqFilters(it,f){
+    if(!hasEqFilter(f))return true;
+    const idd=String(it?.ID||'').trim();
+    const eqs=equipRows().filter(eq=>eqId(eq)===idd);
+    return eqs.some(eq=>eqMatch(eq,f));
+  }
+  function optionHtml(values, selected, allLabel){
+    return '<option value="">'+h(allLabel)+'</option>'+values.map(v=>'<option value="'+h(v)+'" '+(String(v)===String(selected)?'selected':'')+'>'+h(v)+'</option>').join('');
+  }
+  function fillItemFilterOptions(){
+    const eqs=equipRows();
+    const saved={
+      main:window.v110ItemEqMain||'',
+      series:window.v110ItemEqSeries||'',
+      tier:window.v110ItemEqTier||'',
+      eqType:window.v110ItemEqType||'',
+      kind:window.v110ItemKind||''
+    };
+    const mainSel=id('itemEqMain'), seriesSel=id('itemEqSeries'), tierSel=id('itemEqTier'), typeSel=id('itemEqType'), kindSel=id('itemKind');
+
+    if(mainSel){
+      mainSel.innerHTML=optionHtml(uniq(eqs.map(eqMain)), saved.main, '全部種類');
+      mainSel.value=saved.main;
+    }
+    const f1={main:saved.main,series:'',tier:'',eqType:''};
+    const eqs1=eqs.filter(eq=>eqMatch(eq,f1));
+    if(seriesSel){
+      seriesSel.innerHTML=optionHtml(uniq(eqs1.map(eqSeries)), saved.series, '全部系列');
+      seriesSel.value=saved.series;
+    }
+    const f2={main:saved.main,series:saved.series,tier:'',eqType:''};
+    const eqs2=eqs.filter(eq=>eqMatch(eq,f2));
+    if(tierSel){
+      tierSel.innerHTML=optionHtml(uniq(eqs2.map(eqTier)), saved.tier, '全部階級 / 等級');
+      tierSel.value=saved.tier;
+    }
+    const f3={main:saved.main,series:saved.series,tier:saved.tier,eqType:''};
+    const eqs3=eqs.filter(eq=>eqMatch(eq,f3));
+    if(typeSel){
+      typeSel.innerHTML=optionHtml(uniq(eqs3.map(eqType)), saved.eqType, '全部部位 / 類型');
+      typeSel.value=saved.eqType;
+    }
+
+    if(kindSel){
+      const kinds=uniq((items||[]).map(it=>kindName(it))).sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+      kindSel.innerHTML=optionHtml(kinds, saved.kind, '全部專剋');
+      kindSel.value=saved.kind;
+    }
+  }
+  function latestItems(limit=320){
+    const arr=(Array.isArray(items)?items:[]).slice().reverse().filter(it=>nm(it)).slice(0,limit);
+    return arr.map(it=>'<button type="button" class="resultItem" data-item="'+h(it.ID)+'"><div class="rName">'+h(nm(it))+'</div><div class="rSub">Lv.'+h(it.Level||'')+'｜'+h(typeName(it.Type)||it.Type||'')+'｜'+(kindName(it)?'專剋 '+h(kindName(it))+'｜':'')+'ID '+h(it.ID||'')+'</div></button>').join('') || '<div class="muted">沒有道具資料</div>';
+  }
+  window.renderItemPage=function(tab='item'){
+    if(tab!=='item'){
+      if(typeof oldRenderItemPage==='function')return oldRenderItemPage(tab);
+      return;
+    }
+    const reader=id('reader'); if(!reader)return;
+    reader.innerHTML=`<section class="card latestSearchPage itemAdvancedSearchPage"><h1>道具查詢</h1>
+      <div class="latestQueryLayout">
+        <div class="latestMainPane">
+          <div class="kvGrid">
+            <div class="kv"><div class="k">道具名稱 / ID / 類型</div><div class="v"><input id="itemQ" placeholder="例如：宮殤、277、火傷、吸血" value="${h(window.v86ItemQ||'')}"></div></div>
+            <div class="kv"><div class="k">原始類型</div><div class="v"><select id="itemType"></select></div></div>
+            <div class="kv"><div class="k">等級起</div><div class="v"><input id="itemMin" type="number" value="${h(window.v86ItemMin||'')}"></div></div>
+            <div class="kv"><div class="k">等級迄</div><div class="v"><input id="itemMax" type="number" value="${h(window.v86ItemMax||'')}"></div></div>
+
+            <div class="kv"><div class="k">裝備種類</div><div class="v"><select id="itemEqMain"></select></div></div>
+            <div class="kv"><div class="k">系列</div><div class="v"><select id="itemEqSeries"></select></div></div>
+            <div class="kv"><div class="k">階級 / 等級</div><div class="v"><select id="itemEqTier"></select></div></div>
+            <div class="kv"><div class="k">部位 / 類型</div><div class="v"><select id="itemEqType"></select></div></div>
+            <div class="kv"><div class="k">專剋屬性</div><div class="v"><select id="itemKind"></select></div></div>
+          </div>
+          <div class="notice" style="font-size:12px">可用「原始類型」查全部 ITEM.INI，也可用下方「裝備種類 / 系列 / 階級 / 部位」依合成模擬清單篩選。</div>
+          <div class="results" id="itemResults"></div>
+        </div>
+        <aside class="latestSidePane">
+          <div class="latestSideTitle">最新道具清單</div>
+          <div class="latestSideHint">依 ITEM.INI 原始順序反向顯示，越新的道具越上面。</div>
+          <div class="latestList">${latestItems()}</div>
+        </aside>
+      </div>
+    </section>`;
+    const sel=id('itemType');
+    if(sel){
+      sel.innerHTML='<option value="">全部原始類型</option>'+Object.entries(ITEM_TYPE_MAP||{}).map(([k,v])=>`<option value="${h(k)}" ${String(k)===String(window.v86ItemType||'')?'selected':''}>${h(v)}</option>`).join('');
+      sel.value=window.v86ItemType||'';
+    }
+    fillItemFilterOptions();
+
+    ['itemQ','itemType','itemMin','itemMax','itemEqMain','itemEqSeries','itemEqTier','itemEqType','itemKind'].forEach(x=>{
+      const el=id(x); if(!el)return;
+      const ev=el.tagName==='INPUT'?'input':'change';
+      el.addEventListener(ev,()=>{
+        if(x==='itemEqMain'){
+          window.v110ItemEqMain=el.value; window.v110ItemEqSeries=''; window.v110ItemEqTier=''; window.v110ItemEqType='';
+          fillItemFilterOptions();
+        }else if(x==='itemEqSeries'){
+          window.v110ItemEqSeries=el.value; window.v110ItemEqTier=''; window.v110ItemEqType='';
+          fillItemFilterOptions();
+        }else if(x==='itemEqTier'){
+          window.v110ItemEqTier=el.value; window.v110ItemEqType='';
+          fillItemFilterOptions();
+        }else if(x==='itemEqType'){
+          window.v110ItemEqType=el.value;
+        }else if(x==='itemKind'){
+          window.v110ItemKind=el.value;
+        }
+        searchItems();
+      });
+    });
+    searchItems();
+  };
+  window.searchItems=function(){
+    const itemQ=id('itemQ'); if(!itemQ)return;
+    window.v86ItemQ=itemQ.value;
+    window.v86ItemType=id('itemType')?.value||'';
+    window.v86ItemMin=id('itemMin')?.value||'';
+    window.v86ItemMax=id('itemMax')?.value||'';
+    window.v110ItemEqMain=id('itemEqMain')?.value||'';
+    window.v110ItemEqSeries=id('itemEqSeries')?.value||'';
+    window.v110ItemEqTier=id('itemEqTier')?.value||'';
+    window.v110ItemEqType=id('itemEqType')?.value||'';
+    window.v110ItemKind=id('itemKind')?.value||'';
+
+    const q=itemQ.value.trim().toLowerCase();
+    const type=window.v86ItemType;
+    const min=window.v86ItemMin?iN(window.v86ItemMin):null;
+    const max=window.v86ItemMax?iN(window.v86ItemMax):null;
+    const kind=window.v110ItemKind||'';
+    const f=selectedEqFilters();
+    const hasFilter=!!(q||type||window.v86ItemMin||window.v86ItemMax||kind||hasEqFilter(f));
+    const box=id('itemResults'); if(!box)return;
+    if(!hasFilter){box.innerHTML='';return;}
+
+    const arr=(items||[]).filter(it=>
+      (!q||safeItemSearchText(it).includes(q)) &&
+      (!type||String(it.Type||'')===String(type)) &&
+      (min===null||iN(it.Level)>=min) &&
+      (max===null||iN(it.Level)<=max) &&
+      (!kind||kindName(it)===kind) &&
+      itemMatchesEqFilters(it,f)
+    ).slice(0,180);
+
+    box.innerHTML=arr.map(it=>'<button type="button" class="resultItem" data-item="'+h(it.ID)+'"><div class="rName">'+h(nm(it))+'</div><div class="rSub">Lv.'+h(it.Level||'')+'｜'+h(typeName(it.Type)||it.Type||'')+'｜'+(kindName(it)?'專剋 '+h(kindName(it))+'｜':'')+'ID '+h(it.ID||'')+'</div></button>').join('')||'<div class="muted">找不到道具</div>';
   };
 })();
 </script>
