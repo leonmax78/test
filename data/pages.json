@@ -1,0 +1,31 @@
+[
+  {
+    "id": "home",
+    "title": "首頁",
+    "module": "home"
+  },
+  {
+    "id": "jiangshen",
+    "title": "降神、經驗、修練試算",
+    "module": "jiangshen"
+  },
+  {
+    "id": "monster",
+    "title": "怪物查詢",
+    "module": "monster"
+  },
+  {
+    "id": "item",
+    "title": "道具查詢",
+    "module": "item"
+  },
+  {
+    "id": "compound",
+    "title": "裝備合成模擬",
+    "module": "compound"
+  },
+  {
+    "id": "soul",
+    "title": "武魂能力試算",
+    "module": "soul"
+  }
