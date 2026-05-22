@@ -42786,8 +42786,25 @@ function buildDataIndexes(){
  for(const it of items)itemIndex[String(it.ID).trim()]=it;
  for(const m of magics)magicIndex[String(m.ID).trim()]=m;
  for(const s of statuses)statusIndex[String(intOf(s.ID))]=s;
- for(const m of monsters){for(const [iid,rate] of parseDrop(m.DropItem)){if(!dropReverse[iid])dropReverse[iid]=[];dropReverse[iid].push({monster:m,rate})}}
- for(const iid of Object.keys(dropReverse))dropReverse[iid].sort((a,b)=>b.rate-a.rate);
+ const seenReverse=new Set();
+ for(const m of monsters){
+  const mid=String(m.ID||nameOf(m)||'').trim();
+  for(const [iid,rate] of parseDrop(m.DropItem)){
+   const key=mid+'|'+String(iid).trim();
+   if(seenReverse.has(key))continue;
+   seenReverse.add(key);
+   if(!dropReverse[iid])dropReverse[iid]=[];
+   dropReverse[iid].push({monster:m,rate});
+  }
+ }
+ for(const iid of Object.keys(dropReverse)){
+  const map=new Map();
+  for(const row of dropReverse[iid]){
+   const key=String(row.monster?.ID||nameOf(row.monster)||'').trim();
+   if(!map.has(key) || (row.rate||0)>(map.get(key).rate||0))map.set(key,row);
+  }
+  dropReverse[iid]=[...map.values()].sort((a,b)=>b.rate-a.rate);
+ }
  const sel=byId('itemType'); if(sel){sel.innerHTML='<option value="">全部類型</option>'+Object.entries(ITEM_TYPE_MAP).map(([k,v])=>`<option value="${esc(k)}">${esc(v)}</option>`).join('')}
 }
 async function loadAllData(){
@@ -43050,7 +43067,16 @@ function searchReverseItems(){
  window.v86ReverseQ=input.value;
  const q=input.value.trim().toLowerCase();
  if(!q){byId('reverseResults').innerHTML='<div class="muted">請輸入道具名稱</div>';return}
- const arr=items.filter(it=>itemSearchText(it).includes(q)).slice(0,100);
+ const seenItems=new Set();
+ const arr=[];
+ for(const it of items){
+  if(!itemSearchText(it).includes(q))continue;
+  const key=String(it.ID||nameOf(it)||'').trim();
+  if(seenItems.has(key))continue;
+  seenItems.add(key);
+  arr.push(it);
+  if(arr.length>=100)break;
+ }
  byId('reverseResults').innerHTML=arr.map(it=>`<button class="resultItem" data-rev="${esc(it.ID)}"><div class="rName">${esc(nameOf(it))}</div><div class="rSub">Lv.${esc(it.Level||'')}｜${esc(itemTypeName(it.Type)||'')}｜ID ${esc(it.ID)}</div></button>`).join('')||'<div class="muted">找不到道具</div>';
 }
 function showReverse(id){
@@ -52117,6 +52143,56 @@ loadSiteConfigV105();
 
 
 
+
+
+<script>
+// V116b：掉落反查搜尋清單依 ITEM ID 去重。
+// 只修搜尋候選道具重複，不改實際掉落反查資料。
+(function(){
+  function by(id){return document.getElementById(id)}
+  function esc2(s){
+    if(typeof esc==='function')return esc(s);
+    return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function name2(it){
+    try{return typeof nameOf==='function'?nameOf(it):(it?.Name||'')}catch(e){return it?.Name||''}
+  }
+  function searchText2(it){
+    try{return typeof itemSearchText==='function'?itemSearchText(it):''}catch(e){return ''}
+  }
+  function dedupByItemId(arr){
+    const map=new Map();
+    (arr||[]).forEach(it=>{
+      const key=String(it?.ID||'').trim() || String(name2(it)||'').trim();
+      if(key && !map.has(key))map.set(key,it);
+    });
+    return [...map.values()];
+  }
+
+  window.searchReverseItems=function(){
+    const input=by('reverseQ');
+    if(!input)return;
+    window.v86ReverseQ=input.value;
+    const q=input.value.trim().toLowerCase();
+    const box=by('reverseResults');
+    if(!box)return;
+
+    if(!q){
+      box.innerHTML='<div class="muted">請輸入道具名稱</div>';
+      return;
+    }
+
+    const arr=dedupByItemId((items||[]).filter(it=>searchText2(it).includes(q))).slice(0,100);
+
+    box.innerHTML=arr.map(it=>`
+      <button class="resultItem" data-rev="${esc2(it.ID)}">
+        <div class="rName">${esc2(name2(it))}</div>
+        <div class="rSub">Lv.${esc2(it.Level||'')}｜${esc2((typeof itemTypeName==='function'?itemTypeName(it.Type):it.Type)||it.Type||'')}｜ID ${esc2(it.ID)}</div>
+      </button>
+    `).join('') || '<div class="muted">找不到道具</div>';
+  };
+})();
+</script>
 
 </body>
 </html>
