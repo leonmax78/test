@@ -3,7 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<<<<<<< HEAD
 <title>神州降神、經驗、修練試算、掉落查詢系統｜V108 配方白名單修正版</title>
+=======
+<title>神州降神、經驗、修練試算、掉落查詢系統｜v88ab仙器僅安定值70修正版</title>
+>>>>>>> 2d3cda48a3553f433d72d969379d9a2a708fef27
 <style>
 :root{
   --bg:#07111f;--panel:#101a2d;--panel2:#0b1527;--line:#263a58;--text:#eaf2ff;--muted:#9fb4d4;
@@ -298,8 +302,13 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
 <div id="mainShell">
 <header class="topbar"><div class="topline">
   <button class="menuBtn" id="openMenuBtn">☰</button>
+<<<<<<< HEAD
   <div class="brand"><div class="brandTitle" id="siteTitle">神州降神、經驗、修練試算、掉落查詢系統</div></div>
   <div class="maker" id="siteMaker">製作By文昌 慕容淵</div>
+=======
+  <div class="brand"><div class="brandTitle">神州降神、經驗、修練試算、掉落查詢系統</div></div>
+  <div class="maker">製作By文昌 尼扣扣</div>
+>>>>>>> 2d3cda48a3553f433d72d969379d9a2a708fef27
   <div class="status" id="topStatus">準備中</div>
 </div></header>
 <div class="backdrop" id="backdrop"></div>
@@ -351,9 +360,12 @@ const FILES = {
   magics:['MAGIC.INI','magic.ini'],
   statuses:['STATUS.INI','status.ini'],
   locations:['一般怪物位置.csv','一般怪物位置.CSV','monsterLocations.csv','monster_locations.csv','怪物位置.csv'],
+<<<<<<< HEAD
   compounds:['COMPOUND.INI','COMPOUN.INI','COMPOUND.ini','COMPOUN.ini','compound.ini','compoun.ini'],
   compoundConfigs:['data/compound_config.json','compound_config.json'],
   changebody:['CHANGEBODYITEM.INI','ChangeBodyItem.ini','changebodyitem.ini','CHANGEBODY.INI','changebody.ini'],
+=======
+>>>>>>> 2d3cda48a3553f433d72d969379d9a2a708fef27
   version:['data_version.txt']
 };
 const EQUIP_COMPOUND_DATA={
@@ -42547,9 +42559,12 @@ const DATA = {"stats":["血量","精力","體魄","力量","智慧","靈敏","�
 
 
 let monsters=[],items=[],magics=[],statuses=[],monsterLocations={};
+<<<<<<< HEAD
 let compoundIniRecipes=[];
 let compoundConfigData=null;
 let changeBodyIniSouls=[];
+=======
+>>>>>>> 2d3cda48a3553f433d72d969379d9a2a708fef27
 let itemIndex={},magicIndex={},statusIndex={},dropReverse={};
 let currentView='home';
 
@@ -42791,9 +42806,12 @@ async function loadAllData(){
   const magic=await fetchFirst(FILES.magics,'技能 INI');
   const status=await fetchFirst(FILES.statuses,'狀態 INI');
   const loc=await fetchFirst(FILES.locations,'怪物位置 CSV');
+<<<<<<< HEAD
   const comp=await fetchFirst(FILES.compounds||[],'配方 INI');
   const compCfg=await fetchFirst(FILES.compoundConfigs||[],'合成網站設定 JSON');
   const cb=await fetchFirst(FILES.changebody||[],'武魂 INI');
+=======
+>>>>>>> 2d3cda48a3553f433d72d969379d9a2a708fef27
 
   if(mon.missing||item.missing||magic.missing)throw new Error('必要檔案讀取失敗');
 
@@ -42802,9 +42820,12 @@ async function loadAllData(){
   magics=parseIni(magic.text);
   statuses=status.missing?[]:parseIni(status.text);
   monsterLocations=loc.missing?{}:parseLocations(loc.text);
+<<<<<<< HEAD
   try{compoundConfigData=compCfg.missing?null:JSON.parse(compCfg.text);}catch(e){compoundConfigData=null;console.warn('compound_config.json 解析失敗',e);}
   compoundIniRecipes=comp.missing?[]:buildCompoundRecipesFromIni(comp.text);
   changeBodyIniSouls=cb.missing?[]:buildSoulDataFromChangeBodyIni(cb.text);
+=======
+>>>>>>> 2d3cda48a3553f433d72d969379d9a2a708fef27
 
   // v82：排除第一筆/雜訊 UNKNOWN，但保留原始 INI 順序。
   monsters=monsters.filter(x=>{
@@ -49345,6 +49366,7 @@ function updateSupportOptions(){
  }
 }
 let eqState={main:'',series:'',tier:'',type:'',q:'',uid:'',recipeCounts:{},simTotals:null,simCount:0,simRecipeCounts:{}};
+<<<<<<< HEAD
 
 
 
@@ -49569,6 +49591,11 @@ function eqBuildBaseStatsFromItemIni(raw,fallback){
  return base;
 }
 
+=======
+function eqData(){return EQUIP_COMPOUND_DATA||{equipment:[],recipes:[],type_order:[],calc_rules:{}}}
+function eqUnique(arr){return [...new Set(arr.filter(v=>v!==undefined&&v!==null&&String(v).trim()!==''))]}
+function eqEquipList(){return eqData().equipment||[]}
+>>>>>>> 2d3cda48a3553f433d72d969379d9a2a708fef27
 function eqRecipesForType(tp){return (eqData().recipes||[]).filter(r=>(r.display_types||[]).includes(tp))}
 function eqFmtVal(v){return v===undefined||v===null||v===''?'':fmt(Number(v)||0)}
 function eqStatValueText(o){if(!o)return''; if(o.min!==undefined||o.max!==undefined)return `${eqFmtVal(o.min)}～${eqFmtVal(o.max)}`; return eqFmtVal(o.value)}
@@ -49715,7 +49742,11 @@ function eqMetaLine(eq){
  const level=base.level?.value||eq?.raw_item?.Level||'';
  const clevel=base.clevel?.value??eq?.raw_item?.CLevel??'';
  const main=['等級 '+(level||'-'),'職等(CL) '+eqCLevelText(clevel)];
+<<<<<<< HEAD
  const rest=['ID '+eq.item_id,eq.main_category,eq.series||eq.series_group,eq.display_type,(eq._stats_source||'內嵌備援')].filter(Boolean);
+=======
+ const rest=['ID '+eq.item_id,eq.main_category,eq.series||eq.series_group,eq.display_type].filter(Boolean);
+>>>>>>> 2d3cda48a3553f433d72d969379d9a2a708fef27
  return `<div class="eqTopMeta">${main.map(x=>`<span class="pill" style="font-size:14px;border-color:#60a5fa;color:#e0f2fe">${esc(x)}</span>`).join('')}${rest.map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>`;
 }
 function eqRenderStats(eq,includeEffects=true){
@@ -51082,6 +51113,7 @@ document.addEventListener('DOMContentLoaded',init);
   function N(v,d){v=Number(v);return Number.isFinite(v)?v:(d||0)}
   function F(n){return Math.floor(Number(n)||0).toLocaleString('zh-TW');}
   function by(id){return document.getElementById(id)}
+<<<<<<< HEAD
   function soulById(id){const list=getSoulListV106();return list.find(x=>String(x.ID)===String(id))||list[0]||{}}
   function bonusRate(count){count=Math.max(1,N(count,1));return (count-1)*0.025;}
   function renderSoulCalc(){
@@ -51091,6 +51123,17 @@ document.addEventListener('DOMContentLoaded',init);
     const options=list.map(x=>'<option value="'+E(x.ID)+'" '+(String(x.ID)===String(savedId)?'selected':'')+'>'+E(x.Name)+'</option>').join('');
     const reader=by('reader'); if(!reader)return;
     reader.innerHTML='<section class="card"><h1>武魂能力試算</h1><div class="muted">資料來源：'+E((Array.isArray(changeBodyIniSouls)&&changeBodyIniSouls.length)?'CHANGEBODYITEM.INI':'內嵌備援')+'。可直接搜尋 / 選擇武魂，輸入總收藏數後自動計算收藏加成。第 1 隻為原始能力，第 2 隻開始每多 1 隻增加 2.5%。</div><div class="kvGrid"><div class="kv"><div class="k">武魂</div><div class="v"><select id="soulSelect">'+options+'</select></div></div><div class="kv"><div class="k">總收藏武魂數</div><div class="v"><input id="soulCount" type="number" min="1" value="'+E(savedCount)+'"><div class="soulQuick"><button type="button" data-soul-count="1">1</button><button type="button" data-soul-count="2">2</button><button type="button" data-soul-count="3">3</button><button type="button" data-soul-count="5">5</button><button type="button" data-soul-count="10">10</button><button type="button" data-soul-count="20">20</button><button type="button" data-soul-count="'+MAX_SOUL_COUNT+'">滿收藏</button></div></div></div></div><div id="soulResult"></div></section>';
+=======
+  function soulById(id){return SOUL_DATA.find(x=>String(x.ID)===String(id))||SOUL_DATA[0]}
+  function bonusRate(count){count=Math.max(1,N(count,1));return (count-1)*0.025;}
+  function renderSoulCalc(){
+    const first=SOUL_DATA[0]||{};
+    const savedId=window.soulSelectedId||first.ID;
+    const savedCount=Math.max(1,N(window.soulCount||1,1));
+    const options=SOUL_DATA.map(x=>'<option value="'+E(x.ID)+'" '+(String(x.ID)===String(savedId)?'selected':'')+'>'+E(x.Name)+'</option>').join('');
+    const reader=by('reader'); if(!reader)return;
+    reader.innerHTML='<section class="card"><h1>武魂能力試算</h1><div class="muted">可直接搜尋 / 選擇武魂，輸入總收藏數後自動計算收藏加成。第 1 隻為原始能力，第 2 隻開始每多 1 隻增加 2.5%。</div><div class="kvGrid"><div class="kv"><div class="k">武魂</div><div class="v"><select id="soulSelect">'+options+'</select></div></div><div class="kv"><div class="k">總收藏武魂數</div><div class="v"><input id="soulCount" type="number" min="1" value="'+E(savedCount)+'"><div class="soulQuick"><button type="button" data-soul-count="1">1</button><button type="button" data-soul-count="2">2</button><button type="button" data-soul-count="3">3</button><button type="button" data-soul-count="5">5</button><button type="button" data-soul-count="10">10</button><button type="button" data-soul-count="20">20</button><button type="button" data-soul-count="'+MAX_SOUL_COUNT+'">滿收藏</button></div></div></div></div><div id="soulResult"></div></section>';
+>>>>>>> 2d3cda48a3553f433d72d969379d9a2a708fef27
     bindSoulCalc();
     updateSoulCalc();
     if(window.innerWidth<980) closeDrawerSafe();
@@ -51798,6 +51841,7 @@ document.addEventListener('DOMContentLoaded',init);
 </script>
 
 
+<<<<<<< HEAD
 
 <script>
 // V105：讀取 data/config.json，讓標題、署名、授權設定不用再寫死在 index.html
@@ -51838,5 +51882,7 @@ async function loadSiteConfigV105(){
 loadSiteConfigV105();
 </script>
 
+=======
+>>>>>>> 2d3cda48a3553f433d72d969379d9a2a708fef27
 </body>
 </html>
