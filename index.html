@@ -51939,9 +51939,11 @@ loadSiteConfigV105();
 </script>
 
 
+
 <script>
-// V110：道具查詢增加「合成式下拉篩選」與「專剋屬性篩選」。
-// 不改原本合成頁，只加強道具查詢頁。
+// V111：修正道具合成式篩選當掉 + 搜尋結果依 ID 去重。
+// 原因：部分裝備清單欄位為 object/null，V110 直接 String 比對會在特定下拉組合出錯。
+// 這版統一轉字串、避免 undefined、並用 ID Map 去重。
 (function(){
   function id(x){return document.getElementById(x)}
   function h(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -51949,6 +51951,15 @@ loadSiteConfigV105();
   function iN(v){return typeof intOf==='function'?intOf(v):(parseInt(v,10)||0)}
   function typeName(t){return (typeof itemTypeName==='function'?itemTypeName(t):'')||t||''}
   function kindName(it){try{return (typeof itemKind==='function'?itemKind(it):'')||''}catch(e){return ''}}
+  function str(v){
+    if(v===undefined||v===null)return '';
+    if(typeof v==='object'){
+      if(v.value!==undefined)return String(v.value);
+      if(v.label!==undefined)return String(v.label);
+      return '';
+    }
+    return String(v).trim();
+  }
   function safeItemSearchText(it){
     let base='';
     try{base=typeof itemSearchText==='function'?itemSearchText(it):''}catch(e){}
@@ -51956,21 +51967,21 @@ loadSiteConfigV105();
   }
   function equipRows(){
     try{
-      if(typeof eqEquipList==='function')return eqEquipList()||[];
-      if(typeof eqData==='function')return (eqData().equipment||[]);
-    }catch(e){}
-    try{return (EQUIP_COMPOUND_DATA&&EQUIP_COMPOUND_DATA.equipment)||[]}catch(e){}
+      if(typeof eqEquipList==='function')return (eqEquipList()||[]).filter(Boolean);
+      if(typeof eqData==='function')return ((eqData().equipment)||[]).filter(Boolean);
+    }catch(e){console.warn('equipRows failed',e)}
+    try{return ((EQUIP_COMPOUND_DATA&&EQUIP_COMPOUND_DATA.equipment)||[]).filter(Boolean)}catch(e){}
     return [];
   }
   function uniq(arr){
-    return [...new Set(arr.map(v=>String(v??'').trim()).filter(Boolean))];
+    return [...new Set((arr||[]).map(str).filter(Boolean))];
   }
-  function eqId(eq){return String(eq.item_id||eq.Item||'').trim()}
-  function eqMain(eq){return String(eq.main_category||'').trim()}
-  function eqSeries(eq){return String(eq.series_group||eq.series||'').trim()}
-  function eqTier(eq){return String(eq.tier||eq.series_grade||'').trim()}
-  function eqType(eq){return String(eq.display_type||'').trim()}
-  function selectedEqFilters(){
+  function eqId(eq){return str(eq?.item_id||eq?.Item||eq?.ID)}
+  function eqMain(eq){return str(eq?.main_category)}
+  function eqSeries(eq){return str(eq?.series_group||eq?.series)}
+  function eqTier(eq){return str(eq?.tier||eq?.series_grade)}
+  function eqType(eq){return str(eq?.display_type)}
+  function getFilter(){
     return {
       main:id('itemEqMain')?.value||'',
       series:id('itemEqSeries')?.value||'',
@@ -51985,16 +51996,24 @@ loadSiteConfigV105();
            (!f.tier||eqTier(eq)===f.tier) &&
            (!f.eqType||eqType(eq)===f.eqType);
   }
-  function itemMatchesEqFilters(it,f){
-    if(!hasEqFilter(f))return true;
-    const idd=String(it?.ID||'').trim();
-    const eqs=equipRows().filter(eq=>eqId(eq)===idd);
-    return eqs.some(eq=>eqMatch(eq,f));
-  }
   function optionHtml(values, selected, allLabel){
     return '<option value="">'+h(allLabel)+'</option>'+values.map(v=>'<option value="'+h(v)+'" '+(String(v)===String(selected)?'selected':'')+'>'+h(v)+'</option>').join('');
   }
-  function fillItemFilterOptions(){
+  function dedupItems(arr){
+    const m=new Map();
+    (arr||[]).forEach(it=>{
+      const key=str(it?.ID)||nm(it);
+      if(key&&!m.has(key))m.set(key,it);
+    });
+    return [...m.values()];
+  }
+  function itemMatchesEqFilters(it,f){
+    if(!hasEqFilter(f))return true;
+    const idd=str(it?.ID);
+    const eqs=equipRows().filter(eq=>eqId(eq)===idd);
+    return eqs.some(eq=>eqMatch(eq,f));
+  }
+  function fillItemFilterOptions(changed){
     const eqs=equipRows();
     const saved={
       main:window.v110ItemEqMain||'',
@@ -52009,35 +52028,43 @@ loadSiteConfigV105();
       mainSel.innerHTML=optionHtml(uniq(eqs.map(eqMain)), saved.main, '全部種類');
       mainSel.value=saved.main;
     }
-    const f1={main:saved.main,series:'',tier:'',eqType:''};
-    const eqs1=eqs.filter(eq=>eqMatch(eq,f1));
+
+    const eqs1=eqs.filter(eq=>eqMatch(eq,{main:saved.main,series:'',tier:'',eqType:''}));
     if(seriesSel){
-      seriesSel.innerHTML=optionHtml(uniq(eqs1.map(eqSeries)), saved.series, '全部系列');
+      const vals=uniq(eqs1.map(eqSeries));
+      if(saved.series && !vals.includes(saved.series)) saved.series=window.v110ItemEqSeries='';
+      seriesSel.innerHTML=optionHtml(vals, saved.series, '全部系列');
       seriesSel.value=saved.series;
     }
-    const f2={main:saved.main,series:saved.series,tier:'',eqType:''};
-    const eqs2=eqs.filter(eq=>eqMatch(eq,f2));
+
+    const eqs2=eqs.filter(eq=>eqMatch(eq,{main:saved.main,series:saved.series,tier:'',eqType:''}));
     if(tierSel){
-      tierSel.innerHTML=optionHtml(uniq(eqs2.map(eqTier)), saved.tier, '全部階級 / 等級');
+      const vals=uniq(eqs2.map(eqTier));
+      if(saved.tier && !vals.includes(saved.tier)) saved.tier=window.v110ItemEqTier='';
+      tierSel.innerHTML=optionHtml(vals, saved.tier, '全部階級 / 等級');
       tierSel.value=saved.tier;
     }
-    const f3={main:saved.main,series:saved.series,tier:saved.tier,eqType:''};
-    const eqs3=eqs.filter(eq=>eqMatch(eq,f3));
+
+    const eqs3=eqs.filter(eq=>eqMatch(eq,{main:saved.main,series:saved.series,tier:saved.tier,eqType:''}));
     if(typeSel){
-      typeSel.innerHTML=optionHtml(uniq(eqs3.map(eqType)), saved.eqType, '全部部位 / 類型');
+      const vals=uniq(eqs3.map(eqType));
+      if(saved.eqType && !vals.includes(saved.eqType)) saved.eqType=window.v110ItemEqType='';
+      typeSel.innerHTML=optionHtml(vals, saved.eqType, '全部部位 / 類型');
       typeSel.value=saved.eqType;
     }
 
-    if(kindSel){
+    if(kindSel && !kindSel.dataset.ready){
       const kinds=uniq((items||[]).map(it=>kindName(it))).sort((a,b)=>a.localeCompare(b,'zh-Hant'));
       kindSel.innerHTML=optionHtml(kinds, saved.kind, '全部專剋');
       kindSel.value=saved.kind;
+      kindSel.dataset.ready='1';
     }
   }
   function latestItems(limit=320){
-    const arr=(Array.isArray(items)?items:[]).slice().reverse().filter(it=>nm(it)).slice(0,limit);
+    const arr=dedupItems((Array.isArray(items)?items:[]).slice().reverse().filter(it=>nm(it))).slice(0,limit);
     return arr.map(it=>'<button type="button" class="resultItem" data-item="'+h(it.ID)+'"><div class="rName">'+h(nm(it))+'</div><div class="rSub">Lv.'+h(it.Level||'')+'｜'+h(typeName(it.Type)||it.Type||'')+'｜'+(kindName(it)?'專剋 '+h(kindName(it))+'｜':'')+'ID '+h(it.ID||'')+'</div></button>').join('') || '<div class="muted">沒有道具資料</div>';
   }
+
   window.renderItemPage=function(tab='item'){
     if(tab!=='item'){
       if(typeof oldRenderItemPage==='function')return oldRenderItemPage(tab);
@@ -52052,14 +52079,13 @@ loadSiteConfigV105();
             <div class="kv"><div class="k">原始類型</div><div class="v"><select id="itemType"></select></div></div>
             <div class="kv"><div class="k">等級起</div><div class="v"><input id="itemMin" type="number" value="${h(window.v86ItemMin||'')}"></div></div>
             <div class="kv"><div class="k">等級迄</div><div class="v"><input id="itemMax" type="number" value="${h(window.v86ItemMax||'')}"></div></div>
-
             <div class="kv"><div class="k">裝備種類</div><div class="v"><select id="itemEqMain"></select></div></div>
             <div class="kv"><div class="k">系列</div><div class="v"><select id="itemEqSeries"></select></div></div>
             <div class="kv"><div class="k">階級 / 等級</div><div class="v"><select id="itemEqTier"></select></div></div>
             <div class="kv"><div class="k">部位 / 類型</div><div class="v"><select id="itemEqType"></select></div></div>
             <div class="kv"><div class="k">專剋屬性</div><div class="v"><select id="itemKind"></select></div></div>
           </div>
-          <div class="notice" style="font-size:12px">可用「原始類型」查全部 ITEM.INI，也可用下方「裝備種類 / 系列 / 階級 / 部位」依合成模擬清單篩選。</div>
+          <div class="notice" style="font-size:12px">可用原始類型查全部 ITEM.INI，也可用裝備種類 / 系列 / 階級 / 部位依合成模擬清單篩選。</div>
           <div class="results" id="itemResults"></div>
         </div>
         <aside class="latestSidePane">
@@ -52069,6 +52095,7 @@ loadSiteConfigV105();
         </aside>
       </div>
     </section>`;
+
     const sel=id('itemType');
     if(sel){
       sel.innerHTML='<option value="">全部原始類型</option>'+Object.entries(ITEM_TYPE_MAP||{}).map(([k,v])=>`<option value="${h(k)}" ${String(k)===String(window.v86ItemType||'')?'selected':''}>${h(v)}</option>`).join('');
@@ -52076,64 +52103,63 @@ loadSiteConfigV105();
     }
     fillItemFilterOptions();
 
-    ['itemQ','itemType','itemMin','itemMax','itemEqMain','itemEqSeries','itemEqTier','itemEqType','itemKind'].forEach(x=>{
+    ['itemQ','itemType','itemMin','itemMax','itemKind'].forEach(x=>{
       const el=id(x); if(!el)return;
-      const ev=el.tagName==='INPUT'?'input':'change';
-      el.addEventListener(ev,()=>{
-        if(x==='itemEqMain'){
-          window.v110ItemEqMain=el.value; window.v110ItemEqSeries=''; window.v110ItemEqTier=''; window.v110ItemEqType='';
-          fillItemFilterOptions();
-        }else if(x==='itemEqSeries'){
-          window.v110ItemEqSeries=el.value; window.v110ItemEqTier=''; window.v110ItemEqType='';
-          fillItemFilterOptions();
-        }else if(x==='itemEqTier'){
-          window.v110ItemEqTier=el.value; window.v110ItemEqType='';
-          fillItemFilterOptions();
-        }else if(x==='itemEqType'){
-          window.v110ItemEqType=el.value;
-        }else if(x==='itemKind'){
-          window.v110ItemKind=el.value;
-        }
+      el.addEventListener(el.tagName==='INPUT'?'input':'change',()=>{
+        if(x==='itemKind')window.v110ItemKind=el.value;
         searchItems();
       });
     });
+    const main=id('itemEqMain'), series=id('itemEqSeries'), tier=id('itemEqTier'), typ=id('itemEqType');
+    if(main)main.addEventListener('change',()=>{window.v110ItemEqMain=main.value;window.v110ItemEqSeries='';window.v110ItemEqTier='';window.v110ItemEqType='';fillItemFilterOptions('main');searchItems();});
+    if(series)series.addEventListener('change',()=>{window.v110ItemEqSeries=series.value;window.v110ItemEqTier='';window.v110ItemEqType='';fillItemFilterOptions('series');searchItems();});
+    if(tier)tier.addEventListener('change',()=>{window.v110ItemEqTier=tier.value;window.v110ItemEqType='';fillItemFilterOptions('tier');searchItems();});
+    if(typ)typ.addEventListener('change',()=>{window.v110ItemEqType=typ.value;searchItems();});
+
     searchItems();
   };
+
   window.searchItems=function(){
-    const itemQ=id('itemQ'); if(!itemQ)return;
-    window.v86ItemQ=itemQ.value;
-    window.v86ItemType=id('itemType')?.value||'';
-    window.v86ItemMin=id('itemMin')?.value||'';
-    window.v86ItemMax=id('itemMax')?.value||'';
-    window.v110ItemEqMain=id('itemEqMain')?.value||'';
-    window.v110ItemEqSeries=id('itemEqSeries')?.value||'';
-    window.v110ItemEqTier=id('itemEqTier')?.value||'';
-    window.v110ItemEqType=id('itemEqType')?.value||'';
-    window.v110ItemKind=id('itemKind')?.value||'';
+    try{
+      const itemQ=id('itemQ'); if(!itemQ)return;
+      window.v86ItemQ=itemQ.value;
+      window.v86ItemType=id('itemType')?.value||'';
+      window.v86ItemMin=id('itemMin')?.value||'';
+      window.v86ItemMax=id('itemMax')?.value||'';
+      window.v110ItemEqMain=id('itemEqMain')?.value||'';
+      window.v110ItemEqSeries=id('itemEqSeries')?.value||'';
+      window.v110ItemEqTier=id('itemEqTier')?.value||'';
+      window.v110ItemEqType=id('itemEqType')?.value||'';
+      window.v110ItemKind=id('itemKind')?.value||'';
 
-    const q=itemQ.value.trim().toLowerCase();
-    const type=window.v86ItemType;
-    const min=window.v86ItemMin?iN(window.v86ItemMin):null;
-    const max=window.v86ItemMax?iN(window.v86ItemMax):null;
-    const kind=window.v110ItemKind||'';
-    const f=selectedEqFilters();
-    const hasFilter=!!(q||type||window.v86ItemMin||window.v86ItemMax||kind||hasEqFilter(f));
-    const box=id('itemResults'); if(!box)return;
-    if(!hasFilter){box.innerHTML='';return;}
+      const q=itemQ.value.trim().toLowerCase();
+      const type=window.v86ItemType;
+      const min=window.v86ItemMin?iN(window.v86ItemMin):null;
+      const max=window.v86ItemMax?iN(window.v86ItemMax):null;
+      const kind=window.v110ItemKind||'';
+      const f=getFilter();
+      const hasFilter=!!(q||type||window.v86ItemMin||window.v86ItemMax||kind||hasEqFilter(f));
+      const box=id('itemResults'); if(!box)return;
+      if(!hasFilter){box.innerHTML='';return;}
 
-    const arr=(items||[]).filter(it=>
-      (!q||safeItemSearchText(it).includes(q)) &&
-      (!type||String(it.Type||'')===String(type)) &&
-      (min===null||iN(it.Level)>=min) &&
-      (max===null||iN(it.Level)<=max) &&
-      (!kind||kindName(it)===kind) &&
-      itemMatchesEqFilters(it,f)
-    ).slice(0,180);
+      const arr=dedupItems((items||[]).filter(it=>
+        (!q||safeItemSearchText(it).includes(q)) &&
+        (!type||String(it.Type||'')===String(type)) &&
+        (min===null||iN(it.Level)>=min) &&
+        (max===null||iN(it.Level)<=max) &&
+        (!kind||kindName(it)===kind) &&
+        itemMatchesEqFilters(it,f)
+      )).slice(0,180);
 
-    box.innerHTML=arr.map(it=>'<button type="button" class="resultItem" data-item="'+h(it.ID)+'"><div class="rName">'+h(nm(it))+'</div><div class="rSub">Lv.'+h(it.Level||'')+'｜'+h(typeName(it.Type)||it.Type||'')+'｜'+(kindName(it)?'專剋 '+h(kindName(it))+'｜':'')+'ID '+h(it.ID||'')+'</div></button>').join('')||'<div class="muted">找不到道具</div>';
+      box.innerHTML=arr.map(it=>'<button type="button" class="resultItem" data-item="'+h(it.ID)+'"><div class="rName">'+h(nm(it))+'</div><div class="rSub">Lv.'+h(it.Level||'')+'｜'+h(typeName(it.Type)||it.Type||'')+'｜'+(kindName(it)?'專剋 '+h(kindName(it))+'｜':'')+'ID '+h(it.ID||'')+'</div></button>').join('')||'<div class="muted">找不到道具</div>';
+    }catch(e){
+      console.error('V111 searchItems failed',e);
+      const box=id('itemResults'); if(box)box.innerHTML='<div class="muted">篩選發生錯誤，請回報這組條件。</div>';
+    }
   };
 })();
 </script>
+
 
 </body>
 </html>
