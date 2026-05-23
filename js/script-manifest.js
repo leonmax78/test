@@ -1,12 +1,11 @@
-// V218 script manifest: 統一管理載入順序。
-// index.html 不放功能程式；要新增/停用模組請改這裡。
-// 分層：data → core → pages → domain patches → enhancements。
-// 注意：patch 仍維持原本載入順序，只是依照功能分類放到資料夾，避免一次搬太大造成壞功能。
+// V219 script manifest: active modules no longer load from js/legacy/patches.
+// index.html remains a pure entry.  Add/disable modules here, not in index.html.
 window.SZO_SCRIPT_GROUPS = {
   "data": [
     "js/data/equip-compound-data.js",
     "js/data/jiangshen-data.js",
-    "js/data/training-data.js"
+    "js/data/training-data.js",
+    "js/data/soul-data.js"
   ],
   "core": [
     "js/core/app-core.js",
@@ -17,36 +16,35 @@ window.SZO_SCRIPT_GROUPS = {
     "js/pages/item-page.js",
     "js/pages/reverse-page.js",
     "js/pages/compound-page.js",
-    "js/pages/soul-page.js"
+    "js/pages/soul-page.js",
+    "js/pages/soul-data-page.js"
   ],
-  "patches_equipment": [
-    "js/legacy/patches/equipment/patch-02-equipment-display.js",
-    "js/legacy/patches/equipment/patch-03-equipment-special-filter.js",
-    "js/legacy/patches/equipment/patch-04-equipment-stable-group.js",
-    "js/legacy/patches/equipment/patch-05-underboot-stable70.js",
-    "js/legacy/patches/equipment/patch-06-equipment-stat-render.js",
-    "js/legacy/patches/equipment/patch-07-accessory-filter.js",
-    "js/legacy/patches/equipment/patch-08-accessory-menu-guard.js"
+  "features_equipment": [
+    "js/features/equipment/display-and-random-sim.js",
+    "js/features/equipment/special-equipment-filter.js",
+    "js/features/equipment/stable-group-routing.js",
+    "js/features/equipment/underboot-stable70.js",
+    "js/features/equipment/stat-renderer.js",
+    "js/features/equipment/accessory-filter.js",
+    "js/features/equipment/accessory-menu-guard.js"
   ],
-  "patches_soul": [
-    "js/legacy/patches/soul/patch-09-soul-data-page.js"
+  "features_soul": [],
+  "features_auth": [
+    "js/features/auth/license-submit.js",
+    "js/features/auth/license-countdown.js"
   ],
-  "patches_auth": [
-    "js/legacy/patches/auth/patch-10-license-submit.js",
-    "js/legacy/patches/auth/patch-11-license-countdown.js"
+  "features_monster_item_safety": [
+    "js/pages/monster-detail-fix.js",
+    "js/features/safety/button-anchor-guard.js",
+    "js/pages/item-detail-order.js"
   ],
-  "patches_monster_item_safety": [
-    "js/legacy/patches/monster/patch-12-monster-detail-fix.js",
-    "js/legacy/patches/safety/patch-13-button-anchor-guard.js",
-    "js/legacy/patches/item/patch-14-item-detail-order.js"
-  ],
-  "patches_jiangshen": [
-    "js/legacy/patches/jiangshen/patch-15-star-aura-tabs.js",
-    "js/legacy/patches/jiangshen/patch-16-star-exp-training.js",
-    "js/legacy/patches/jiangshen/patch-17-star-aura-page.js",
-    "js/legacy/patches/equipment/patch-18-equipment-sort-and-jiangshen-fix.js",
-    "js/legacy/patches/jiangshen/patch-19-support-integer-compare.js",
-    "js/legacy/patches/jiangshen/patch-20-support-slots-compare.js"
+  "features_jiangshen": [
+    "js/features/jiangshen/star-aura-tabs.js",
+    "js/features/jiangshen/star-exp-training.js",
+    "js/features/jiangshen/star-aura-page.js",
+    "js/features/compat/equipment-sort-jiangshen-calc-fix.js",
+    "js/features/jiangshen/support-integer-compare.js",
+    "js/features/jiangshen/support-slots-compare.js"
   ],
   "enhancements": [
     "js/pages/latest-list.js",
@@ -57,6 +55,7 @@ window.SZO_SCRIPT_GROUPS = {
   "not_loaded_legacy": [
     "js/legacy/not-loaded/app-esmodule-unused.js",
     "js/legacy/not-loaded/jiangshen-duplicate-unused.js",
+    "js/legacy/not-loaded/archived-patches-v218/",
     "js/legacy/not-loaded/js-modules/",
     "js/legacy/not-loaded/html-modules/"
   ]
@@ -65,10 +64,9 @@ window.SZO_SCRIPT_MANIFEST = [
   ...window.SZO_SCRIPT_GROUPS.data,
   ...window.SZO_SCRIPT_GROUPS.core,
   ...window.SZO_SCRIPT_GROUPS.pages,
-  ...window.SZO_SCRIPT_GROUPS.patches_equipment,
-  ...window.SZO_SCRIPT_GROUPS.patches_soul,
-  ...window.SZO_SCRIPT_GROUPS.patches_auth,
-  ...window.SZO_SCRIPT_GROUPS.patches_monster_item_safety,
-  ...window.SZO_SCRIPT_GROUPS.patches_jiangshen,
+  ...window.SZO_SCRIPT_GROUPS.features_equipment,
+  ...window.SZO_SCRIPT_GROUPS.features_auth,
+  ...window.SZO_SCRIPT_GROUPS.features_monster_item_safety,
+  ...window.SZO_SCRIPT_GROUPS.features_jiangshen,
   ...window.SZO_SCRIPT_GROUPS.enhancements
 ];
