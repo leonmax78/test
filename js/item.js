@@ -171,3 +171,15 @@ window.SZO_ITEM_MODULE = {
   searchItems: (typeof searchItems==='function'?searchItems:null),
   showItem: (typeof showItem==='function'?showItem:null)
 };
+
+
+// V210 active item exports
+try{
+  if(typeof itemTypeName==='function')window.itemTypeName=itemTypeName;
+  if(typeof itemKind==='function')window.itemKind=itemKind;
+  if(typeof itemStatus==='function')window.itemStatus=itemStatus;
+  if(typeof itemDetailRows==='function')window.itemDetailRows=itemDetailRows;
+  if(typeof itemAbilityFields==='function')window.itemAbilityFields=itemAbilityFields;
+  if(typeof itemSearchText==='function')window.itemSearchText=itemSearchText;
+  if(typeof showItem==='function')window.showItem=showItem;
+}catch(e){console.warn('V210 item active export failed',e);}

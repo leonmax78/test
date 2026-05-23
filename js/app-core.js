@@ -42216,79 +42216,27 @@ function fmt(n){if(typeof n==='bigint')return String(n).replace(/\B(?=(\d{3})+(?
 function normHex(v){if(!v)return "";v=String(v).trim();if(/^0x/i.test(v))return "0x"+v.slice(2).toUpperCase().padStart(8,"0");const n=Number(v);if(Number.isFinite(n))return "0x"+n.toString(16).toUpperCase().padStart(8,"0");return v.toUpperCase()}
 function raceName(v){const h=normHex(v);return RACE_MAP[h]||h||''}
 function subtypeName(type,sub){const th=normHex(type), sh=normHex(sub);return SUBTYPE_MAP[`${th}|${sh}`]||sh||''}
-function itemTypeName(t){return ITEM_TYPE_MAP[String(t||'').trim()]||''}
+// [V210] itemTypeName moved active to js/item.js
+
 function statusName(id){return statusIndex[String(intOf(id))]?.Name||''}
 function magicName(id){return magicIndex[String(intOf(id))]?.Name||''}
-function itemKind(it){
- const candidates=[it.Kind,it.kind,it.RaceKind,it.Race,it.TargetRace,it.TargetKind].filter(v=>v!==undefined&&String(v).trim()!=='');
- for(const v of candidates){
-  const h=normHex(v);
-  if(h&&h!=='0x00000000'){
-    const n=raceName(h);
-    if(n)return n;
-  }
- }
- return '';
-}
+// [V210] itemKind moved active to js/item.js
+
 
 // v88g：依舊版 index.html 的邏輯，特殊能力只讀 ITEM.INI 的 ExtraStatus。
 // 不再掃描 StatusID / Effect / EFFECT_GIVE 這些系統欄位，避免顯示成 StatusID:EFFECT_GIVE。
-function itemStatus(it){
- const raw=String(it?.ExtraStatus||'').trim();
- if(!raw || raw==='0')return '';
- const parts=raw.split(/[,\s;]+/).filter(Boolean);
- const names=parts
-   .map(x=>{
-     const n=statusName(x)||magicName(x);
-     if(n)return n;
-     // 舊版會在無法轉名時顯示 StatusID，但只限數字或 0x 代碼。
-     if(/^\d+$/.test(String(x))||/^0x/i.test(String(x)))return `StatusID:${x}`;
-     return '';
-   })
-   .filter(Boolean);
- return [...new Set(names)].join('、');
-}
+// [V210] itemStatus moved active to js/item.js
+
 
 // v88g：道具能力依舊版 index.html 的欄位順序與中文名稱，不再用「所有非 0 欄位」亂列。
 const ITEM_DETAIL_ORDER=['ID','Name','Type','Kind','ExtraStatus','Level','CLevel','HP','MP','Con','Str','Int','Dex','ExtraDef','Damage','MagicAttack','MagicDef','IceDef','FireDef','LightningDef','DarkDef','ParalysisRes','PosionRes','BlindRes','SilentRes','Value'];
 const ITEM_DETAIL_RENAME={'Name':'名稱','Type':'類型','Kind':'專剋','ExtraStatus':'特殊能力','Level':'等級','CLevel':'職等','HP':'血量','MP':'精力','Con':'體魄','Str':'力量','Int':'智慧','Dex':'靈敏','ExtraDef':'物理防禦','MagicAttack':'術法攻擊','MagicDef':'術法防禦','IceDef':'冰防','FireDef':'火防','LightningDef':'電防','DarkDef':'冥防','ParalysisRes':'抗定身','PosionRes':'抗毒','BlindRes':'抗盲目','SilentRes':'抗禁咒','Value':'價值'};
 
-function itemDetailRows(it){
- const rows=[];
- for(const k of ITEM_DETAIL_ORDER){
-  if(k==='Damage'){
-   if(it.DamageMin||it.DamageMax)rows.push(['傷害',`${it.DamageMin||''}~${it.DamageMax||''}`]);
-   continue;
-  }
-  if(k==='Type'){
-   const typeName=itemTypeName(it.Type)||it.Type;
-   if(typeName)rows.push(['類型',typeName]);
-   continue;
-  }
-  if(k==='Kind'){
-   const kindName=itemKind(it);
-   if(kindName)rows.push(['專剋',kindName]);
-   continue;
-  }
-  if(k==='ExtraStatus'){
-   const statusName=itemStatus(it);
-   if(statusName)rows.push(['特殊能力',statusName]);
-   continue;
-  }
-  if(k in it && String(it[k]??'').trim()!=='')rows.push([ITEM_DETAIL_RENAME[k]||k,it[k]]);
- }
- if(it.Help)rows.push(['說明',it.Help]);
- return rows;
-}
+// [V210] itemDetailRows moved active to js/item.js
 
-function itemAbilityFields(it){
- const abilityKeys=new Set(['CLevel','HP','MP','Con','Str','Int','Dex','ExtraDef','Damage','MagicAttack','MagicDef','IceDef','FireDef','LightningDef','DarkDef','ParalysisRes','PosionRes','BlindRes','SilentRes','Value']);
- return itemDetailRows(it).filter(([label])=>{
-   const reverse=Object.entries(ITEM_DETAIL_RENAME).find(([,v])=>v===label)?.[0];
-   if(label==='傷害')return true;
-   return abilityKeys.has(reverse||label);
- });
-}
+
+// [V210] itemAbilityFields moved active to js/item.js
+
 
 function openDrawer(){byId('drawer').classList.add('open');byId('backdrop').classList.add('open')}
 function closeDrawer(){byId('drawer').classList.remove('open');byId('backdrop').classList.remove('open')}
@@ -42548,7 +42496,8 @@ function breakSuggestText(def){
 }
 // [V201] showMonster moved to js/monster.js
 
-function itemSearchText(it){return `${nameOf(it)} ${it.ID||''} ${it.Level||''} ${it.Type||''} ${itemTypeName(it.Type)} ${it.Help||''}`.toLowerCase()}
+// [V210] itemSearchText moved active to js/item.js
+
 function searchItems(){
  const itemQ=byId('itemQ'); if(!itemQ)return;
  window.v86ItemQ=itemQ.value;
@@ -42575,20 +42524,8 @@ function searchItems(){
 
  box.innerHTML=arr.map(it=>`<button class="resultItem" data-item="${esc(it.ID)}"><div class="rName">${esc(nameOf(it))}</div><div class="rSub">Lv.${esc(it.Level||'')}｜${esc(itemTypeName(it.Type)||it.Type||'')}｜ID ${esc(it.ID)}</div></button>`).join('')||'<div class="muted">找不到道具</div>';
 }
-function showItem(id){
- window.v86LastView='item';
- history.pushState({app:'detail',view:'item'},'','#item-'+id);
- const it=itemIndex[String(id).trim()]; if(!it)return;
- const allRows=itemDetailRows(it);
- const dataLabels=new Set(['ID','名稱','等級','職等','類型','專剋','特殊能力','說明']);
- const dataRows=allRows.filter(([k])=>dataLabels.has(k));
- const abilityRows=allRows.filter(([k])=>!dataLabels.has(k));
- const showRows=rows=>rows.filter(x=>x[1]!==''&&x[1]!==undefined&&x[1]!==null&&String(x[1]).trim()!=='0');
- const kvHtml=(rows,cls='')=>`<div class="kvGrid ${cls}">${showRows(rows).map(([k,v])=>`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('')}</div>`;
- const data=showRows(dataRows), abilities=showRows(abilityRows);
- byId('reader').innerHTML=`<section class="card monsterCompact itemCompact"><button class="backBtn" type="button" onclick="goBackToPrevious()">← 返回查詢</button><h1>${esc(nameOf(it))}</h1><div class="monsterGrid"><div class="monsterPanel"><h3>道具資料</h3>${kvHtml(data,'itemDataGrid')}</div>${abilities.length?`<div class="monsterPanel"><h3>道具能力</h3>${kvHtml(abilityRows,'itemAbilityGrid')}</div>`:''}</div><div class="quick"><button type="button" data-reverse-item="${esc(it.ID)}">反查哪些怪物掉落這個道具<small>查看怪物與掉落機率</small></button></div></section>`;
- closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});
-}
+// [V210] showItem moved active to js/item.js
+
 
 
 // [V208] searchReverseItems moved active to js/reverse.js

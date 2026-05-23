@@ -1,5 +1,5 @@
 {
-  "version": "V208 reverse active cleanup",
+  "version": "V210 item active cleanup",
   "base": "V116b",
   "index_html": "只保留 HTML 框架與 script/css 引用",
   "css": [
@@ -199,5 +199,19 @@
   "removed_from_app_core_v208": [
     "searchReverseItems",
     "showReverse"
+  ],
+  "changes_v210": [
+    "Moved low-risk item helpers/detail functions active to js/item.js.",
+    "Removed those functions from app-core.js.",
+    "Kept renderItemPage/searchItems/setItemSub in app-core/patch flow to avoid breaking reverse/compound menu."
+  ],
+  "removed_from_app_core_v210": [
+    "itemTypeName",
+    "itemKind",
+    "itemStatus",
+    "itemDetailRows",
+    "itemAbilityFields",
+    "itemSearchText",
+    "showItem"
   ]
 }
