@@ -170,3 +170,23 @@ try {
   if (typeof searchItems === 'function') window.searchItems = searchItems;
   if (typeof showItem === 'function') window.showItem = showItem;
 } catch (e) { console.warn('V202 item expose failed', e); }
+
+
+// V202a compatibility fix
+// The V115/V116 overlay patches expect the original renderItemPage/searchItems lifecycle.
+// If item page fails to open, fallback to app-core preserved versions.
+(function(){
+  try{
+    if(typeof window.renderItemPage!=='function' && typeof renderItemPage==='function'){
+      window.renderItemPage=renderItemPage;
+    }
+    if(typeof window.searchItems!=='function' && typeof searchItems==='function'){
+      window.searchItems=searchItems;
+    }
+    if(typeof window.showItem!=='function' && typeof showItem==='function'){
+      window.showItem=showItem;
+    }
+  }catch(e){
+    console.warn('V202a compatibility wrapper failed',e);
+  }
+})();

@@ -103,5 +103,24 @@
 <script src="js/latest-list.js"></script>
 <script src="js/item-search.js"></script>
 <script src="js/reverse-search-dedupe.js"></script>
+
+<script>
+// V202a emergency item page fallback
+document.addEventListener('DOMContentLoaded',()=>{
+  try{
+    const btns=document.querySelectorAll('[data-view="item"]');
+    btns.forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        try{
+          if(typeof renderItemPage==='function'){
+            renderItemPage('item');
+          }
+        }catch(e){console.warn(e)}
+      });
+    });
+  }catch(e){}
+});
+</script>
+
 </body>
 </html>
