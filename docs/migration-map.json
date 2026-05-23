@@ -1,5 +1,5 @@
 {
-  "version": "V201 monster模組拆分版",
+  "version": "V202 item模組拆分版",
   "base": "V116b",
   "index_html": "只保留 HTML 框架與 script/css 引用",
   "css": [
@@ -8,6 +8,7 @@
   "js_load_order": [
     "js/app-core.js",
     "js/monster.js",
+    "js/item.js",
     "js/patch-02.js",
     "js/patch-03.js",
     "js/patch-04.js",
@@ -51,5 +52,10 @@
     "Created js/monster.js",
     "Moved monster search/detail/drop functions out of js/app-core.js",
     "index.html now loads js/monster.js after js/app-core.js"
+  ],
+  "changes_v202": [
+    "Created js/item.js",
+    "Moved item type/status/detail/search/menu functions out of js/app-core.js",
+    "Reverse and compound overlay scripts remain separate for safety"
   ]
 }

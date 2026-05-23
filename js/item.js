@@ -1,0 +1,172 @@
+// V202 item.js
+// Item search/detail/menu module extracted from app-core.js.
+// Reverse and compound overlay scripts are kept separate for safety.
+
+const ITEM_TYPE_MAP={"SWORD":"劍","BLADE":"刀","WHISK":"拂塵","STAFF":"禪杖","HIDDEN_WEAPON":"暗器","SPEAR":"槍","ROD":"棍","AXE":"斧","HAMMER":"錘","SHIELD":"盾牌","HELMET":"頭盔","ARMOR":"鎧甲","BRACER":"護腕","BOOT":"鞋子","ORNAMENT":"飾品","UNDER_BOOT":"仙器"};
+
+const ITEM_DETAIL_RENAME={'Name':'名稱','Type':'類型','Kind':'專剋','ExtraStatus':'特殊能力','Level':'等級','CLevel':'職等','HP':'血量','MP':'精力','Con':'體魄','Str':'力量','Int':'智慧','Dex':'靈敏','ExtraDef':'物理防禦','MagicAttack':'術法攻擊','MagicDef':'術法防禦','IceDef':'冰防','FireDef':'火防','LightningDef':'電防','DarkDef':'冥防','ParalysisRes':'抗定身','PosionRes':'抗毒','BlindRes':'抗盲目','SilentRes':'抗禁咒','Value':'價值'};
+
+const ITEM_DETAIL_ORDER=['ID','Name','Type','Kind','ExtraStatus','Level','CLevel','HP','MP','Con','Str','Int','Dex','ExtraDef','Damage','MagicAttack','MagicDef','IceDef','FireDef','LightningDef','DarkDef','ParalysisRes','PosionRes','BlindRes','SilentRes','Value'];
+
+function itemTypeName(t){return ITEM_TYPE_MAP[String(t||'').trim()]||''}
+
+function itemKind(it){
+ const candidates=[it.Kind,it.kind,it.RaceKind,it.Race,it.TargetRace,it.TargetKind].filter(v=>v!==undefined&&String(v).trim()!=='');
+ for(const v of candidates){
+  const h=normHex(v);
+  if(h&&h!=='0x00000000'){
+    const n=raceName(h);
+    if(n)return n;
+  }
+ }
+ return '';
+}
+
+function itemStatus(it){
+ const raw=String(it?.ExtraStatus||'').trim();
+ if(!raw || raw==='0')return '';
+ const parts=raw.split(/[,\s;]+/).filter(Boolean);
+ const names=parts
+   .map(x=>{
+     const n=statusName(x)||magicName(x);
+     if(n)return n;
+     // 舊版會在無法轉名時顯示 StatusID，但只限數字或 0x 代碼。
+     if(/^\d+$/.test(String(x))||/^0x/i.test(String(x)))return `StatusID:${x}`;
+     return '';
+   })
+   .filter(Boolean);
+ return [...new Set(names)].join('、');
+}
+
+function itemDetailRows(it){
+ const rows=[];
+ for(const k of ITEM_DETAIL_ORDER){
+  if(k==='Damage'){
+   if(it.DamageMin||it.DamageMax)rows.push(['傷害',`${it.DamageMin||''}~${it.DamageMax||''}`]);
+   continue;
+  }
+  if(k==='Type'){
+   const typeName=itemTypeName(it.Type)||it.Type;
+   if(typeName)rows.push(['類型',typeName]);
+   continue;
+  }
+  if(k==='Kind'){
+   const kindName=itemKind(it);
+   if(kindName)rows.push(['專剋',kindName]);
+   continue;
+  }
+  if(k==='ExtraStatus'){
+   const statusName=itemStatus(it);
+   if(statusName)rows.push(['特殊能力',statusName]);
+   continue;
+  }
+  if(k in it && String(it[k]??'').trim()!=='')rows.push([ITEM_DETAIL_RENAME[k]||k,it[k]]);
+ }
+ if(it.Help)rows.push(['說明',it.Help]);
+ return rows;
+}
+
+function itemAbilityFields(it){
+ const abilityKeys=new Set(['CLevel','HP','MP','Con','Str','Int','Dex','ExtraDef','Damage','MagicAttack','MagicDef','IceDef','FireDef','LightningDef','DarkDef','ParalysisRes','PosionRes','BlindRes','SilentRes','Value']);
+ return itemDetailRows(it).filter(([label])=>{
+   const reverse=Object.entries(ITEM_DETAIL_RENAME).find(([,v])=>v===label)?.[0];
+   if(label==='傷害')return true;
+   return abilityKeys.has(reverse||label);
+ });
+}
+
+function itemSearchText(it){return `${nameOf(it)} ${it.ID||''} ${it.Level||''} ${it.Type||''} ${itemTypeName(it.Type)} ${it.Help||''}`.toLowerCase()}
+
+function renderItemPage(tab='item'){
+ const activeItem=tab==='item';
+ const activeReverse=tab==='reverse';
+ if(tab==='compound'){renderEquipmentCompoundPage();return;}
+ byId('reader').innerHTML=activeItem?`<section class="card"><h1>道具查詢</h1>
+  <div class="kvGrid">
+    <div class="kv"><div class="k">道具名稱 / ID / 類型</div><div class="v"><input id="itemQ" placeholder="例如：火神砲、錦囊、277" value="${esc(window.v86ItemQ||'')}"></div></div>
+    <div class="kv"><div class="k">類型</div><div class="v"><select id="itemType"></select></div></div>
+    <div class="kv"><div class="k">等級起</div><div class="v"><input id="itemMin" type="number" value="${esc(window.v86ItemMin||'')}"></div></div>
+    <div class="kv"><div class="k">等級迄</div><div class="v"><input id="itemMax" type="number" value="${esc(window.v86ItemMax||'')}"></div></div>
+  </div>
+  <div class="results" id="itemResults"></div>
+ </section>`:`<section class="card"><h1>掉落反查</h1>
+  <div class="kvGrid"><div class="kv"><div class="k">輸入道具名稱</div><div class="v"><input id="reverseQ" placeholder="例如：侯氏兵甲福袋2020" value="${esc(window.v86ReverseQ||'')}"></div></div></div>
+  <div class="results" id="reverseResults"></div>
+ </section>`;
+ const sel=byId('itemType');
+ if(sel){sel.innerHTML='<option value="">全部類型</option>'+Object.entries(ITEM_TYPE_MAP).map(([k,v])=>`<option value="${esc(k)}">${esc(v)}</option>`).join(''); sel.value=window.v86ItemType||'';}
+ if(activeItem)searchItems(); else if(activeReverse)searchReverseItems();
+}
+
+function openItemMenuOnly(){
+ currentView='item';
+ document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='item'));
+ document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
+ byId('itemForm')?.classList.add('active');
+ byId('reader').innerHTML='';
+}
+
+function setItemSub(kind){
+ openItemMenuOnly();
+ if(kind==='item'){renderItemPage('item'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
+ if(kind==='reverse'){renderItemPage('reverse'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
+ if(kind==='compound'){renderEquipmentCompoundPage(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
+}
+
+function searchItems(){
+ const itemQ=byId('itemQ'); if(!itemQ)return;
+ window.v86ItemQ=itemQ.value;
+ window.v86ItemType=byId('itemType')?.value||'';
+ window.v86ItemMin=byId('itemMin')?.value||'';
+ window.v86ItemMax=byId('itemMax')?.value||'';
+
+ const q=itemQ.value.trim().toLowerCase();
+ const type=window.v86ItemType;
+ const min=window.v86ItemMin?intOf(window.v86ItemMin):null;
+ const max=window.v86ItemMax?intOf(window.v86ItemMax):null;
+
+ const hasFilter = !!(q || type || window.v86ItemMin || window.v86ItemMax);
+ const box=byId('itemResults');
+ if(!box)return;
+ if(!hasFilter){box.innerHTML='';return;}
+
+ const arr=items.filter(it=>
+  (!q||itemSearchText(it).includes(q)) &&
+  (!type||it.Type===type) &&
+  (min===null||intOf(it.Level)>=min) &&
+  (max===null||intOf(it.Level)<=max)
+ ).slice(0,150);
+
+ box.innerHTML=arr.map(it=>`<button class="resultItem" data-item="${esc(it.ID)}"><div class="rName">${esc(nameOf(it))}</div><div class="rSub">Lv.${esc(it.Level||'')}｜${esc(itemTypeName(it.Type)||it.Type||'')}｜ID ${esc(it.ID)}</div></button>`).join('')||'<div class="muted">找不到道具</div>';
+}
+
+function showItem(id){
+ window.v86LastView='item';
+ history.pushState({app:'detail',view:'item'},'','#item-'+id);
+ const it=itemIndex[String(id).trim()]; if(!it)return;
+ const allRows=itemDetailRows(it);
+ const dataLabels=new Set(['ID','名稱','等級','職等','類型','專剋','特殊能力','說明']);
+ const dataRows=allRows.filter(([k])=>dataLabels.has(k));
+ const abilityRows=allRows.filter(([k])=>!dataLabels.has(k));
+ const showRows=rows=>rows.filter(x=>x[1]!==''&&x[1]!==undefined&&x[1]!==null&&String(x[1]).trim()!=='0');
+ const kvHtml=(rows,cls='')=>`<div class="kvGrid ${cls}">${showRows(rows).map(([k,v])=>`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('')}</div>`;
+ const data=showRows(dataRows), abilities=showRows(abilityRows);
+ byId('reader').innerHTML=`<section class="card monsterCompact itemCompact"><button class="backBtn" type="button" onclick="goBackToPrevious()">← 返回查詢</button><h1>${esc(nameOf(it))}</h1><div class="monsterGrid"><div class="monsterPanel"><h3>道具資料</h3>${kvHtml(data,'itemDataGrid')}</div>${abilities.length?`<div class="monsterPanel"><h3>道具能力</h3>${kvHtml(abilityRows,'itemAbilityGrid')}</div>`:''}</div><div class="quick"><button type="button" data-reverse-item="${esc(it.ID)}">反查哪些怪物掉落這個道具<small>查看怪物與掉落機率</small></button></div></section>`;
+ closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Expose item functions for patch scripts and inline handlers.
+try {
+  if (typeof ITEM_TYPE_MAP !== 'undefined') window.ITEM_TYPE_MAP = ITEM_TYPE_MAP;
+  if (typeof itemTypeName === 'function') window.itemTypeName = itemTypeName;
+  if (typeof itemKind === 'function') window.itemKind = itemKind;
+  if (typeof itemStatus === 'function') window.itemStatus = itemStatus;
+  if (typeof itemDetailRows === 'function') window.itemDetailRows = itemDetailRows;
+  if (typeof itemAbilityFields === 'function') window.itemAbilityFields = itemAbilityFields;
+  if (typeof itemSearchText === 'function') window.itemSearchText = itemSearchText;
+  if (typeof renderItemPage === 'function') window.renderItemPage = renderItemPage;
+  if (typeof openItemMenuOnly === 'function') window.openItemMenuOnly = openItemMenuOnly;
+  if (typeof setItemSub === 'function') window.setItemSub = setItemSub;
+  if (typeof searchItems === 'function') window.searchItems = searchItems;
+  if (typeof showItem === 'function') window.showItem = showItem;
+} catch (e) { console.warn('V202 item expose failed', e); }
