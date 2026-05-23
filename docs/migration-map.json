@@ -1,5 +1,5 @@
 {
-  "version": "V204 compound安全模組版",
+  "version": "V205 soul安全模組版",
   "base": "V116b",
   "index_html": "只保留 HTML 框架與 script/css 引用",
   "css": [
@@ -11,6 +11,7 @@
     "js/item.js",
     "js/reverse.js",
     "js/compound.js",
+    "js/soul.js",
     "js/patch-02.js",
     "js/patch-03.js",
     "js/patch-04.js",
@@ -132,5 +133,16 @@
     "eqRenderRandomRecipePicker",
     "materialRank",
     "sortMaterialEntries"
+  ],
+  "changes_v205": [
+    "Created js/soul.js as a safe staged module copy.",
+    "app-core.js still keeps original soul functions to preserve working soul calculator.",
+    "This prepares for later full extraction after jiangshen split."
+  ],
+  "soul_functions_copied": [
+    "parseChangeBodyIniBlocks",
+    "soulNum",
+    "buildSoulDataFromChangeBodyIni",
+    "getSoulListV106"
   ]
 }
