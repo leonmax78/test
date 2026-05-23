@@ -1,5 +1,5 @@
 {
-  "version": "V206 jiangshen安全模組版",
+  "version": "V207 app-core瘦身第一版",
   "base": "V116b",
   "index_html": "只保留 HTML 框架與 script/css 引用",
   "css": [
@@ -179,5 +179,16 @@
     "EXP_ITEMS",
     "stars1",
     "stars20"
+  ],
+  "changes_v207": [
+    "Made soul.js active for CHANGEBODYITEM parser helpers.",
+    "Removed low-risk soul parser helper functions from app-core.js.",
+    "Kept jiangshen functions in app-core.js for now because they have many formula/data dependencies."
+  ],
+  "removed_from_app_core_v207": [
+    "parseChangeBodyIniBlocks",
+    "soulNum",
+    "buildSoulDataFromChangeBodyIni",
+    "getSoulListV106"
   ]
 }

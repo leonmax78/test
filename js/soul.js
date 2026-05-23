@@ -50,3 +50,12 @@ window.SZO_SOUL_MODULE = {
   buildSoulDataFromChangeBodyIni: (typeof buildSoulDataFromChangeBodyIni==='function'?buildSoulDataFromChangeBodyIni:null),
   getSoulListV106: (typeof getSoulListV106==='function'?getSoulListV106:null)
 };
+
+
+// V207 active soul exports
+try{
+  if(typeof parseChangeBodyIniBlocks==='function')window.parseChangeBodyIniBlocks=parseChangeBodyIniBlocks;
+  if(typeof soulNum==='function')window.soulNum=soulNum;
+  if(typeof buildSoulDataFromChangeBodyIni==='function')window.buildSoulDataFromChangeBodyIni=buildSoulDataFromChangeBodyIni;
+  if(typeof getSoulListV106==='function')window.getSoulListV106=getSoulListV106;
+}catch(e){console.warn('V207 soul active export failed',e);}

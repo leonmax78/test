@@ -48918,43 +48918,14 @@ let eqState={main:'',series:'',tier:'',type:'',q:'',uid:'',recipeCounts:{},simTo
 
 
 // V106：CHANGEBODYITEM.INI 武魂資料讀取。
-function parseChangeBodyIniBlocks(text){
- const data=[];let cur=null;
- function push(){if(cur&&Object.keys(cur).length)data.push(cur);cur=null}
- for(const raw of String(text||'').replace(/^\ufeff/,'').split(/\r?\n/)){
-  const line=String(raw||'').trim();
-  if(!line||line.startsWith('//')||line.startsWith(';'))continue;
-  if(line.startsWith('[')&&line.endsWith(']')){push();cur={};continue}
+// [V207] parseChangeBodyIniBlocks moved active to external module.
 
+// [V207] soulNum moved active to external module.
 
-  const p=line.indexOf('='); if(p<0)continue;
-  const k=line.slice(0,p).trim(),v=line.slice(p+1).trim();
-  if(/^ID$/i.test(k)&&cur&&(cur.ID!==undefined))push();
-  if(!cur)cur={};
-  cur[k]=v;
- }
- push();return data.filter(x=>x&&x.Name);
-}
-function soulNum(v){const n=Number(v);return Number.isFinite(n)?n:0}
-function buildSoulDataFromChangeBodyIni(text){
- return parseChangeBodyIniBlocks(text).map(r=>({
-  ID:soulNum(r.ID),
-  Item:soulNum(r.Item),
-  Name:String(r.Name||'').trim(),
-  Base_Str:soulNum(r.Base_Str),
-  Base_Int:soulNum(r.Base_Int),
-  Base_Dex:soulNum(r.Base_Dex),
-  Base_Con:soulNum(r.Base_Con),
-  Extra_Def:soulNum(r.Extra_Def),
-  Magic_Def:soulNum(r.Magic_Def),
-  _source:'CHANGEBODYITEM.INI'
- })).filter(x=>x.Name);
-}
-function getSoulListV106(){
- if(Array.isArray(changeBodyIniSouls)&&changeBodyIniSouls.length)return changeBodyIniSouls;
- if(typeof SOUL_DATA!=='undefined'&&Array.isArray(SOUL_DATA))return SOUL_DATA;
- return [];
-}
+// [V207] buildSoulDataFromChangeBodyIni moved active to external module.
+
+// [V207] getSoulListV106 moved active to external module.
+
 
 // V104：COMPOUND.INI 配方讀取。
 // 注意：COMPOUND.INI 欄位不足時，材料會從原內嵌配方備援補上，避免材料頁壞掉。
