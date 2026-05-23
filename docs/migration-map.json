@@ -1,5 +1,5 @@
 {
-  "version": "V202b item安全模組版",
+  "version": "V203 reverse模組拆分版",
   "base": "V116b",
   "index_html": "只保留 HTML 框架與 script/css 引用",
   "css": [
@@ -9,6 +9,7 @@
     "js/app-core.js",
     "js/monster.js",
     "js/item.js",
+    "js/reverse.js",
     "js/patch-02.js",
     "js/patch-03.js",
     "js/patch-04.js",
@@ -57,5 +58,11 @@
     "Created js/item.js as a safe staged module copy.",
     "Kept original item functions inside js/app-core.js to preserve item/reverse/compound menu behavior.",
     "Previous V202/V202a removed too much and broke reverse/compound; V202b avoids that."
+  ],
+  "changes_v203": [
+    "Created js/reverse.js",
+    "Reverse search and showReverse now have active overrides in reverse.js",
+    "Search candidates are de-duplicated by ITEM ID",
+    "app-core.js still keeps original reverse functions as fallback"
   ]
 }
