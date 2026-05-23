@@ -1,5 +1,5 @@
 {
-  "version": "V205 soul安全模組版",
+  "version": "V206 jiangshen安全模組版",
   "base": "V116b",
   "index_html": "只保留 HTML 框架與 script/css 引用",
   "css": [
@@ -12,6 +12,7 @@
     "js/reverse.js",
     "js/compound.js",
     "js/soul.js",
+    "js/jiangshen.js",
     "js/patch-02.js",
     "js/patch-03.js",
     "js/patch-04.js",
@@ -144,5 +145,39 @@
     "soulNum",
     "buildSoulDataFromChangeBodyIni",
     "getSoulListV106"
+  ],
+  "changes_v206": [
+    "Created js/jiangshen.js as a safe staged module copy.",
+    "app-core.js still keeps original jiangshen/training functions to preserve all calculators.",
+    "This prepares for later true extraction and data JSON split."
+  ],
+  "jiangshen_functions_copied": [
+    "renderJiangHome",
+    "openJiangMenuOnly",
+    "setJiang",
+    "fillJiangFields",
+    "updateSupportOptions",
+    "trainingGroupRank",
+    "trainingElementRank",
+    "trainingDisplayName",
+    "trainingFilterGroups",
+    "trainingGroupLabel",
+    "trainingViewGroupValue",
+    "sortedTrainingData",
+    "appendTrainingNote",
+    "renderTrainingCalc",
+    "filterTrainingRows",
+    "applyTrainingDerivedLevels",
+    "clampTrainingInputs",
+    "updateTrainingNeeds",
+    "setTrainingAllMax",
+    "clearTrainingTargets",
+    "calcTraining"
+  ],
+  "jiangshen_vars_copied": [
+    "TRAINING_DATA",
+    "EXP_ITEMS",
+    "stars1",
+    "stars20"
   ]
 }
