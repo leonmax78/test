@@ -42207,7 +42207,9 @@ let compoundConfigData=null;
 let changeBodyIniSouls=[];
 let itemIndex={},magicIndex={},statusIndex={},dropReverse={};
 
-  // V210c：把內部資料掛到 window，讓外部模組 reverse.js / item.js 可穩定讀取。
+  
+  SZO_SYNC_DATA(); // V210d after index build
+// V210c：把內部資料掛到 window，讓外部模組 reverse.js / item.js 可穩定讀取。
   window.SZO_DATA = window.SZO_DATA || {};
   window.SZO_DATA.items = items;
   window.SZO_DATA.itemIndex = itemIndex;
@@ -42216,6 +42218,26 @@ let itemIndex={},magicIndex={},statusIndex={},dropReverse={};
   window.itemIndex = itemIndex;
   window.dropReverse = dropReverse;
 let currentView='home';
+
+// V210d：資料同步橋接。外部模組可呼叫 window.SZO_SYNC_DATA() 取得 app-core 內部資料。
+function SZO_SYNC_DATA(){
+  try{
+    window.SZO_DATA = window.SZO_DATA || {};
+    window.SZO_DATA.items = Array.isArray(items) ? items : [];
+    window.SZO_DATA.itemIndex = itemIndex || {};
+    window.SZO_DATA.dropReverse = dropReverse || {};
+    window.SZO_DATA.monsters = Array.isArray(monsters) ? monsters : [];
+    window.SZO_DATA.magicIndex = magicIndex || {};
+    window.SZO_DATA.statusIndex = statusIndex || {};
+    return window.SZO_DATA;
+  }catch(e){
+    console.warn('SZO_SYNC_DATA failed', e);
+    window.SZO_DATA = window.SZO_DATA || {};
+    return window.SZO_DATA;
+  }
+}
+window.SZO_SYNC_DATA = SZO_SYNC_DATA;
+
 
 function byId(id){return document.getElementById(id)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}

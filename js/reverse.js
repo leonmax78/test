@@ -295,3 +295,86 @@ try{
     `).join('') || '<div class="muted">找不到道具</div>';
   };
 })();
+
+
+// V210d：最終反查搜尋修正。
+// 每次搜尋前呼叫 window.SZO_SYNC_DATA()，直接同步 app-core 內部 items。
+(function(){
+  function by(id){return document.getElementById(id)}
+  function e(s){
+    if(typeof esc==='function')return esc(s);
+    return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function nm(it){
+    try{return typeof nameOf==='function'?nameOf(it):(it?.Name||'')}catch(err){return it?.Name||''}
+  }
+  function typeNameText(it){
+    try{return (typeof itemTypeName==='function'?itemTypeName(it.Type):it.Type)||it.Type||''}catch(err){return it?.Type||''}
+  }
+  function makeText(it){
+    let extra='';
+    try{extra += ' '+(typeof itemKind==='function'?itemKind(it):'');}catch(err){}
+    try{extra += ' '+(typeof itemStatus==='function'?itemStatus(it):'');}catch(err){}
+    return [
+      nm(it),
+      it?.ID,
+      it?.Level,
+      it?.CLevel,
+      it?.Type,
+      typeNameText(it),
+      it?.Help,
+      extra
+    ].join(' ').toLowerCase();
+  }
+  function dedup(arr){
+    const map=new Map();
+    (arr||[]).forEach(it=>{
+      const key=String(it?.ID||'').trim() || String(nm(it)||'').trim();
+      if(key && !map.has(key))map.set(key,it);
+    });
+    return [...map.values()];
+  }
+  function getItems(){
+    try{
+      if(typeof window.SZO_SYNC_DATA==='function')window.SZO_SYNC_DATA();
+    }catch(err){console.warn('SZO_SYNC_DATA call failed',err)}
+    if(Array.isArray(window.SZO_DATA?.items) && window.SZO_DATA.items.length)return window.SZO_DATA.items;
+    if(Array.isArray(window.items) && window.items.length)return window.items;
+    return [];
+  }
+
+  window.searchReverseItems=function(){
+    const input=by('reverseQ');
+    const box=by('reverseResults');
+    if(!input||!box)return;
+
+    window.v86ReverseQ=input.value;
+    const q=String(input.value||'').trim().toLowerCase();
+
+    if(!q){
+      box.innerHTML='<div class="muted">請輸入道具名稱</div>';
+      return;
+    }
+
+    const src=getItems();
+    const arr=dedup(src.filter(it=>makeText(it).includes(q))).slice(0,100);
+
+    if(!src.length){
+      box.innerHTML='<div class="muted">道具資料尚未同步，請等資料載入完成後再試一次</div>';
+      return;
+    }
+
+    box.innerHTML=arr.map(it=>`
+      <button type="button" class="resultItem" data-rev="${e(it.ID)}">
+        <div class="rName">${e(nm(it))}</div>
+        <div class="rSub">Lv.${e(it.Level||'')}｜${e(typeNameText(it))}｜ID ${e(it.ID||'')}</div>
+      </button>
+    `).join('') || `<div class="muted">找不到道具（已搜尋 ${src.length} 筆道具）</div>`;
+  };
+
+  document.addEventListener('input',function(ev){
+    if(ev.target && ev.target.id==='reverseQ'){
+      window.searchReverseItems();
+    }
+  },true);
+})();
