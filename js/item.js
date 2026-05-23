@@ -183,3 +183,20 @@ try{
   if(typeof itemSearchText==='function')window.itemSearchText=itemSearchText;
   if(typeof showItem==='function')window.showItem=showItem;
 }catch(e){console.warn('V210 item active export failed',e);}
+
+
+// V210a itemSearchText fallback
+try{
+  if(typeof itemSearchText==='function'){
+    window.itemSearchText = itemSearchText;
+  }else{
+    window.itemSearchText = function(it){
+      return String(
+        (it?.Name||'')+' '+
+        (it?.ID||'')+' '+
+        (it?.Level||'')+' '+
+        (it?.Type||'')
+      ).toLowerCase();
+    };
+  }
+}catch(e){console.warn('V210a itemSearchText fallback failed',e);}

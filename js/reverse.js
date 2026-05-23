@@ -129,3 +129,36 @@ function showReverse(id){
     dedupDrops
   };
 })();
+
+
+// V210a reverse search fallback
+try{
+  if(typeof window.searchReverseItems==='function'){
+    const oldReverseSearch = window.searchReverseItems;
+    window.searchReverseItems = function(){
+      try{
+        return oldReverseSearch();
+      }catch(err){
+        console.warn('V210a reverse fallback', err);
+
+        const q = (document.getElementById('reverseQ')?.value || '').trim().toLowerCase();
+        const box = document.getElementById('reverseResults');
+        if(!box)return;
+
+        const arr = (window.items||[]).filter(it=>{
+          const txt = typeof window.itemSearchText==='function'
+            ? window.itemSearchText(it)
+            : ((it?.Name||'')+' '+(it?.ID||'')).toLowerCase();
+          return txt.includes(q);
+        }).slice(0,100);
+
+        box.innerHTML = arr.map(it=>`
+          <button class="resultItem" onclick="showReverse('${it.ID}')">
+            <div class="rName">${it.Name||''}</div>
+            <div class="rSub">Lv.${it.Level||''}｜${it.Type||''}｜ID ${it.ID||''}</div>
+          </button>
+        `).join('') || '<div class="muted">找不到道具</div>';
+      }
+    };
+  }
+}catch(e){console.warn('V210a reverse patch failed',e);}
