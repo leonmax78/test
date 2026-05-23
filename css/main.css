@@ -345,3 +345,6 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
 .latestQueryLayout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start;margin-top:10px}
 .latestMainPane{min-width:0}.latestSidePane{border:1px solid var(--line);background:#081225;border-radius:18px;padding:12px;position:sticky;top:92px;max-height:calc(100vh - 128px);overflow:auto;-webkit-overflow-scrolling:touch}.latestSideTitle{font-size:15px;font-weight:1000;color:#eaf2ff;margin-bottom:4px}.latestSideHint{font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:10px}.latestList{display:flex;flex-direction:column;gap:8px}.latestList .resultItem{padding:9px;border-radius:13px}.latestList .rName{font-size:14px}.latestList .rSub{font-size:11px}.latestMainPane .results{max-height:48vh;overflow:auto}.latestSearchPage .kvGrid{margin-bottom:10px}
 @media(max-width:900px){.latestQueryLayout{grid-template-columns:1fr}.latestSidePane{position:relative;top:auto;max-height:44vh}.latestMainPane .results{max-height:none}}
+/* V217 武魂快速數量按鈕保險：避免被上層元素或樣式吃掉點擊 */
+.soulQuick, .quickBtns{position:relative;z-index:5;pointer-events:auto!important;}
+.soulQuick button, .quickBtns button{position:relative;z-index:6;pointer-events:auto!important;cursor:pointer;}
