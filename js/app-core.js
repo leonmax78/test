@@ -42206,6 +42206,15 @@ let compoundIniRecipes=[];
 let compoundConfigData=null;
 let changeBodyIniSouls=[];
 let itemIndex={},magicIndex={},statusIndex={},dropReverse={};
+
+  // V210c：把內部資料掛到 window，讓外部模組 reverse.js / item.js 可穩定讀取。
+  window.SZO_DATA = window.SZO_DATA || {};
+  window.SZO_DATA.items = items;
+  window.SZO_DATA.itemIndex = itemIndex;
+  window.SZO_DATA.dropReverse = dropReverse;
+  window.items = items;
+  window.itemIndex = itemIndex;
+  window.dropReverse = dropReverse;
 let currentView='home';
 
 function byId(id){return document.getElementById(id)}
