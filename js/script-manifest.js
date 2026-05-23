@@ -1,6 +1,6 @@
-// V212 script manifest: 所有 JS 載入順序集中在這裡。
-// 以後要停用/新增模組，優先改這個檔案，不要改 index.html。
-// 注意：js/jiangshen.js 是舊的備份/準備抽離檔，裡面函式 app-core.js 目前已有，所以本版不載入，避免重複宣告。
+// V214 script manifest: 統一管理載入順序。
+// index.html 不放功能程式；要新增/停用模組請改這裡。
+// 分層：data → core → pages → legacy patches → enhancements。
 window.SZO_SCRIPT_GROUPS = {
   "data": [
     "js/data/equip-compound-data.js",
@@ -8,12 +8,15 @@ window.SZO_SCRIPT_GROUPS = {
     "js/data/training-data.js"
   ],
   "core": [
-    "js/app-core.js",
-    "js/monster.js",
-    "js/item.js",
-    "js/reverse.js",
-    "js/compound.js",
-    "js/soul.js"
+    "js/core/app-core.js",
+    "js/core/config-loader.js"
+  ],
+  "pages": [
+    "js/pages/monster-page.js",
+    "js/pages/item-page.js",
+    "js/pages/reverse-page.js",
+    "js/pages/compound-page.js",
+    "js/pages/soul-page.js"
   ],
   "legacy_patches": [
     "js/legacy/patches/patch-02.js",
@@ -37,18 +40,21 @@ window.SZO_SCRIPT_GROUPS = {
     "js/legacy/patches/patch-20.js"
   ],
   "enhancements": [
-    "js/config-loader.js",
-    "js/latest-list.js",
-    "js/item-search.js",
-    "js/reverse-search-dedupe.js"
+    "js/pages/latest-list.js",
+    "js/pages/item-search.js",
+    "js/pages/reverse-search-dedupe.js"
   ],
   "not_loaded_legacy": [
-    "js/jiangshen.js"
+    "js/legacy/not-loaded/app-esmodule-unused.js",
+    "js/legacy/not-loaded/jiangshen-duplicate-unused.js",
+    "js/legacy/not-loaded/js-modules/",
+    "js/legacy/not-loaded/html-modules/"
   ]
 };
 window.SZO_SCRIPT_MANIFEST = [
   ...window.SZO_SCRIPT_GROUPS.data,
   ...window.SZO_SCRIPT_GROUPS.core,
+  ...window.SZO_SCRIPT_GROUPS.pages,
   ...window.SZO_SCRIPT_GROUPS.legacy_patches,
   ...window.SZO_SCRIPT_GROUPS.enhancements
 ];
