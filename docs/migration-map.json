@@ -1,5 +1,5 @@
 {
-  "version": "V207 app-core瘦身第一版",
+  "version": "V208 reverse active cleanup",
   "base": "V116b",
   "index_html": "只保留 HTML 框架與 script/css 引用",
   "css": [
@@ -190,5 +190,14 @@
     "soulNum",
     "buildSoulDataFromChangeBodyIni",
     "getSoulListV106"
+  ],
+  "changes_v208": [
+    "Removed old searchReverseItems/showReverse from app-core.js.",
+    "Embedded original showReverse UI inside js/reverse.js as showReverseOriginalV208.",
+    "reverse.js now fully owns reverse search and detail page while keeping old percent UI."
+  ],
+  "removed_from_app_core_v208": [
+    "searchReverseItems",
+    "showReverse"
   ]
 }
