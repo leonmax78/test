@@ -1,5 +1,5 @@
 {
-  "version": "V202 item模組拆分版",
+  "version": "V202b item安全模組版",
   "base": "V116b",
   "index_html": "只保留 HTML 框架與 script/css 引用",
   "css": [
@@ -53,9 +53,9 @@
     "Moved monster search/detail/drop functions out of js/app-core.js",
     "index.html now loads js/monster.js after js/app-core.js"
   ],
-  "changes_v202": [
-    "Created js/item.js",
-    "Moved item type/status/detail/search/menu functions out of js/app-core.js",
-    "Reverse and compound overlay scripts remain separate for safety"
+  "changes_v202b": [
+    "Created js/item.js as a safe staged module copy.",
+    "Kept original item functions inside js/app-core.js to preserve item/reverse/compound menu behavior.",
+    "Previous V202/V202a removed too much and broke reverse/compound; V202b avoids that."
   ]
 }

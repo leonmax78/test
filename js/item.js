@@ -1,6 +1,7 @@
-// V202 item.js
-// Item search/detail/menu module extracted from app-core.js.
-// Reverse and compound overlay scripts are kept separate for safety.
+// V202b item.js
+// Safe item module copy.
+// Important: app-core.js still keeps original item functions in this version.
+// This file is a staged module copy for future extraction, so reverse/compound remain stable.
 
 const ITEM_TYPE_MAP={"SWORD":"劍","BLADE":"刀","WHISK":"拂塵","STAFF":"禪杖","HIDDEN_WEAPON":"暗器","SPEAR":"槍","ROD":"棍","AXE":"斧","HAMMER":"錘","SHIELD":"盾牌","HELMET":"頭盔","ARMOR":"鎧甲","BRACER":"護腕","BOOT":"鞋子","ORNAMENT":"飾品","UNDER_BOOT":"仙器"};
 
@@ -155,38 +156,18 @@ function showItem(id){
  closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// Expose item functions for patch scripts and inline handlers.
-try {
-  if (typeof ITEM_TYPE_MAP !== 'undefined') window.ITEM_TYPE_MAP = ITEM_TYPE_MAP;
-  if (typeof itemTypeName === 'function') window.itemTypeName = itemTypeName;
-  if (typeof itemKind === 'function') window.itemKind = itemKind;
-  if (typeof itemStatus === 'function') window.itemStatus = itemStatus;
-  if (typeof itemDetailRows === 'function') window.itemDetailRows = itemDetailRows;
-  if (typeof itemAbilityFields === 'function') window.itemAbilityFields = itemAbilityFields;
-  if (typeof itemSearchText === 'function') window.itemSearchText = itemSearchText;
-  if (typeof renderItemPage === 'function') window.renderItemPage = renderItemPage;
-  if (typeof openItemMenuOnly === 'function') window.openItemMenuOnly = openItemMenuOnly;
-  if (typeof setItemSub === 'function') window.setItemSub = setItemSub;
-  if (typeof searchItems === 'function') window.searchItems = searchItems;
-  if (typeof showItem === 'function') window.showItem = showItem;
-} catch (e) { console.warn('V202 item expose failed', e); }
-
-
-// V202a compatibility fix
-// The V115/V116 overlay patches expect the original renderItemPage/searchItems lifecycle.
-// If item page fails to open, fallback to app-core preserved versions.
-(function(){
-  try{
-    if(typeof window.renderItemPage!=='function' && typeof renderItemPage==='function'){
-      window.renderItemPage=renderItemPage;
-    }
-    if(typeof window.searchItems!=='function' && typeof searchItems==='function'){
-      window.searchItems=searchItems;
-    }
-    if(typeof window.showItem!=='function' && typeof showItem==='function'){
-      window.showItem=showItem;
-    }
-  }catch(e){
-    console.warn('V202a compatibility wrapper failed',e);
-  }
-})();
+// V202b does not override current app behavior.
+// It only exposes a namespace for future migration.
+window.SZO_ITEM_MODULE = {
+  itemTypeName: (typeof itemTypeName==='function'?itemTypeName:null),
+  itemKind: (typeof itemKind==='function'?itemKind:null),
+  itemStatus: (typeof itemStatus==='function'?itemStatus:null),
+  itemDetailRows: (typeof itemDetailRows==='function'?itemDetailRows:null),
+  itemAbilityFields: (typeof itemAbilityFields==='function'?itemAbilityFields:null),
+  itemSearchText: (typeof itemSearchText==='function'?itemSearchText:null),
+  renderItemPage: (typeof renderItemPage==='function'?renderItemPage:null),
+  openItemMenuOnly: (typeof openItemMenuOnly==='function'?openItemMenuOnly:null),
+  setItemSub: (typeof setItemSub==='function'?setItemSub:null),
+  searchItems: (typeof searchItems==='function'?searchItems:null),
+  showItem: (typeof showItem==='function'?showItem:null)
+};
