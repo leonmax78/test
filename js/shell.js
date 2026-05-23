@@ -47,4 +47,30 @@
 </div>
 <div class="authModal" id="licenseModal"><div class="authBox"><h2>授權驗證</h2><div class="muted">請貼上授權鑰匙。</div><textarea id="licenseInput"></textarea><div class="error" id="licenseError"></div><button class="primary" id="licenseSubmit">驗證授權</button></div></div>
 `;
+
+  // V213：快速選單保險事件。
+  // 這裡在 shell 生成 DOM 後立刻綁定一次，避免後續模組載入失敗或 init 時機改變時，左上角 ☰ 沒反應。
+  function bindShellMenu(){
+    const drawer = document.getElementById('drawer');
+    const backdrop = document.getElementById('backdrop');
+    const openBtn = document.getElementById('openMenuBtn');
+    const closeBtn = document.getElementById('closeMenuBtn');
+    const open = function(ev){
+      if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+      if(drawer) drawer.classList.add('open');
+      if(backdrop) backdrop.classList.add('open');
+    };
+    const close = function(ev){
+      if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+      if(drawer) drawer.classList.remove('open');
+      if(backdrop) backdrop.classList.remove('open');
+    };
+    if(openBtn) openBtn.addEventListener('click', open, true);
+    if(closeBtn) closeBtn.addEventListener('click', close, true);
+    if(backdrop) backdrop.addEventListener('click', close, true);
+    window.SZO_OPEN_MENU = open;
+    window.SZO_CLOSE_MENU = close;
+  }
+  bindShellMenu();
+
 })();
