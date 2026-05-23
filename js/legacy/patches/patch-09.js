@@ -102,4 +102,6 @@
   // In case another patch overwrites setItemSub later, re-apply the safe wrapper once.
   setTimeout(function(){installSoulMenu();patchSetItemSub();},0);
   window.renderSoulCalcPage=renderSoulCalc;
+  window.SZOLegacyUpdateSoulCalc=updateSoulCalc;
+  window.SZOLegacySetSoulCount=function(v){const c=by('soulCount'); if(c){c.value=v; window.soulCount=v; updateSoulCalc();}};
 })();

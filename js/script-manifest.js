@@ -42,7 +42,8 @@ window.SZO_SCRIPT_GROUPS = {
   "enhancements": [
     "js/pages/latest-list.js",
     "js/pages/item-search.js",
-    "js/pages/reverse-search-dedupe.js"
+    "js/pages/reverse-search-dedupe.js",
+    "js/pages/soul-quick-force-fix.js"
   ],
   "not_loaded_legacy": [
     "js/legacy/not-loaded/app-esmodule-unused.js",
