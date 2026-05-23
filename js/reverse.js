@@ -1,5 +1,5 @@
-// V203 reverse.js
-// Drop reverse search module extracted safely from app-core.js.
+// V203b reverse.js
+// Drop reverse search module; search is de-duplicated, detail UI restored to original.
 // app-core.js still keeps the original functions for now; this module provides the active override.
 
 function searchReverseItems(){
@@ -89,31 +89,12 @@ function showReverse(id){
   };
 
   const oldShowReverse = (typeof window.showReverse==='function') ? window.showReverse : (typeof showReverse==='function' ? showReverse : null);
+
+  // V203b：詳細頁恢復使用舊版 showReverse 介面。
+  // 這樣會保留原本每一種怪物的掉落率 % 顯示方式。
   window.showReverse=function(id){
-    window.v86LastView='reverse';
-    try{history.pushState({app:'detail',view:'reverse'},'','#reverse-'+id);}catch(e){}
-    const it=itemIndex[String(id).trim()];
-    if(!it)return;
-    const raw=dropReverse[String(id).trim()]||[];
-    const arr=dedupDrops(raw);
-
-    const title=esc2(name2(it));
-    const rows=arr.map(x=>{
-      const m=x.monster||x;
-      const rate=x.rateText||x.rate||x.weight||'';
-      const mid=m.ID||x.monster_id||'';
-      const lv=m.Level||'';
-      const mn=typeof nameOf==='function'?nameOf(m):(m.Name||'');
-      return `<button class="resultItem" data-monster="${esc2(mid)}"><div class="rName">${esc2(mn)}</div><div class="rSub">Lv.${esc2(lv)}｜${rate?('掉率 '+esc2(rate)+'｜'):''}ID ${esc2(mid)}</div></button>`;
-    }).join('');
-
-    const reader=by('reader');
-    if(reader){
-      reader.innerHTML=`<section class="card"><button class="backBtn" type="button" onclick="goBackToPrevious()">← 返回查詢</button><h1>${title}</h1><div class="muted">掉落反查結果：${arr.length} 筆</div><div class="results">${rows||'<div class="muted">沒有反查資料</div>'}</div></section>`;
-      try{closeDrawer&&closeDrawer();}catch(e){}
-      window.scrollTo({top:0,behavior:'smooth'});
-    }else if(oldShowReverse){
-      oldShowReverse(id);
+    if(oldShowReverse){
+      return oldShowReverse(id);
     }
   };
 

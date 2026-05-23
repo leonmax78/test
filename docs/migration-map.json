@@ -1,5 +1,5 @@
 {
-  "version": "V203 reverse模組拆分版",
+  "version": "V203b reverse介面還原版",
   "base": "V116b",
   "index_html": "只保留 HTML 框架與 script/css 引用",
   "css": [
@@ -64,5 +64,10 @@
     "Reverse search and showReverse now have active overrides in reverse.js",
     "Search candidates are de-duplicated by ITEM ID",
     "app-core.js still keeps original reverse functions as fallback"
+  ],
+  "changes_v203b": [
+    "Kept reverse search candidate de-duplication",
+    "Restored reverse detail page to original showReverse UI",
+    "Original UI shows each monster's drop percentage as before"
   ]
 }
