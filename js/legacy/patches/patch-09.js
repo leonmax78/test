@@ -26,6 +26,20 @@
     const sel=by('soulSelect'), cnt=by('soulCount');
     if(sel) sel.addEventListener('change',()=>{window.soulSelectedId=sel.value;updateSoulCalc();});
     if(cnt) cnt.addEventListener('input',()=>{window.soulCount=cnt.value;updateSoulCalc();});
+    // V215：快速收藏數按鈕直接綁在武魂頁渲染流程內。
+    // 原本只靠全域 click capture；模組動態載入時 DOMContentLoaded 可能已經錯過，
+    // 會造成 1/2/3/5/10/20/滿收藏 點了沒反應。
+    document.querySelectorAll('[data-soul-count]').forEach(btn=>{
+      btn.onclick=function(e){
+        if(e) e.preventDefault();
+        const c=by('soulCount');
+        if(c){
+          c.value=this.dataset.soulCount;
+          window.soulCount=c.value;
+          updateSoulCalc();
+        }
+      };
+    });
   }
   function updateSoulCalc(){
     const sel=by('soulSelect'), cnt=by('soulCount'), out=by('soulResult'); if(!out)return;
@@ -75,8 +89,17 @@
       const cnt=by('soulCount'); if(cnt){cnt.value=b.dataset.soulCount; window.soulCount=cnt.value; updateSoulCalc();}
     });
   }
-  document.addEventListener('DOMContentLoaded',function(){installSoulMenu();patchSetItemSub();patchClickCapture();});
-  // In case this script loads after DOMContentLoaded in some browsers
+  function initSoulPatchV215(){
+    installSoulMenu();
+    patchSetItemSub();
+    patchClickCapture();
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',initSoulPatchV215,{once:true});
+  }else{
+    initSoulPatchV215();
+  }
+  // In case another patch overwrites setItemSub later, re-apply the safe wrapper once.
   setTimeout(function(){installSoulMenu();patchSetItemSub();},0);
   window.renderSoulCalcPage=renderSoulCalc;
 })();
