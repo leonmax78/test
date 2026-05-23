@@ -73,4 +73,16 @@
   }
   bindShellMenu();
 
+  // V221：模組尚未載入完成時，先擋住功能選單點擊。
+  // 避免使用者第一次太快點「副降神模擬」時，先跑到舊版頁面，後面初始化又跳回首頁。
+  document.addEventListener('click', function(ev){
+    const hit = ev.target && ev.target.closest && ev.target.closest('[data-view],[data-jiang],[data-item-open]');
+    if(!hit) return;
+    if(window.SZO_READY) return;
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    const st = document.getElementById('topStatus');
+    if(st) st.textContent = '模組載入中，請稍候再點一次';
+  }, true);
+
 })();

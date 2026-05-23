@@ -1,4 +1,4 @@
-// V220 script manifest: core settings/maps/utils are split out before app-core.
+// V221 script manifest: core settings/maps/utils are split out before app-core.
 // index.html remains a pure entry.  Add/disable modules here, not in index.html.
 window.SZO_SCRIPT_GROUPS = {
   "data": [
@@ -54,7 +54,8 @@ window.SZO_SCRIPT_GROUPS = {
     "js/pages/latest-list.js",
     "js/pages/item-search.js",
     "js/pages/reverse-search-dedupe.js",
-    "js/pages/soul-quick-force-fix.js"
+    "js/pages/soul-quick-force-fix.js",
+    "js/features/jiangshen/jiangshen-nav-final-guard.js"
   ],
   "not_loaded_legacy": [
     "js/legacy/not-loaded/app-esmodule-unused.js",

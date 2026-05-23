@@ -1,5 +1,6 @@
 // V212 script loader: 依序載入，避免資料/公式/patch 順序錯亂。
 (function(){
+  window.SZO_READY = false;
   const list = window.SZO_SCRIPT_MANIFEST || [];
   const status = () => document.getElementById('topStatus');
   function setStatus(msg){ const el=status(); if(el) el.textContent=msg; }
@@ -21,6 +22,9 @@
       }
       setStatus('初始化中');
       if (typeof window.SZOAppInit === 'function') { window.SZOAppInit(); }
+      window.SZO_READY = true;
+      document.documentElement.classList.add('szo-ready');
+      window.dispatchEvent(new CustomEvent('szo:ready'));
       setStatus('載入完成');
     }catch(err){
       console.error(err);
