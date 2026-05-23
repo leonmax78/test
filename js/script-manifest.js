@@ -1,4 +1,4 @@
-// V221 script manifest: core settings/maps/utils are split out before app-core.
+// V222 script manifest: core settings/maps/utils are split out before app-core.
 // index.html remains a pure entry.  Add/disable modules here, not in index.html.
 window.SZO_SCRIPT_GROUPS = {
   "data": [
@@ -30,7 +30,8 @@ window.SZO_SCRIPT_GROUPS = {
     "js/features/equipment/underboot-stable70.js",
     "js/features/equipment/stat-renderer.js",
     "js/features/equipment/accessory-filter.js",
-    "js/features/equipment/accessory-menu-guard.js"
+    "js/features/equipment/accessory-menu-guard.js",
+    "js/features/equipment/equipment-sort-fix.js"
   ],
   "features_soul": [],
   "features_auth": [
@@ -46,8 +47,7 @@ window.SZO_SCRIPT_GROUPS = {
     "js/features/jiangshen/star-aura-tabs.js",
     "js/features/jiangshen/star-exp-training.js",
     "js/features/jiangshen/star-aura-page.js",
-    "js/features/compat/equipment-sort-jiangshen-calc-fix.js",
-    "js/features/jiangshen/support-integer-compare.js",
+    "js/features/jiangshen/basic-compare-stars.js",
     "js/features/jiangshen/support-slots-compare.js"
   ],
   "enhancements": [
@@ -62,7 +62,8 @@ window.SZO_SCRIPT_GROUPS = {
     "js/legacy/not-loaded/jiangshen-duplicate-unused.js",
     "js/legacy/not-loaded/archived-patches-v218/",
     "js/legacy/not-loaded/js-modules/",
-    "js/legacy/not-loaded/html-modules/"
+    "js/legacy/not-loaded/html-modules/",
+    "js/legacy/not-loaded/old-jiangshen-support-v222/"
   ]
 };
 window.SZO_SCRIPT_MANIFEST = [

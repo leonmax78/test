@@ -53,6 +53,7 @@
   function comboTextBlock(res){ return res.combos&&res.combos.length?res.combos.map(c=>`<div class="notice"><b>${E(c)}</b><br>${E(((D().comboMembers||{})[c]||[]).join('、'))}<br>${E(typeof comboText==='function'?comboText(c):'')}</div>`).join(''):'<div class="empty">沒有成立連結</div>'; }
 
   function renderSupport(){
+    window.__SZO_SUPPORT_PAGE_VERSION__='V222_SUPPORT_SLOTS';
     $('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>副降神試算</h2><div class="notice">主降神以 100% 能力計算；副降神 1～4 各 10%。可以直接試算，也可以存入 A～E 後到比較頁做 2～5 組比較。</div>${planHtml('P')}<div class="supportSaveBar"><button id="calcSupportOnce" type="button">直接試算</button><label style="margin:0">存檔到<select id="supportSaveSlot">${SLOT_LETTERS.map((x,i)=>`<option value="${i}">${x}</option>`).join('')}</select></label><button id="saveSupportSlot" type="button">存檔</button><button id="openSupportCompare" type="button">開啟存檔比較</button></div><h3>目前存檔</h3><div id="supportSlotList" class="kvGrid"></div></section>`;
     fillPlan('P',getCurrent());
     document.querySelectorAll('.supportInput').forEach(el=>el.addEventListener('change',saveCurrent));
@@ -86,6 +87,8 @@
     if(!cols.length){ out.innerHTML='<div class="empty">選到的存檔沒有降神資料</div>'; return; }
     out.innerHTML=`<h3>總能力比較</h3><div class="tableWrap"><table><thead><tr><th>能力</th>${cols.map(c=>`<th>${E(c.label)}<br><small>${E(slotSummary(c.set))}</small></th>`).join('')}</tr></thead><tbody>${stats().map(st=>`<tr><td>${E(st)}</td>${cols.map(c=>`<td>${fmt(c.res.total[st]||0)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${cols.map(c=>`<h3>${E(c.label)} 成立連結</h3>${comboTextBlock(c.res)}`).join('')}`;
   }
+  window.renderSupportSlotsPage = function(){ renderSupport(); closeMenu(); scrollTop(); };
+  window.renderSupportComparePage = function(){ renderSupportCompare(); closeMenu(); scrollTop(); };
   const oldSetJiang=window.setJiang;
-  window.setJiang=function(kind){ if(kind==='support'){ renderSupport(); closeMenu(); scrollTop(); return; } if(typeof oldSetJiang==='function') return oldSetJiang(kind); };
+  window.setJiang=function(kind){ if(kind==='support'){ window.renderSupportSlotsPage(); return; } if(typeof oldSetJiang==='function') return oldSetJiang(kind); };
 })();

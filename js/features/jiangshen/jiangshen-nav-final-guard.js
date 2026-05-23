@@ -13,6 +13,12 @@
     if(!kind) return;
     ev.preventDefault();
     ev.stopImmediatePropagation();
+    if(kind === 'support' && typeof window.renderSupportSlotsPage === 'function'){
+      window.renderSupportSlotsPage();
+      closeMenu();
+      scrollTop();
+      return;
+    }
     if(typeof window.setJiang === 'function'){
       window.setJiang(kind);
       closeMenu();

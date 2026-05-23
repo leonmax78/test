@@ -360,15 +360,15 @@ function fillJiangFields(kind){
  const stars20=Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} 星</option>`).join('');
 
  if(kind==='support'){
-  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>副降神模擬</h2>
-  <div class="notice">主降神以 100% 能力計算；副降神 1～4 以原本能力的 10% 計算。</div>
-  <div class="kvGrid">
-    <div class="kv"><div class="k">主降神</div><div class="v"><select id="jsN0" class="jsSupportName" data-index="0">${opts}</select><label>星等</label><select id="jsS0">${stars1}</select></div></div>
-    ${Array.from({length:4},(_,i)=>`<div class="kv"><div class="k">副降神 ${i+1}</div><div class="v"><select id="jsN${i+1}" class="jsSupportName" data-index="${i+1}">${opts}</select><label>星等</label><select id="jsS${i+1}">${stars1}</select></div></div>`).join('')}
-  </div>
-  <div class="quick"><button id="calcSupport">產生閱讀頁<small>主降神 100%，副降神 10%，並計算成立連結</small></button></div></section>`;
-  updateSupportOptions();
+  // V222: 舊版副降神模擬頁已停用。
+  // 正式副降神頁由 js/features/jiangshen/support-slots-compare.js 接管。
+  if(typeof window.renderSupportSlotsPage === 'function'){
+    window.renderSupportSlotsPage();
+  }else{
+    byId('reader').innerHTML='<section class="card"><h1>副降神試算</h1><div class="notice">副降神模組載入中，請稍候再點一次。</div></section>';
+  }
  }
+
 
  if(kind==='compare'){
   byId('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>主降神比較</h2><div class="kvGrid">
