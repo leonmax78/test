@@ -162,3 +162,76 @@ try{
     };
   }
 }catch(e){console.warn('V210a reverse patch failed',e);}
+
+
+// V210b：強制修正掉落反查搜尋。
+// 不再依賴舊 searchReverseItems，也不依賴 itemSearchText 是否在 window 上。
+// 直接掃 items 全資料，搜尋 Name / ID / Level / Type / Help，並依 ITEM ID 去重。
+(function(){
+  function by(id){return document.getElementById(id)}
+  function e(s){
+    if(typeof esc==='function')return esc(s);
+    return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function nm(it){
+    try{return typeof nameOf==='function'?nameOf(it):(it?.Name||'')}catch(err){return it?.Name||''}
+  }
+  function typeName(it){
+    try{return (typeof itemTypeName==='function'?itemTypeName(it.Type):it.Type)||it.Type||''}catch(err){return it?.Type||''}
+  }
+  function text(it){
+    let status = '';
+    let kind = '';
+    try{ status = typeof itemStatus==='function' ? itemStatus(it) : ''; }catch(err){}
+    try{ kind = typeof itemKind==='function' ? itemKind(it) : ''; }catch(err){}
+    return [
+      nm(it),
+      it?.ID,
+      it?.Level,
+      it?.CLevel,
+      it?.Type,
+      typeName(it),
+      it?.Help,
+      status,
+      kind
+    ].join(' ').toLowerCase();
+  }
+  function dedup(arr){
+    const map=new Map();
+    (arr||[]).forEach(it=>{
+      const key=String(it?.ID||'').trim() || String(nm(it)||'').trim();
+      if(key && !map.has(key))map.set(key,it);
+    });
+    return [...map.values()];
+  }
+
+  window.searchReverseItems=function(){
+    const input=by('reverseQ');
+    const box=by('reverseResults');
+    if(!input||!box)return;
+
+    window.v86ReverseQ=input.value;
+    const q=String(input.value||'').trim().toLowerCase();
+
+    if(!q){
+      box.innerHTML='<div class="muted">請輸入道具名稱</div>';
+      return;
+    }
+
+    const src = Array.isArray(window.items) ? window.items : (Array.isArray(items) ? items : []);
+    const arr = dedup(src.filter(it=>text(it).includes(q))).slice(0,100);
+
+    box.innerHTML = arr.map(it=>`
+      <button type="button" class="resultItem" data-rev="${e(it.ID)}">
+        <div class="rName">${e(nm(it))}</div>
+        <div class="rSub">Lv.${e(it.Level||'')}｜${e(typeName(it))}｜ID ${e(it.ID||'')}</div>
+      </button>
+    `).join('') || '<div class="muted">找不到道具</div>';
+  };
+
+  document.addEventListener('input',function(ev){
+    if(ev.target && ev.target.id==='reverseQ'){
+      window.searchReverseItems();
+    }
+  },true);
+})();
