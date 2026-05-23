@@ -42429,6 +42429,7 @@ function buildDataIndexes(){
   dropReverse[iid]=[...map.values()].sort((a,b)=>b.rate-a.rate);
  }
  const sel=byId('itemType'); if(sel){sel.innerHTML='<option value="">全部類型</option>'+Object.entries(ITEM_TYPE_MAP).map(([k,v])=>`<option value="${esc(k)}">${esc(v)}</option>`).join('')}
+ try{ if(typeof SZO_SYNC_DATA==='function') SZO_SYNC_DATA(); }catch(e){console.warn('reverse sync failed',e)} // V101 reverse sync after buildDataIndexes
 }
 async function loadAllData(){
  renderLoad();

@@ -3,12 +3,9 @@
 // Important: app-core.js still keeps original item functions in this version.
 // This file is a staged module copy for future extraction, so reverse/compound remain stable.
 
-const ITEM_TYPE_MAP={"SWORD":"劍","BLADE":"刀","WHISK":"拂塵","STAFF":"禪杖","HIDDEN_WEAPON":"暗器","SPEAR":"槍","ROD":"棍","AXE":"斧","HAMMER":"錘","SHIELD":"盾牌","HELMET":"頭盔","ARMOR":"鎧甲","BRACER":"護腕","BOOT":"鞋子","ORNAMENT":"飾品","UNDER_BOOT":"仙器"};
-
-const ITEM_DETAIL_RENAME={'Name':'名稱','Type':'類型','Kind':'專剋','ExtraStatus':'特殊能力','Level':'等級','CLevel':'職等','HP':'血量','MP':'精力','Con':'體魄','Str':'力量','Int':'智慧','Dex':'靈敏','ExtraDef':'物理防禦','MagicAttack':'術法攻擊','MagicDef':'術法防禦','IceDef':'冰防','FireDef':'火防','LightningDef':'電防','DarkDef':'冥防','ParalysisRes':'抗定身','PosionRes':'抗毒','BlindRes':'抗盲目','SilentRes':'抗禁咒','Value':'價值'};
-
-const ITEM_DETAIL_ORDER=['ID','Name','Type','Kind','ExtraStatus','Level','CLevel','HP','MP','Con','Str','Int','Dex','ExtraDef','Damage','MagicAttack','MagicDef','IceDef','FireDef','LightningDef','DarkDef','ParalysisRes','PosionRes','BlindRes','SilentRes','Value'];
-
+// V101 fix: ITEM_TYPE_MAP is provided by app-core.js; avoid redeclaring global const.
+// V101 fix: ITEM_DETAIL_RENAME is provided by app-core.js; avoid redeclaring global const.
+// V101 fix: ITEM_DETAIL_ORDER is provided by app-core.js; avoid redeclaring global const.
 function itemTypeName(t){return ITEM_TYPE_MAP[String(t||'').trim()]||''}
 
 function itemKind(it){
