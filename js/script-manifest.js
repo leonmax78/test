@@ -1,13 +1,17 @@
-// V219 script manifest: active modules no longer load from js/legacy/patches.
+// V220 script manifest: core settings/maps/utils are split out before app-core.
 // index.html remains a pure entry.  Add/disable modules here, not in index.html.
 window.SZO_SCRIPT_GROUPS = {
   "data": [
+    "js/data/type-maps.js",
     "js/data/equip-compound-data.js",
     "js/data/jiangshen-data.js",
     "js/data/training-data.js",
     "js/data/soul-data.js"
   ],
   "core": [
+    "js/core/app-settings.js",
+    "js/utils/common-utils.js",
+    "js/core/data-loader-utils.js",
     "js/core/app-core.js",
     "js/core/config-loader.js"
   ],

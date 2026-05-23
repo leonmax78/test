@@ -1,21 +1,9 @@
-const AUTH_REQUIRED = false;
-const RAW_BASE = 'https://raw.githubusercontent.com/leonmax78/leonmax78.github.io/main/';
-const FILES = {
-  monsters:['MONSTER_C.INI','MONSTER_C.ini','monster_c.ini','MONSTER.INI','monster.ini'],
-  items:['ITEM.INI','item.ini'],
-  magics:['MAGIC.INI','magic.ini'],
-  statuses:['STATUS.INI','status.ini'],
-  locations:['一般怪物位置.csv','一般怪物位置.CSV','monsterLocations.csv','monster_locations.csv','怪物位置.csv'],
-  compounds:['COMPOUND.INI','COMPOUN.INI','COMPOUND.ini','COMPOUN.ini','compound.ini','compoun.ini'],
-  compoundConfigs:['data/compound_config.json','compound_config.json'],
-  changebody:['CHANGEBODYITEM.INI','ChangeBodyItem.ini','changebodyitem.ini','CHANGEBODY.INI','changebody.ini'],
-  version:['data_version.txt']
-};
+// V220: AUTH_REQUIRED / RAW_BASE / FILES moved to js/core/app-settings.js.
 // V212: EQUIP_COMPOUND_DATA 已移到 js/data/equip-compound-data.js，由 script-manifest.js 在 app-core.js 前載入。
 
-const ITEM_TYPE_MAP={"SWORD":"劍","BLADE":"刀","WHISK":"拂塵","STAFF":"禪杖","HIDDEN_WEAPON":"暗器","SPEAR":"槍","ROD":"棍","AXE":"斧","HAMMER":"錘","SHIELD":"盾牌","HELMET":"頭盔","ARMOR":"鎧甲","BRACER":"護腕","BOOT":"鞋子","ORNAMENT":"飾品","UNDER_BOOT":"仙器"};
-const SUBTYPE_MAP={"0x00000001|0x00000001":"百姓","0x00000001|0x00000002":"官差","0x00000001|0x00000004":"正道中人","0x00000001|0x00000008":"正十字軍","0x00000001|0x00000010":"天兵","0x00000001|0x00000020":"天界神","0x00000001|0x00000040":"艾濟王族","0x00000001|0x00000080":"禁軍","0x00000002|0x00000001":"盜匪","0x00000002|0x00000002":"蠻族","0x00000002|0x00000004":"叛軍","0x00000002|0x00000008":"侏人族","0x00000002|0x00000010":"十字軍","0x00000002|0x00000020":"女巫","0x00000002|0x00000040":"墮真者","0x00000002|0x00000080":"艾濟冥司","0x00000002|0x00000100":"太極國","0x00000002|0x00000200":"天門教","0x00000004|0x00000001":"夜叉族","0x00000004|0x00000002":"巨魔族","0x00000004|0x00000004":"修羅族","0x00000004|0x00000008":"夸父族","0x00000004|0x00000010":"刑天族","0x00000004|0x00000020":"百眼族","0x00000004|0x00000040":"土行族","0x00000004|0x00000080":"鷹翅族","0x00000004|0x00000100":"惡魔","0x00000004|0x00000200":"冥河","0x00000004|0x00000400":"魔界","0x00000008|0x00000001":"亡魂","0x00000008|0x00000002":"殭屍","0x00000008|0x00000004":"骷髏","0x00000008|0x00000008":"魅","0x00000008|0x00000010":"水母","0x00000008|0x00000020":"四兇","0x00000008|0x00000040":"木乃伊","0x00000010|0x00000001":"石怪","0x00000010|0x00000002":"樹精","0x00000010|0x00000004":"火妖","0x00000010|0x00000008":"水鬼","0x00000010|0x00000010":"花精","0x00000010|0x00000020":"靈芝精","0x00000010|0x00000040":"人蔘精","0x00000010|0x00000080":"風靈","0x00000010|0x00000100":"火元素","0x00000010|0x00000200":"水元素","0x00000010|0x00000400":"地元素","0x00000010|0x00000800":"風元素","0x00000010|0x00001000":"蝶精","0x00000010|0x00002000":"食人花","0x00000020|0x00000001":"蜘蛛精","0x00000020|0x00000002":"妖靈","0x00000020|0x00000004":"鬼卒","0x00000020|0x00000008":"蟾蜍精","0x00000020|0x00000010":"蛇妖","0x00000020|0x00000020":"蝦兵","0x00000020|0x00000040":"蜂后","0x00000020|0x00000080":"兔精","0x00000020|0x00000100":"熊妖","0x00000020|0x00000200":"虎妖","0x00000020|0x00000400":"狐妖","0x00000020|0x00000800":"狸妖","0x00000020|0x00001000":"豬妖","0x00000020|0x00002000":"猴妖","0x00000020|0x00004000":"蟹兵","0x00000020|0x00008000":"鯊兵","0x00000020|0x00010000":"章魚","0x00000020|0x00020000":"蕈傘人","0x00000020|0x00040000":"地靈","0x00000020|0x00080000":"蜥蜴人","0x00000020|0x00100000":"鷹女","0x00000020|0x00200000":"蝸牛","0x00000020|0x00400000":"狼人","0x00000040|0x00000001":"蟾蜍","0x00000040|0x00000002":"蜘蛛","0x00000040|0x00000004":"蠍子","0x00000040|0x00000008":"蛇類","0x00000040|0x00000010":"蜈蚣","0x00000040|0x00000020":"蜜蜂","0x00000040|0x00000040":"蠶","0x00000040|0x00000080":"蛤蟆","0x00000080|0x00000001":"狂猴","0x00000080|0x00000002":"巨猿","0x00000080|0x00000004":"猛虎","0x00000080|0x00000008":"惡狼","0x00000080|0x00000010":"豬類","0x00000080|0x00000020":"犬類","0x00000080|0x00000040":"鼠類","0x00000080|0x00000080":"蝙蝠","0x00000080|0x00000100":"蜥蜴","0x00000080|0x00000200":"鱷魚","0x00000080|0x00000400":"龜","0x00000080|0x00000800":"羊類","0x00000080|0x00001000":"牛類","0x00000080|0x00002000":"馬類","0x00000080|0x00004000":"豹類","0x00000080|0x00008000":"地底猛獸","0x00000080|0x00010000":"象類","0x00000080|0x00020000":"駱駝","0x00000080|0x00040000":"獅","0x00000080|0x00080000":"貓熊","0x00000080|0x00100000":"犀牛","0x00000080|0x00200000":"巨狸","0x00000080|0x00400000":"熊","0x00000100|0x00000001":"雞類","0x00000100|0x00000002":"鷹類","0x00000100|0x00000004":"蛾","0x00000200|0x00000001":"陵墓兵俑","0x00000200|0x00000002":"晶石怪","0x00000200|0x00000004":"人面獅身","0x00000200|0x00000008":"機關人","0x00000400|0x00000001":"巨蛟","0x00000400|0x00000002":"龍王","0x00000400|0x00000004":"飛龍","0x00000400|0x00000008":"西方龍","0x00000400|0x00000010":"雲蛟","0x00000400|0x00000020":"艾濟諸神","0x00000400|0x00000040":"龍龜","0x00000800|0x00000001":"鳳凰","0x00000800|0x00000002":"仙鶴","0x00000800|0x00000004":"孔雀","0x00000800|0x00000008":"娃娃魚","0x00001000|0x00000001":"麒麟","0x00001000|0x00000002":"兔仙","0x00001000|0x00000004":"狐仙","0x00001000|0x00000008":"狸仙","0x00001000|0x00000010":"紫靈貂","0x00001000|0x00000020":"蒼狼","0x00001000|0x00000040":"白鹿","0x00002000|0x00000001":"機關","0x00002000|0x00000002":"寶箱","0x00002000|0x00000004":"旗子","0x00002000|0x00000008":"專有怪","0x00002000|0x00000010":"魔王","0x00004000|0x00000001":"海魚","0x00004000|0x00000002":"蠑螈","0x00008000|0x00000001":"蛇眼星","0x00008000|0x00000002":"方舟","0x00008000|0x00000004":"太古深淵","0x00008000|0x00000008":"九界樹","0x00008000|0x00000010":"鬥羅關","0x00008000|0x00000020":"誅仙庭"};
-const RACE_MAP={"0x00000001":"正道系","0x00000002":"惡人系","0x00000004":"魔族系","0x00000008":"死靈系","0x00000010":"精怪系","0x00000020":"妖物系","0x00000040":"蠱毒系","0x00000080":"猛獸系","0x00000100":"凶禽系","0x00000200":"魔偶系","0x00000400":"神獸系","0x00000800":"仙禽系","0x00001000":"靈獸系","0x00002000":"特殊類","0x00004000":"海獸系","0x00008000":"宇外系"};
+// V220: ITEM_TYPE_MAP moved to js/data/type-maps.js.
+// V220: SUBTYPE_MAP moved to js/data/type-maps.js.
+// V220: RACE_MAP moved to js/data/type-maps.js.
 // V212: DATA 已移到 js/data/jiangshen-data.js，由 script-manifest.js 在 app-core.js 前載入。
 
 
@@ -58,18 +46,18 @@ function SZO_SYNC_DATA(){
 window.SZO_SYNC_DATA = SZO_SYNC_DATA;
 
 
-function byId(id){return document.getElementById(id)}
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function nameOf(o){return String((o&&o.Name)||'').trim()}
-function intOf(v,d=0){const n=parseInt(String(v??'').replace(/,/g,''),10);return Number.isFinite(n)?n:d}
-function fmt(n){if(typeof n==='bigint')return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,','); const x=Number(n); if(!Number.isFinite(x))return String(n??''); return Math.round(x).toLocaleString('en-US')}
-function normHex(v){if(!v)return "";v=String(v).trim();if(/^0x/i.test(v))return "0x"+v.slice(2).toUpperCase().padStart(8,"0");const n=Number(v);if(Number.isFinite(n))return "0x"+n.toString(16).toUpperCase().padStart(8,"0");return v.toUpperCase()}
-function raceName(v){const h=normHex(v);return RACE_MAP[h]||h||''}
-function subtypeName(type,sub){const th=normHex(type), sh=normHex(sub);return SUBTYPE_MAP[`${th}|${sh}`]||sh||''}
+// V220: byId moved to js/utils/common-utils.js.
+// V220: esc moved to js/utils/common-utils.js.
+// V220: nameOf moved to js/utils/common-utils.js.
+// V220: intOf moved to js/utils/common-utils.js.
+// V220: fmt moved to js/utils/common-utils.js.
+// V220: normHex moved to js/utils/common-utils.js.
+// V220: raceName moved to js/utils/common-utils.js.
+// V220: subtypeName moved to js/utils/common-utils.js.
 // [V210] itemTypeName moved active to js/item.js
 
-function statusName(id){return statusIndex[String(intOf(id))]?.Name||''}
-function magicName(id){return magicIndex[String(intOf(id))]?.Name||''}
+// V220: statusName moved to js/utils/common-utils.js.
+// V220: magicName moved to js/utils/common-utils.js.
 // [V210] itemKind moved active to js/item.js
 
 
@@ -79,8 +67,8 @@ function magicName(id){return magicIndex[String(intOf(id))]?.Name||''}
 
 
 // v88g：道具能力依舊版 index.html 的欄位順序與中文名稱，不再用「所有非 0 欄位」亂列。
-const ITEM_DETAIL_ORDER=['ID','Name','Type','Kind','ExtraStatus','Level','CLevel','HP','MP','Con','Str','Int','Dex','ExtraDef','Damage','MagicAttack','MagicDef','IceDef','FireDef','LightningDef','DarkDef','ParalysisRes','PosionRes','BlindRes','SilentRes','Value'];
-const ITEM_DETAIL_RENAME={'Name':'名稱','Type':'類型','Kind':'專剋','ExtraStatus':'特殊能力','Level':'等級','CLevel':'職等','HP':'血量','MP':'精力','Con':'體魄','Str':'力量','Int':'智慧','Dex':'靈敏','ExtraDef':'物理防禦','MagicAttack':'術法攻擊','MagicDef':'術法防禦','IceDef':'冰防','FireDef':'火防','LightningDef':'電防','DarkDef':'冥防','ParalysisRes':'抗定身','PosionRes':'抗毒','BlindRes':'抗盲目','SilentRes':'抗禁咒','Value':'價值'};
+// V220: ITEM_DETAIL_ORDER moved to js/data/type-maps.js.
+// V220: ITEM_DETAIL_RENAME moved to js/data/type-maps.js.
 
 // [V210] itemDetailRows moved active to js/item.js
 
@@ -88,9 +76,9 @@ const ITEM_DETAIL_RENAME={'Name':'名稱','Type':'類型','Kind':'專剋','Extra
 // [V210] itemAbilityFields moved active to js/item.js
 
 
-function openDrawer(){byId('drawer').classList.add('open');byId('backdrop').classList.add('open')}
-function closeDrawer(){byId('drawer').classList.remove('open');byId('backdrop').classList.remove('open')}
-function setTopStatus(s){byId('topStatus').textContent=s}
+// V220: openDrawer moved to js/utils/common-utils.js.
+// V220: closeDrawer moved to js/utils/common-utils.js.
+// V220: setTopStatus moved to js/utils/common-utils.js.
 
 function renderJiangHome(){
  byId('reader').innerHTML='';
@@ -182,45 +170,14 @@ function loadLine(msg,type='info'){
  const cls=type==='ok'?'loadOk':type==='bad'?'loadBad':'loadLine';
  el.innerHTML+=`<div class="${cls}">${msg}</div>`;
 }
-function empty(msg){byId('reader').innerHTML=`<section class="empty">${esc(msg)}</section>`}
+// V220: empty moved to js/utils/common-utils.js.
 
-function candidateUrls(name){const enc=encodeURIComponent(name).replace(/%2F/g,'/'); return ['./'+enc, RAW_BASE+enc]}
-async function fetchTimeout(url,ms=12000){const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),ms);try{return await fetch(url,{cache:'no-store',signal:ctrl.signal})}finally{clearTimeout(t)}}
-async function fetchFirst(names,label){
- const tried=[];
- for(const name of names){
-  for(const url of candidateUrls(name)){
-   try{
-    loadLine(`讀取 ${esc(name)} ...`);
-    const res=await fetchTimeout(url);
-    tried.push(`${url} HTTP ${res.status}`);
-    if(res.ok){
-      const buf=await res.arrayBuffer();
-      let text='';
-      try{text=new TextDecoder('big5').decode(buf)}catch(e){}
-      if(!text || text.includes('�')){try{text=new TextDecoder('utf-8').decode(buf)}catch(e){}}
-      if(text&&text.trim()){loadLine(`成功：${esc(name)} (${Math.round(buf.byteLength/1024)} KB)`,'ok');return {name,text,tried}}
-    }
-   }catch(e){tried.push(`${url} ${e.name==='AbortError'?'逾時':(e.message||e)}`)}
-  }
- }
- loadLine(`${esc(label)} 讀取失敗`,'bad');
- return {missing:true,tried};
-}
-function parseIni(text){
- const data=[];let cur=null;function push(){if(cur&&Object.keys(cur).length)data.push(cur);cur=null}
- for(const raw of String(text||'').replace(/^\ufeff/,'').split(/\r?\n/)){
-  const line=String(raw||'').trim(); if(!line||line.startsWith('//')||line.startsWith(';'))continue;
-  if(line.startsWith('[')&&line.endsWith(']')){push();cur={};continue}
-  const p=line.indexOf('='); if(p<0)continue;
-  const k=line.slice(0,p).trim(), v=line.slice(p+1).trim();
-  if(/^ID$/i.test(k)&&cur&&(cur.ID!==undefined||cur.Id!==undefined||cur.id!==undefined))push();
-  if(!cur)cur={}; cur[k]=v;
- }
- push(); return data.filter(x=>x&&(x.ID!==undefined||x.Name!==undefined));
-}
-function parseCSVLine(line){const out=[];let val='',q=false;for(let i=0;i<line.length;i++){const c=line[i],n=line[i+1];if(q){if(c==='"'&&n==='"'){val+='"';i++}else if(c==='"')q=false;else val+=c}else{if(c==='"')q=true;else if(c===','){out.push(val);val=''}else val+=c}}out.push(val);return out.map(x=>String(x||'').trim())}
-function parseLocations(text){const map={};for(const raw of String(text||'').replace(/^\ufeff/,'').split(/\r?\n/)){const line=raw.trim();if(!line||line.startsWith('//'))continue;let p=line.includes(',')?parseCSVLine(line):line.split(/\t+/).map(x=>x.trim());p=p.filter(Boolean);if(p.length<2)continue;const n=p[0],loc=p.slice(1).join('、');if(!n||n==='怪物名稱'||n.toLowerCase()==='name')continue;if(map[n]&&!map[n].includes(loc))map[n]+='、'+loc;else map[n]=loc}return map}
+// V220: candidateUrls moved to js/core/data-loader-utils.js.
+// V220: fetchTimeout moved to js/core/data-loader-utils.js.
+// V220: fetchFirst moved to js/core/data-loader-utils.js.
+// V220: parseIni moved to js/core/data-loader-utils.js.
+// V220: parseCSVLine moved to js/core/data-loader-utils.js.
+// V220: parseLocations moved to js/core/data-loader-utils.js.
 // [V201] parseDrop moved to js/monster.js
 
 function buildDataIndexes(){
