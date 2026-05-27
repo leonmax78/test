@@ -1,6 +1,4 @@
-// V115：安全恢復版。
-// 以 V112 為基底，不再攔截主選單，避免怪物查詢 / 掉落反查 / 武魂消失。
-// 只修改道具查詢欄位：保留名稱、類型、等級、系列快選、專剋。
+﻿// V240: enhanced item search page.
 (function(){
   function id(x){return document.getElementById(x)}
   function h(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -70,44 +68,52 @@
     return list.some(m=>m.series===series);
   }
   function latest(limit=320){
-    return dedup((items||[]).slice().reverse().filter(it=>n(it))).slice(0,limit).map(it=>'<button type="button" class="resultItem" data-item="'+h(it.ID)+'"><div class="rName">'+h(n(it))+'</div><div class="rSub">Lv.'+h(it.Level||'')+'｜'+h(tname(it.Type)||it.Type||'')+'｜'+(kname(it)?'專剋 '+h(kname(it))+'｜':'')+'ID '+h(it.ID||'')+'</div></button>').join('') || '<div class="muted">沒有道具資料</div>';
+    return dedup((items||[]).slice().reverse().filter(it=>n(it))).slice(0,limit).map(it=>{
+      const sub=['Lv.'+h(it.Level||''), h(tname(it.Type)||it.Type||''), kname(it)?'專剋 '+h(kname(it)):'', 'ID '+h(it.ID||'')].filter(Boolean).join('｜');
+      return '<button type="button" class="resultItem" data-item="'+h(it.ID)+'"><div class="rName">'+h(n(it))+'</div><div class="rSub">'+sub+'</div></button>';
+    }).join('') || '<div class="muted">沒有道具資料</div>';
   }
   function fill(){
     const c=getCache();
-    if(id('itemEqSeries'))id('itemEqSeries').innerHTML=opt(c.series,window.v110ItemEqSeries||'','全部系列');
+    if(id('itemEqSeries'))id('itemEqSeries').innerHTML=opt(c.series,window.v110ItemEqSeries||'','?券蝟餃?');
     const kindSel=id('itemKind');
     if(kindSel){
       const kinds=uniq((items||[]).map(it=>kname(it))).sort((a,b)=>a.localeCompare(b,'zh-Hant'));
-      kindSel.innerHTML=opt(kinds,window.v110ItemKind||'','全部專剋');
+      kindSel.innerHTML=opt(kinds,window.v110ItemKind||'','?券撠?');
     }
   }
 
-  // 只覆蓋「道具查詢」頁；reverse/compound 一律交回原本 renderItemPage。
   const oldRender = window.renderItemPage;
   window.renderItemPage=function(tab='item'){
     if(tab!=='item'){
       if(typeof oldRender==='function')return oldRender(tab);
       return;
     }
+    if(typeof window.ensureItemDataLoaded==="function" && (!Array.isArray(items)||!items.length)) {
+      const reader=id("reader");
+      if(reader)reader.innerHTML="<section class=\"card\"><h1>道具資料讀取中</h1><div class=\"muted\">正在載入道具資料。第一次開啟需要一點時間。</div></section>";
+      window.ensureItemDataLoaded().then(ok=>{if(ok)window.renderItemPage(tab);});
+      return;
+    }
     buildCache();
     const reader=id('reader'); if(!reader)return;
-    reader.innerHTML=`<section class="card latestSearchPage itemAdvancedSearchPage"><h1>道具查詢</h1>
+    reader.innerHTML=`<section class="card latestSearchPage itemAdvancedSearchPage"><h1>??亥岷</h1>
       <div class="latestQueryLayout">
         <div class="latestMainPane">
           <div class="kvGrid">
-            <div class="kv"><div class="k">道具名稱 / ID / 類型</div><div class="v"><input id="itemQ" placeholder="例如：宮殤、277、火傷、吸血" value="${h(window.v86ItemQ||'')}"></div></div>
-            <div class="kv"><div class="k">類型</div><div class="v"><select id="itemType"></select></div></div>
-            <div class="kv"><div class="k">等級起</div><div class="v"><input id="itemMin" type="number" value="${h(window.v86ItemMin||'')}"></div></div>
-            <div class="kv"><div class="k">等級迄</div><div class="v"><input id="itemMax" type="number" value="${h(window.v86ItemMax||'')}"></div></div>
-            <div class="kv"><div class="k">系列快選</div><div class="v"><select id="itemEqSeries"></select></div></div>
-            <div class="kv"><div class="k">專剋屬性</div><div class="v"><select id="itemKind"></select></div></div>
+            <div class="kv"><div class="k">??迂 / ID / 憿?</div><div class="v"><input id="itemQ" placeholder="靘?嚗悅畾扎?77??瑯銵" value="${h(window.v86ItemQ||'')}"></div></div>
+            <div class="kv"><div class="k">憿?</div><div class="v"><select id="itemType"></select></div></div>
+            <div class="kv"><div class="k">蝑?韏?/div><div class="v"><input id="itemMin" type="number" value="${h(window.v86ItemMin||'')}"></div></div>
+            <div class="kv"><div class="k">蝑?餈?/div><div class="v"><input id="itemMax" type="number" value="${h(window.v86ItemMax||'')}"></div></div>
+            <div class="kv"><div class="k">蝟餃?敹恍</div><div class="v"><select id="itemEqSeries"></select></div></div>
+            <div class="kv"><div class="k">撠?撅祆?/div><div class="v"><select id="itemKind"></select></div></div>
           </div>
-          <div class="notice" style="font-size:12px">系列快選依合成模擬清單建立；類型則依 ITEM.INI 原始 Type 欄位篩選。</div>
+          <div class="notice" style="font-size:12px">蝟餃?敹恍靘??芋?祆??桀遣蝡?憿??? ITEM.INI ?? Type 甈?蝭拚??/div>
           <div class="results" id="itemResults"></div>
         </div>
         <aside class="latestSidePane">
-          <div class="latestSideTitle">最新道具清單</div>
-          <div class="latestSideHint">依 ITEM.INI 原始順序反向顯示，越新的道具越上面。</div>
+          <div class="latestSideTitle">??圈??瑟???/div>
+          <div class="latestSideHint">靘?ITEM.INI ??????憿舐內嚗??啁??頞??Ｕ?/div>
           <div class="latestList">${latest()}</div>
         </aside>
       </div>
@@ -115,7 +121,7 @@
 
     const sel=id('itemType');
     if(sel){
-      sel.innerHTML='<option value="">全部類型</option>'+Object.entries(ITEM_TYPE_MAP||{}).map(([k,v])=>`<option value="${h(k)}" ${String(k)===String(window.v86ItemType||'')?'selected':''}>${h(v)}</option>`).join('');
+      sel.innerHTML='<option value="">?券憿?</option>'+Object.entries(ITEM_TYPE_MAP||{}).map(([k,v])=>`<option value="${h(k)}" ${String(k)===String(window.v86ItemType||'')?'selected':''}>${h(v)}</option>`).join('');
       sel.value=window.v86ItemType||'';
     }
     fill();
@@ -161,10 +167,13 @@
         itemMatchSeries(it,series)
       )).slice(0,180);
 
-      box.innerHTML=arr.map(it=>'<button type="button" class="resultItem" data-item="'+h(it.ID)+'"><div class="rName">'+h(n(it))+'</div><div class="rSub">Lv.'+h(it.Level||'')+'｜'+h(tname(it.Type)||it.Type||'')+'｜'+(kname(it)?'專剋 '+h(kname(it))+'｜':'')+'ID '+h(it.ID||'')+'</div></button>').join('')||'<div class="muted">找不到道具</div>';
+      box.innerHTML=arr.map(it=>{
+        const sub=['Lv.'+h(it.Level||''), h(tname(it.Type)||it.Type||''), kname(it)?'專剋 '+h(kname(it)):'', 'ID '+h(it.ID||'')].filter(Boolean).join('｜');
+        return '<button type="button" class="resultItem" data-item="'+h(it.ID)+'"><div class="rName">'+h(n(it))+'</div><div class="rSub">'+sub+'</div></button>';
+      }).join('')||'<div class="muted">沒有找到道具</div>';
     }catch(e){
       console.error('V115 searchItems failed',e);
-      const box=id('itemResults'); if(box)box.innerHTML='<div class="muted">篩選發生錯誤，請回報這組條件。</div>';
+      const box=id('itemResults'); if(box)box.innerHTML='<div class="muted">蝭拚?潛??航炊嚗????璇辣??/div>';
     }
   };
 })();

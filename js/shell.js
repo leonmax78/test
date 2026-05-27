@@ -6,6 +6,7 @@
   <button class="menuBtn" id="openMenuBtn">☰</button>
   <div class="brand"><div class="brandTitle" id="siteTitle">神州降神、經驗、修練試算、掉落查詢系統</div></div>
   <div class="maker" id="siteMaker">讀取署名中...</div>
+  <button class="shellSettingsBtn" id="openUiSettingsBtn" type="button">網頁外觀</button>
   <div class="status" id="topStatus">準備中</div>
 </div></header>
 <div class="backdrop" id="backdrop"></div>

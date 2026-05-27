@@ -1,7 +1,7 @@
-// V204 compound.js
-// Safe compound module copy.
-// app-core.js still keeps original compound functions in this version.
-// This staged module lets us keep the working合成模擬 while preparing for full extraction.
+// V224: 正式裝備合成模組。
+// app-core.js 只負責導覽與事件委派，合成資料解析、頁面渲染、材料統計與亂數模擬都集中在這裡。
+
+let eqState={main:'',series:'',tier:'',type:'',q:'',uid:'',recipeCounts:{},simTotals:null,simCount:0,simRecipeCounts:{}};
 
 function parseCompoundIniMulti(text){
  const data=[];let cur=null;
@@ -25,6 +25,49 @@ function parseCompoundIniMulti(text){
  push();return data.filter(x=>x&&(x.ID!==undefined||x.Name!==undefined||x.Item!==undefined));
 }
 
+function compTypeToDisplay(code){return ITEM_TYPE_MAP[String(code||'').trim()]||String(code||'').trim()}
+
+function compGroupFromStable(stable,types){
+ const s=Number(stable)||0;
+ const isUnder=(types||[]).includes('UNDER_BOOT');
+ if(isUnder||s>=70)return 'stable_70';
+ if(s>=50)return 'stable_50';
+ if(s>=12)return 'stable_12';
+ return 'stable_1';
+}
+
+function compGroupLabel(g){
+ return g==='stable_70'?'安定值70':g==='stable_50'?'安定值50':g==='stable_12'?'安定值12':'安定值1';
+}
+
+function compEffectList(r){
+ const defs=[
+  ['ConMin','ConMax','con','體魄'],['StrMin','StrMax','str','力量'],['IntMin','IntMax','int','智慧'],['DexMin','DexMax','dex','靈敏'],
+  ['HPMin','HPMax','hp','生命'],['MPMin','MPMax','mp','精力'],['DamageMin','DamageMax','damage','傷害'],[['MagicAttackMin','MAttMin'],['MagicAttackMax','MAttMax'],'m_attack','術法攻擊'],
+  [['ExtraDefMin','DefMin'],['ExtraDefMax','DefMax'],'def','物理防禦'],[['MagicDefMin','MDefMin'],['MagicDefMax','MDefMax'],'m_def','術法防禦'],
+  ['FireAttMin','FireAttMax','fire_attack','火傷'],['IceAttMin','IceAttMax','ice_attack','冰傷'],['LightningAttMin','LightningAttMax','lightning_attack','雷傷'],['DarkAttMin','DarkAttMax','dark_attack','冥傷'],
+  ['FireProbMin','FireProbMax','fire_prob','火傷機率'],['IceProbMin','IceProbMax','ice_prob','冰傷機率'],['LightningProbMin','LightningProbMax','lightning_prob','雷傷機率'],['DarkProbMin','DarkProbMax','dark_prob','冥傷機率']
+ ];
+ const out=[];
+ for(const [a,b,stat,label] of defs){
+  const read=(keys)=>{
+   const arr=Array.isArray(keys)?keys:[keys];
+   for(const key of arr){
+    const n=Number(r[key]);
+    if(Number.isFinite(n))return n;
+   }
+   return NaN;
+  };
+  const mn=read(a),mx=read(b);
+  if(Number.isFinite(mn)||Number.isFinite(mx)){
+   const min=Number.isFinite(mn)?mn:(Number.isFinite(mx)?mx:0);
+   const max=Number.isFinite(mx)?mx:min;
+   if(min!==0||max!==0)out.push({stat,label,min,max,stackable:true,raw_fields:[a,b]});
+  }
+ }
+ return out;
+}
+
 function buildCompoundRecipesFromIni(text){
  const rows=parseCompoundIniMulti(text);
  const old=(((compoundConfigData&&compoundConfigData.recipes)||((typeof EQUIP_COMPOUND_DATA!=='undefined')&&EQUIP_COMPOUND_DATA.recipes))||[]);
@@ -36,7 +79,12 @@ function buildCompoundRecipesFromIni(text){
   const types=Array.isArray(r.Type)?r.Type:(r.Type?[r.Type]:[]);
   const group=compGroupFromStable(r.Stable,types);
   const fallback=oldByItem[itemId]||oldByName[name]||{};
-  const effects=compEffectList(r);
+  const parsedEffects=compEffectList(r);
+  const parsedStats=new Set(parsedEffects.map(e=>e.stat));
+  const effects=[
+   ...parsedEffects,
+   ...(fallback.effects||[]).filter(e=>e&&e.stat&&!parsedStats.has(e.stat))
+  ];
   return Object.assign({},fallback,{
    id:Number(r.ID)||fallback.id||name,
    item_id:Number(itemId)||fallback.item_id||null,
@@ -51,7 +99,7 @@ function buildCompoundRecipesFromIni(text){
    type_codes:types.length?types:(fallback.type_codes||[]),
    display_types:types.length?types.map(compTypeToDisplay).filter(Boolean):(fallback.display_types||[]),
    first_raw:r.First!==undefined?Number(r.First):fallback.first_raw,
-   effects:effects.length?effects:(fallback.effects||[]),
+   effects,
    materials:fallback.materials||[],
    _recipe_source:'COMPOUND.INI'
   });
@@ -59,7 +107,7 @@ function buildCompoundRecipesFromIni(text){
 }
 
 function eqData(){
- const fallback=EQUIP_COMPOUND_DATA||{equipment:[],recipes:[],type_order:[],calc_rules:{}};
+ const fallback=(typeof EQUIP_COMPOUND_DATA!=='undefined'&&EQUIP_COMPOUND_DATA)||{equipment:[],recipes:[],type_order:[],calc_rules:{}};
  const cfg=compoundConfigData||fallback;
  const base=Object.assign({},fallback,cfg);
  if(compoundIniRecipes&&compoundIniRecipes.length){
@@ -184,7 +232,7 @@ function eqRefreshFilters(){
  const a1=all.filter(e=>!eqState.main||e.main_category===eqState.main);
  eqFillSelect('eqSeries',eqUnique(a1.map(e=>e.series_group)),'全部系列',eqState.series);
  const a2=a1.filter(e=>!eqState.series||e.series_group===eqState.series);
- const tiers=eqUnique(a2.map(e=>e.tier||e.series_grade)).sort((a,b)=>{const na=Number(a),nb=Number(b); if(!isNaN(na)&&!isNaN(nb))return na-nb; return String(a).localeCompare(String(b),'zh-Hant')});
+ const tiers=eqState.series?eqUnique(a2.map(e=>e.tier||e.series_grade)).sort((a,b)=>{const na=Number(a),nb=Number(b); if(!isNaN(na)&&!isNaN(nb))return na-nb; return String(a).localeCompare(String(b),'zh-Hant')}):[];
  eqFillSelect('eqTier',tiers,'全部階級 / 等級',eqState.tier);
  const typeOrder=eqData().type_order||[];
  const types=eqUnique(a2.filter(e=>!eqState.tier||String(e.tier||e.series_grade||'')===String(eqState.tier)).map(e=>e.display_type)).sort((a,b)=>{let ia=typeOrder.indexOf(a),ib=typeOrder.indexOf(b); if(ia<0)ia=999;if(ib<0)ib=999; return ia-ib;});
@@ -375,6 +423,17 @@ function eqRenderRecipeArea(){
 }
 
 function renderEquipmentCompoundPage(){
+ if(
+  typeof ensureCompoundDataLoaded==='function' &&
+  (
+   typeof compoundDataReady==='undefined'||!compoundDataReady||
+   !(typeof itemIndex!=='undefined'&&itemIndex&&Object.keys(itemIndex).length)
+  )
+ ){
+  byId('reader').innerHTML='<section class="card"><h1>合成資料讀取中</h1><div class="muted">正在載入道具、怪物與合成資料，請稍等。</div></section>';
+  ensureCompoundDataLoaded().then(ok=>{if(ok)renderEquipmentCompoundPage();});
+  return;
+ }
  window.v86LastView='item';
  byId('reader').innerHTML=`<section class="card"><h1>裝備合成模擬</h1><div class="muted">先篩選裝備，點選裝備後會進入合成模擬頁。</div>
  <div class="eqFilterGrid"><div><label>種類（武器 / 防具 / 仙器）</label><select id="eqMain"></select></div><div><label>系列</label><select id="eqSeries"></select></div><div><label>階級 / 等級</label><select id="eqTier"></select></div><div><label>類型 / 部位</label><select id="eqType"></select></div><div style="grid-column:1/-1"><label>搜尋裝備名稱 / ID</label><input id="eqQ" value="${esc(eqState.q||'')}" placeholder="例如：椒圖、宮殤、劍、300"></div></div>
@@ -385,6 +444,12 @@ function renderEquipmentCompoundPage(){
 }
 
 function eqRefreshSelect(){}
+
+function openEquipmentSim(uid){
+ eqState.uid=uid||eqState.uid;
+ eqResetRandom(false);
+ eqRenderPreview();
+}
 
 function eqRenderPreview(keepScroll=false){
  const y=window.scrollY||document.documentElement.scrollTop||0;
@@ -482,10 +547,13 @@ function sortMaterialEntries(entries){
  });
 }
 
-// V204: Do not override current behavior yet.
-// Expose a namespace copy for future migration.
+// 提供命名空間給之後的 Python/HTML 編輯器或其他模組檢查可用功能。
 window.SZO_COMPOUND_MODULE = {
   parseCompoundIniMulti: (typeof parseCompoundIniMulti==='function'?parseCompoundIniMulti:null),
+  compTypeToDisplay: (typeof compTypeToDisplay==='function'?compTypeToDisplay:null),
+  compGroupFromStable: (typeof compGroupFromStable==='function'?compGroupFromStable:null),
+  compGroupLabel: (typeof compGroupLabel==='function'?compGroupLabel:null),
+  compEffectList: (typeof compEffectList==='function'?compEffectList:null),
   buildCompoundRecipesFromIni: (typeof buildCompoundRecipesFromIni==='function'?buildCompoundRecipesFromIni:null),
   eqData: (typeof eqData==='function'?eqData:null),
   mergeCompoundIniRecipesWithConfig: (typeof mergeCompoundIniRecipesWithConfig==='function'?mergeCompoundIniRecipesWithConfig:null),
@@ -527,6 +595,7 @@ window.SZO_COMPOUND_MODULE = {
   eqRenderRecipeArea: (typeof eqRenderRecipeArea==='function'?eqRenderRecipeArea:null),
   renderEquipmentCompoundPage: (typeof renderEquipmentCompoundPage==='function'?renderEquipmentCompoundPage:null),
   eqRefreshSelect: (typeof eqRefreshSelect==='function'?eqRefreshSelect:null),
+  openEquipmentSim: (typeof openEquipmentSim==='function'?openEquipmentSim:null),
   eqRenderPreview: (typeof eqRenderPreview==='function'?eqRenderPreview:null),
   eqMaterials: (typeof eqMaterials==='function'?eqMaterials:null),
   eqAllMaterials: (typeof eqAllMaterials==='function'?eqAllMaterials:null),

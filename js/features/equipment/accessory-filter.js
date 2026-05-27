@@ -278,6 +278,14 @@
     return `<div class="eqTopMeta">${main.map(x=>`<span class="pill" style="font-size:14px;border-color:#60a5fa;color:#e0f2fe">${esc(x)}</span>`).join('')}${rest.map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>`;
   };
   window.renderEquipmentCompoundPage=function(){
+    if(
+      typeof ensureCompoundDataLoaded==='function' &&
+      (typeof compoundDataReady==='undefined'||!compoundDataReady)
+    ){
+      byId('reader').innerHTML='<section class="card"><h1>合成資料讀取中</h1><div class="muted">第一次進入裝備合成模擬時會載入配方與裝備資料。</div></section>';
+      ensureCompoundDataLoaded().then(ok=>{if(ok)window.renderEquipmentCompoundPage();});
+      return;
+    }
     window.v86LastView='item';
     byId('reader').innerHTML=`<section class="card"><h1>裝備合成模擬</h1><div class="muted">先依種類篩選裝備，點選裝備後會進入合成模擬頁。</div>
     <div class="eqFilterGrid"><div><label>種類（武器 / 防具 / 飾品 / 仙器）</label><select id="eqMain"></select></div><div><label>系列</label><select id="eqSeries"></select></div><div><label>階級 / 等級</label><select id="eqTier"></select></div><div><label>部位 / 類型</label><select id="eqType"></select></div><div style="grid-column:1/-1"><label>搜尋裝備名稱 / ID</label><input id="eqQ" value="${esc(eqState.q||'')}" placeholder="例如：椒圖、宮殤、五佐、飾品、300"></div></div>

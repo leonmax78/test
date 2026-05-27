@@ -1,11 +1,9 @@
-// V220: AUTH_REQUIRED / RAW_BASE / FILES moved to js/core/app-settings.js.
-// V212: EQUIP_COMPOUND_DATA 已移到 js/data/equip-compound-data.js，由 script-manifest.js 在 app-core.js 前載入。
-
+﻿// V220: AUTH_REQUIRED / RAW_BASE / FILES moved to js/core/app-settings.js.
+// V234: ??/靽桃毀鞈????賣芋蝯?箇洵銝甈∩蝙?冽????伐??踹?擐?擐活??憭芣??
 // V220: ITEM_TYPE_MAP moved to js/data/type-maps.js.
 // V220: SUBTYPE_MAP moved to js/data/type-maps.js.
 // V220: RACE_MAP moved to js/data/type-maps.js.
-// V212: DATA 已移到 js/data/jiangshen-data.js，由 script-manifest.js 在 app-core.js 前載入。
-
+// V234: DATA / TRAINING_DATA ?寧暺脤?蟡極?瑟????乓?
 
 
 let monsters=[],items=[],magics=[],statuses=[],monsterLocations={};
@@ -16,8 +14,7 @@ let itemIndex={},magicIndex={},statusIndex={},dropReverse={};
 
   
   SZO_SYNC_DATA(); // V210d after index build
-// V210c：把內部資料掛到 window，讓外部模組 reverse.js / item.js 可穩定讀取。
-  window.SZO_DATA = window.SZO_DATA || {};
+// V210c嚗??折鞈?? window嚗?憭璅∠? reverse.js / item.js ?舐帘摰???  window.SZO_DATA = window.SZO_DATA || {};
   window.SZO_DATA.items = items;
   window.SZO_DATA.itemIndex = itemIndex;
   window.SZO_DATA.dropReverse = dropReverse;
@@ -25,8 +22,45 @@ let itemIndex={},magicIndex={},statusIndex={},dropReverse={};
   window.itemIndex = itemIndex;
   window.dropReverse = dropReverse;
 let currentView='home';
+let mainDataLoadPromise=null;
+let mainDataReady=false;
+let itemDataLoadPromise=null;
+let itemDataReady=false;
+let monsterDataLoadPromise=null;
+let monsterDataReady=false;
+let optionalMainDataLoadPromise=null;
+let compoundDataLoadPromise=null;
+let compoundDataReady=false;
+let soulIniLoadPromise=null;
+let soulIniReady=false;
+let jiangshenToolLoadPromise=null;
+let jiangshenToolReady=false;
+let jiangshenSetDelegating=false;
+const lazyScriptLoads={};
+const dataBundleLoads={};
 
-// V210d：資料同步橋接。外部模組可呼叫 window.SZO_SYNC_DATA() 取得 app-core 內部資料。
+function loadScriptOnce(src){
+ if(!src)return Promise.resolve();
+ if(lazyScriptLoads[src])return lazyScriptLoads[src];
+ const existing=[...document.scripts].find(s=>{
+  const raw=s.getAttribute('src')||'';
+  if(raw===src)return true;
+  try{return new URL(s.src,location.href).pathname.endsWith('/'+src.replace(/^\.?\//,''));}
+  catch(e){return raw.split('?')[0].endsWith(src.replace(/^\.?\//,''));}
+ });
+ if(existing && existing.dataset.loaded==='1')return Promise.resolve(src);
+ lazyScriptLoads[src]=new Promise((resolve,reject)=>{
+  const s=document.createElement('script');
+  s.src=src;
+  s.async=false;
+  s.onload=()=>{s.dataset.loaded='1';resolve(src);};
+  s.onerror=()=>reject(new Error("Failed to load script: "+src));
+  document.body.appendChild(s);
+ });
+ return lazyScriptLoads[src];
+}
+
+// V210d: keep shared data references synced for extracted modules.
 function SZO_SYNC_DATA(){
   try{
     window.SZO_DATA = window.SZO_DATA || {};
@@ -36,6 +70,10 @@ function SZO_SYNC_DATA(){
     window.SZO_DATA.monsters = Array.isArray(monsters) ? monsters : [];
     window.SZO_DATA.magicIndex = magicIndex || {};
     window.SZO_DATA.statusIndex = statusIndex || {};
+    window.items = window.SZO_DATA.items;
+    window.monsters = window.SZO_DATA.monsters;
+    window.itemIndex = window.SZO_DATA.itemIndex;
+    window.dropReverse = window.SZO_DATA.dropReverse;
     return window.SZO_DATA;
   }catch(e){
     console.warn('SZO_SYNC_DATA failed', e);
@@ -61,13 +99,10 @@ window.SZO_SYNC_DATA = SZO_SYNC_DATA;
 // [V210] itemKind moved active to js/item.js
 
 
-// v88g：依舊版 index.html 的邏輯，特殊能力只讀 ITEM.INI 的 ExtraStatus。
-// 不再掃描 StatusID / Effect / EFFECT_GIVE 這些系統欄位，避免顯示成 StatusID:EFFECT_GIVE。
-// [V210] itemStatus moved active to js/item.js
+// v88g嚗??? index.html ??頛荔??寞??賢??芾? ITEM.INI ??ExtraStatus??// 銝??? StatusID / Effect / EFFECT_GIVE ??蝟餌絞甈?嚗?＊蝷箸? StatusID:EFFECT_GIVE??// [V210] itemStatus moved active to js/item.js
 
 
-// v88g：道具能力依舊版 index.html 的欄位順序與中文名稱，不再用「所有非 0 欄位」亂列。
-// V220: ITEM_DETAIL_ORDER moved to js/data/type-maps.js.
+// v88g嚗??瑁???? index.html ??雿?摨?銝剜??迂嚗?????? 0 甈?????// V220: ITEM_DETAIL_ORDER moved to js/data/type-maps.js.
 // V220: ITEM_DETAIL_RENAME moved to js/data/type-maps.js.
 
 // [V210] itemDetailRows moved active to js/item.js
@@ -83,6 +118,18 @@ window.SZO_SYNC_DATA = SZO_SYNC_DATA;
 function renderJiangHome(){
  byId('reader').innerHTML='';
 }
+
+function adoptPreloadedMonsterBundle(){
+ const bundle=window.SZO_DATA_BUNDLES&&window.SZO_DATA_BUNDLES.monsters;
+ if(Array.isArray(bundle)&&bundle.length&&!monsters.length){
+  monsters=bundle;
+  monsterDataReady=true;
+  try{ if(typeof SZO_SYNC_DATA==='function') SZO_SYNC_DATA(); }catch(e){}
+  return true;
+ }
+ return Array.isArray(monsters)&&monsters.length>0;
+}
+
 function openJiangMenuOnly(){
  currentView='jiang';
  document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='jiang'));
@@ -90,7 +137,7 @@ function openJiangMenuOnly(){
  byId('jiangForm')?.classList.add('active');
  renderJiangHome();
 }
-function setView(view){
+async function setView(view){
  currentView=view;
  document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
  document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
@@ -102,35 +149,56 @@ function setView(view){
   currentView='soul';
   document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='soul'));
   document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
+  await ensureSoulDataLoaded();
   if(typeof window.renderSoulCalcPage==='function') window.renderSoulCalcPage();
   closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});
  }
- else if(view==='reverse'){renderItemPage('reverse'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
+ else if(view==='reverse'){await renderItemPage('reverse'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
 }
 function setJiang(kind){
  openJiangMenuOnly();
- fillJiangFields(kind);
+ (async()=>{
+  if(!(await ensureJiangshenToolLoaded()))return;
+  if(!jiangshenSetDelegating && window.setJiang && window.setJiang !== setJiang){
+   jiangshenSetDelegating=true;
+   try{return window.setJiang(kind);}
+   finally{jiangshenSetDelegating=false;}
+  }
+  fillJiangFields(kind);
+ })();
 }
 
-function renderItemPage(tab='item'){
+async function renderItemPage(tab='item'){
  const activeItem=tab==='item';
  const activeReverse=tab==='reverse';
- if(tab==='compound'){renderEquipmentCompoundPage();return;}
- byId('reader').innerHTML=activeItem?`<section class="card"><h1>道具查詢</h1>
+ if(tab==='compound'){if(await ensureCompoundDataLoaded())renderEquipmentCompoundPage();return;}
+ byId('reader').innerHTML=activeItem?`<section class="card"><h1>??亥岷</h1>
   <div class="kvGrid">
-    <div class="kv"><div class="k">道具名稱 / ID / 類型</div><div class="v"><input id="itemQ" placeholder="例如：火神砲、錦囊、277" value="${esc(window.v86ItemQ||'')}"></div></div>
-    <div class="kv"><div class="k">類型</div><div class="v"><select id="itemType"></select></div></div>
-    <div class="kv"><div class="k">等級起</div><div class="v"><input id="itemMin" type="number" value="${esc(window.v86ItemMin||'')}"></div></div>
-    <div class="kv"><div class="k">等級迄</div><div class="v"><input id="itemMax" type="number" value="${esc(window.v86ItemMax||'')}"></div></div>
+    <div class="kv"><div class="k">??迂 / ID / 憿?</div><div class="v"><input id="itemQ" placeholder="靘?嚗蟡???77" value="${esc(window.v86ItemQ||'')}"></div></div>
+    <div class="kv"><div class="k">憿?</div><div class="v"><select id="itemType"></select></div></div>
+    <div class="kv"><div class="k">蝑?韏?/div><div class="v"><input id="itemMin" type="number" value="${esc(window.v86ItemMin||'')}"></div></div>
+    <div class="kv"><div class="k">蝑?餈?/div><div class="v"><input id="itemMax" type="number" value="${esc(window.v86ItemMax||'')}"></div></div>
   </div>
   <div class="results" id="itemResults"></div>
- </section>`:`<section class="card"><h1>掉落反查</h1>
-  <div class="kvGrid"><div class="kv"><div class="k">輸入道具名稱</div><div class="v"><input id="reverseQ" placeholder="例如：侯氏兵甲福袋2020" value="${esc(window.v86ReverseQ||'')}"></div></div></div>
+ </section>`:`<section class="card"><h1>??</h1>
+  <div class="kvGrid"><div class="kv"><div class="k">頛詨??迂</div><div class="v"><input id="reverseQ" placeholder="靘?嚗劑瘞?脩?鋡?020" value="${esc(window.v86ReverseQ||'')}"></div></div></div>
   <div class="results" id="reverseResults"></div>
  </section>`;
  const sel=byId('itemType');
- if(sel){sel.innerHTML='<option value="">全部類型</option>'+Object.entries(ITEM_TYPE_MAP).map(([k,v])=>`<option value="${esc(k)}">${esc(v)}</option>`).join(''); sel.value=window.v86ItemType||'';}
- if(activeItem)searchItems(); else if(activeReverse)searchReverseItems();
+ if(sel){sel.innerHTML='<option value="">?券憿?</option>'+Object.entries(ITEM_TYPE_MAP).map(([k,v])=>`<option value="${esc(k)}">${esc(v)}</option>`).join(''); sel.value=window.v86ItemType||'';}
+ if(activeItem){
+  if(itemDataReady||mainDataReady)searchItems();
+  else{
+   const box=byId('itemResults'); if(box)box.innerHTML='<div class="muted">資料載入中，請稍等。</div>';
+   ensureLookupDataLoaded().then(ok=>{if(ok)searchItems();});
+  }
+ }else if(activeReverse){
+  if(mainDataReady)searchReverseItems();
+  else{
+   const box=byId('reverseResults'); if(box)box.innerHTML='<div class="muted">資料載入中，請稍等。</div>';
+   ensureLookupDataLoaded().then(ok=>{if(ok)searchReverseItems();});
+  }
+ }
 }
 function openItemMenuOnly(){
  currentView='item';
@@ -139,30 +207,27 @@ function openItemMenuOnly(){
  byId('itemForm')?.classList.add('active');
  byId('reader').innerHTML='';
 }
-function setItemSub(kind){
+async function setItemSub(kind){
  openItemMenuOnly();
- if(kind==='item'){renderItemPage('item'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
- if(kind==='reverse'){renderItemPage('reverse'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
- if(kind==='compound'){renderEquipmentCompoundPage(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
+ if(kind==='item'){await renderItemPage('item'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
+ if(kind==='reverse'){await renderItemPage('reverse'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
+ if(kind==='compound'){if(await ensureCompoundDataLoaded())renderEquipmentCompoundPage(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
 }
 function renderHome(){
- byId('reader').innerHTML='';
+ byId('reader').innerHTML='<section class="homeBlank" aria-label="首頁"></section>';
 }
 function renderLoad(){
- // v82：正式版正常不顯示讀取狀態，避免像工程頁。
- // 讀取失敗時才會把 loadCard 顯示出來。
  const old=byId('loadCard');
  if(old)old.remove();
 }
 function loadLine(msg,type='info'){
- // v82：只有錯誤才顯示讀取狀態。
  if(type!=='bad')return;
  let card=byId('loadCard');
  if(!card){
   card=document.createElement('section');
   card.className='card';
   card.id='loadCard';
-  card.innerHTML='<h1>資料讀取失敗</h1><div id="loadLines" class="muted"></div>';
+  card.innerHTML="<h1>Data load failed</h1><div id=\"loadLines\" class=\"muted\"></div>";
   byId('reader').prepend(card);
  }
  const el=byId('loadLines');
@@ -180,6 +245,20 @@ function loadLine(msg,type='info'){
 // V220: parseLocations moved to js/core/data-loader-utils.js.
 // [V201] parseDrop moved to js/monster.js
 
+function parseDropSafe(v){
+ if(typeof parseDrop==='function')return parseDrop(v);
+ const nums=String(v||'').split(',').map(x=>x.trim()).filter(Boolean);
+ if(nums.length<4)return [];
+ const raw=[];
+ for(let i=2;i+1<nums.length;i+=2){
+  const id=String(nums[i]).trim();
+  const w=Number(nums[i+1]);
+  if(id&&id!=='0'&&Number.isFinite(w)&&w>0)raw.push([id,w]);
+ }
+ const total=raw.reduce((s,x)=>s+x[1],0);
+ return total?raw.map(([id,w])=>[id,w/total*100,w,total]):[];
+}
+
 function buildDataIndexes(){
  itemIndex={};magicIndex={};statusIndex={};dropReverse={};
  for(const it of items)itemIndex[String(it.ID).trim()]=it;
@@ -188,7 +267,7 @@ function buildDataIndexes(){
  const seenReverse=new Set();
  for(const m of monsters){
   const mid=String(m.ID||nameOf(m)||'').trim();
-  for(const [iid,rate] of parseDrop(m.DropItem)){
+  for(const [iid,rate] of parseDropSafe(m.DropItem)){
    const key=mid+'|'+String(iid).trim();
    if(seenReverse.has(key))continue;
    seenReverse.add(key);
@@ -204,60 +283,399 @@ function buildDataIndexes(){
   }
   dropReverse[iid]=[...map.values()].sort((a,b)=>b.rate-a.rate);
  }
- const sel=byId('itemType'); if(sel){sel.innerHTML='<option value="">全部類型</option>'+Object.entries(ITEM_TYPE_MAP).map(([k,v])=>`<option value="${esc(k)}">${esc(v)}</option>`).join('')}
+ const sel=byId('itemType'); if(sel){sel.innerHTML='<option value="">?券憿?</option>'+Object.entries(ITEM_TYPE_MAP).map(([k,v])=>`<option value="${esc(k)}">${esc(v)}</option>`).join('')}
  try{ if(typeof SZO_SYNC_DATA==='function') SZO_SYNC_DATA(); }catch(e){console.warn('reverse sync failed',e)} // V101 reverse sync after buildDataIndexes
 }
-async function loadAllData(){
- renderLoad();
- setTopStatus('讀取中');
+
+async function loadDataBundle(key){
+ window.SZO_DATA_BUNDLES=window.SZO_DATA_BUNDLES||{};
+ if(window.SZO_DATA_BUNDLES[key]!==undefined)return window.SZO_DATA_BUNDLES[key];
+ if(dataBundleLoads[key])return dataBundleLoads[key];
+ setTopStatus("Loading "+key);
+ const fileMap={
+  items:'data/items.bundle.js',
+  monsters:'data/monsters.bundle.js',
+  magic:'data/magic.bundle.js',
+  status:'data/status.bundle.js',
+  locations:'data/locations.bundle.js',
+  drop_reverse:'data/drop_reverse.bundle.js',
+  build_meta:'data/build_meta.bundle.js'
+ };
+ const src=fileMap[key];
+ if(!src)return null;
+ dataBundleLoads[key]=loadScriptOnce(src).then(()=>window.SZO_DATA_BUNDLES[key]??null).catch(()=>null);
+ return dataBundleLoads[key];
+}
+
+async function fetchJsonFile(path){
+ const key=String(path||'').replace(/^data\//,'').replace(/\.json$/,'');
+ const mapped=key==='drop_reverse'?'drop_reverse':key;
+ const bundle=await loadDataBundle(mapped);
+ if(bundle!==null && bundle!==undefined)return bundle;
  try{
-  const mon=await fetchFirst(FILES.monsters,'怪物 INI');
-  const item=await fetchFirst(FILES.items,'道具 INI');
-  const magic=await fetchFirst(FILES.magics,'技能 INI');
-  const status=await fetchFirst(FILES.statuses,'狀態 INI');
-  const loc=await fetchFirst(FILES.locations,'怪物位置 CSV');
-  const comp=await fetchFirst(FILES.compounds||[],'配方 INI');
-  const compCfg=await fetchFirst(FILES.compoundConfigs||[],'合成網站設定 JSON');
-  const cb=await fetchFirst(FILES.changebody||[],'武魂 INI');
-
-  if(mon.missing||item.missing||magic.missing)throw new Error('必要檔案讀取失敗');
-
-  monsters=parseIni(mon.text);
-  items=parseIni(item.text);
-  magics=parseIni(magic.text);
-  statuses=status.missing?[]:parseIni(status.text);
-  monsterLocations=loc.missing?{}:parseLocations(loc.text);
-
-  try{
-    compoundConfigData=compCfg.missing?null:JSON.parse(compCfg.text);
-  }catch(e){
-    compoundConfigData=null;
-    console.warn('compound_config.json 解析失敗',e);
-  }
-
-  compoundIniRecipes=comp.missing?[]:buildCompoundRecipesFromIni(comp.text);
-  changeBodyIniSouls=cb.missing?[]:buildSoulDataFromChangeBodyIni(cb.text);
-
-  // v82：排除第一筆/雜訊 UNKNOWN，但保留原始 INI 順序。
-  monsters=monsters.filter(x=>{
-    const n=nameOf(x).trim().toUpperCase();
-    return n && n!=='UNKNOWN' && n!=='NULL';
-  });
-  items=items.filter(x=>{
-    const n=nameOf(x).trim().toUpperCase();
-    return n && n!=='UNKNOWN' && n!=='NULL';
-  });
-
-  if(!monsters.length||!items.length||!magics.length)throw new Error('解析後資料不足');
-
-  buildDataIndexes();
-  setTopStatus('已載入');
-  renderHome();
+  const res=await fetchTimeout('./'+path,60000);
+  if(!res.ok)return null;
+  return await res.json();
  }catch(e){
-  setTopStatus('讀取失敗');
-  loadLine(String(e.message||e),'bad');
-  byId('manualGroup').style.display='block';
+  return null;
  }
+}
+
+function buildDataIndexesFromJson(prebuiltReverse){
+ itemIndex={};magicIndex={};statusIndex={};dropReverse={};
+ for(const it of items)itemIndex[String(it.ID).trim()]=it;
+ for(const m of magics)magicIndex[String(m.ID).trim()]=m;
+ for(const s of statuses)statusIndex[String(intOf(s.ID))]=s;
+ const monsterById={};
+ for(const m of monsters)monsterById[String(m.ID).trim()]=m;
+ if(prebuiltReverse && typeof prebuiltReverse==='object'){
+  for(const [itemId,rows] of Object.entries(prebuiltReverse)){
+   dropReverse[String(itemId)]=(rows||[]).map(row=>{
+    const monster=monsterById[String(row.monsterId)]||{ID:row.monsterId,Name:row.monsterName};
+    return {monster,rate:Number(row.rate)||0,weight:Number(row.weight)||0};
+   }).filter(x=>x.monster);
+  }
+ }else{
+  for(const m of monsters){
+   for(const [iid,rate] of parseDropSafe(m.DropItem)){
+    if(!dropReverse[iid])dropReverse[iid]=[];
+    dropReverse[iid].push({monster:m,rate});
+   }
+  }
+ }
+ try{ if(typeof SZO_SYNC_DATA==='function') SZO_SYNC_DATA(); }catch(e){console.warn('json sync failed',e)}
+}
+
+async function loadMainDataFromJson(){
+ const [mon,item,prebuiltReverse]=await Promise.all([
+  loadDataBundle('monsters'),
+  loadDataBundle('items'),
+  loadDataBundle('drop_reverse')
+ ]);
+ if(!Array.isArray(mon)||!mon.length||!Array.isArray(item)||!item.length)return false;
+ monsters=mon;
+ items=item;
+ magics=[];
+ statuses=[];
+ monsterLocations={};
+ buildDataIndexesFromJson(prebuiltReverse);
+ loadOptionalJsonData();
+ return true;
+}
+
+async function loadMonsterDataFromJson(){
+ if(adoptPreloadedMonsterBundle())return true;
+ const mon=await loadDataBundle('monsters');
+ if(!Array.isArray(mon)||!mon.length)return false;
+ monsters=mon;
+ monsterDataReady=true;
+ try{ if(typeof SZO_SYNC_DATA==='function') SZO_SYNC_DATA(); }catch(e){}
+ loadOptionalJsonData();
+ return true;
+}
+
+function loadOptionalJsonData(){
+ Promise.allSettled([
+  loadDataBundle('magic').then(data=>{ if(Array.isArray(data))magics=data; }),
+  loadDataBundle('status').then(data=>{ if(Array.isArray(data))statuses=data; }),
+  loadDataBundle('locations').then(data=>{ if(data&&typeof data==='object'&&!Array.isArray(data))monsterLocations=data; })
+ ]).then(()=>{
+  magicIndex={};
+  statusIndex={};
+  for(const m of magics)magicIndex[String(m.ID).trim()]=m;
+  for(const s of statuses)statusIndex[String(intOf(s.ID))]=s;
+  try{ if(typeof SZO_SYNC_DATA==='function') SZO_SYNC_DATA(); }catch(e){}
+ }).catch(e=>console.warn('optional json load failed',e));
+}
+
+async function loadItemDataFromJson(){
+ const item=await loadDataBundle('items');
+ if(!Array.isArray(item)||!item.length)return false;
+ items=item;
+ magics=[];
+ statuses=[];
+ itemIndex={};magicIndex={};statusIndex={};
+ for(const it of items)itemIndex[String(it.ID).trim()]=it;
+ try{ if(typeof SZO_SYNC_DATA==='function') SZO_SYNC_DATA(); }catch(e){}
+ loadOptionalJsonData();
+ return true;
+}
+async function loadAllData(){
+ if(mainDataReady)return true;
+ if(mainDataLoadPromise)return mainDataLoadPromise;
+ mainDataLoadPromise=(async()=>{
+  renderLoad();
+  setTopStatus("Loading data");
+  try{
+   if(await loadMainDataFromJson()){
+    mainDataReady=true;
+    itemDataReady=true;
+    setTopStatus("Ready");
+    if(currentView==='home')renderHome();
+    return true;
+   }
+   const [mon,item]=await Promise.all([
+    fetchFirst(FILES.monsters,'?芰 INI'),
+    fetchFirst(FILES.items,'? INI')
+   ]);
+
+   const missing=[];
+   if(mon.missing)missing.push('MONSTER_C.INI');
+   if(item.missing)missing.push('ITEM.INI');
+   if(missing.length)throw new Error("Required data files failed to load: "+missing.join(', '));
+
+   monsters=parseIni(mon.text);
+   items=parseIni(item.text);
+   magics=[];
+   statuses=[];
+   monsterLocations={};
+
+   // Remove placeholder rows from source INI files.
+   monsters=monsters.filter(x=>{
+     const n=nameOf(x).trim().toUpperCase();
+     return n && n!=='UNKNOWN' && n!=='NULL';
+   });
+   items=items.filter(x=>{
+     const n=nameOf(x).trim().toUpperCase();
+     return n && n!=='UNKNOWN' && n!=='NULL';
+   });
+
+   if(!monsters.length||!items.length)throw new Error("Required data is empty: monsters="+monsters.length+", items="+items.length);
+
+   buildDataIndexes();
+   mainDataReady=true;
+   setTopStatus("Ready");
+   if(currentView==='home')renderHome();
+   loadOptionalMainData();
+   return true;
+  }catch(e){
+   mainDataLoadPromise=null;
+   setTopStatus("Load failed");
+   loadLine(String(e.message||e),'bad');
+   const manual=byId('manualGroup'); if(manual)manual.style.display='block';
+   return false;
+  }
+ })();
+ return mainDataLoadPromise;
+}
+
+function loadOptionalMainData(){
+ if(optionalMainDataLoadPromise)return optionalMainDataLoadPromise;
+ optionalMainDataLoadPromise=Promise.allSettled([
+  fetchFirst(FILES.magics,'MAGIC.INI').then(magic=>{
+   if(!magic.missing)magics=parseIni(magic.text);
+  }),
+  fetchFirst(FILES.statuses,'STATUS.INI').then(status=>{
+   if(!status.missing)statuses=parseIni(status.text);
+  }),
+  fetchFirst(FILES.locations,'monster locations CSV').then(loc=>{
+   if(!loc.missing)monsterLocations=parseLocations(loc.text);
+  })
+ ]).then(()=>{
+  magicIndex={};
+  statusIndex={};
+  for(const m of magics)magicIndex[String(m.ID).trim()]=m;
+  for(const s of statuses)statusIndex[String(intOf(s.ID))]=s;
+  try{ if(typeof SZO_SYNC_DATA==='function') SZO_SYNC_DATA(); }catch(e){}
+ }).catch(e=>console.warn('optional data load failed',e));
+ return optionalMainDataLoadPromise;
+}
+
+async function ensureItemDataLoaded(){
+ return await ensureLookupDataLoaded();
+}
+window.ensureItemDataLoaded = ensureItemDataLoaded;
+
+async function ensureItemDataLoadedOld(){
+ if(mainDataReady){itemDataReady=true;return true;}
+ if(itemDataReady)return true;
+ if(itemDataLoadPromise)return itemDataLoadPromise;
+ itemDataLoadPromise=(async()=>{
+  setTopStatus("Loading item data");
+  try{
+   if(await loadItemDataFromJson()){
+    itemDataReady=true;
+    setTopStatus("Ready");
+    return true;
+   }
+   const item=await fetchFirst(FILES.items,'ITEM.INI');
+   if(item.missing)throw new Error("Required item data files failed to load: ITEM.INI");
+   items=parseIni(item.text).filter(x=>{
+    const n=nameOf(x).trim().toUpperCase();
+    return n && n!=='UNKNOWN' && n!=='NULL';
+   });
+   magics=[];
+   statuses=[];
+   itemIndex={};magicIndex={};statusIndex={};
+   for(const it of items)itemIndex[String(it.ID).trim()]=it;
+   itemDataReady=true;
+   setTopStatus("Ready");
+   try{ if(typeof SZO_SYNC_DATA==='function') SZO_SYNC_DATA(); }catch(e){}
+   loadOptionalMainData();
+   return true;
+  }catch(e){
+   itemDataLoadPromise=null;
+   setTopStatus("Item data load failed");
+   loadLine(String(e.message||e),'bad');
+   return false;
+  }
+ })();
+ return itemDataLoadPromise;
+}
+
+async function ensureMonsterDataLoaded(){
+ return await ensureLookupDataLoaded();
+}
+window.ensureMonsterDataLoaded = ensureMonsterDataLoaded;
+
+async function ensureLookupDataLoaded(){
+ if(mainDataReady&&itemDataReady&&monsterDataReady)return true;
+ if(mainDataLoadPromise)return mainDataLoadPromise;
+ mainDataLoadPromise=loadAllData();
+ const ok=await mainDataLoadPromise;
+ if(ok){
+  itemDataReady=true;
+  monsterDataReady=true;
+ }
+ return ok;
+}
+window.ensureLookupDataLoaded = ensureLookupDataLoaded;
+
+async function ensureMonsterDataLoadedOld(){
+ if(monsterDataReady||mainDataReady)return true;
+ if(monsterDataLoadPromise)return monsterDataLoadPromise;
+ monsterDataLoadPromise=(async()=>{
+  setTopStatus("Loading monster data");
+  try{
+   if(await loadMonsterDataFromJson()){
+    setTopStatus("Ready");
+    return true;
+   }
+   const mon=await fetchFirst(FILES.monsters,'MONSTER_C.INI');
+   if(mon.missing)throw new Error("Required monster data files failed to load: MONSTER_C.INI");
+   monsters=parseIni(mon.text).filter(x=>{
+    const n=nameOf(x).trim().toUpperCase();
+    return n && n!=='UNKNOWN' && n!=='NULL';
+   });
+   if(!monsters.length)throw new Error("Monster data is empty");
+   monsterDataReady=true;
+   setTopStatus("Ready");
+   try{ if(typeof SZO_SYNC_DATA==='function') SZO_SYNC_DATA(); }catch(e){}
+   loadOptionalMainData();
+   return true;
+  }catch(e){
+   monsterDataLoadPromise=null;
+   setTopStatus("Monster data load failed");
+   loadLine(String(e.message||e),'bad');
+   return false;
+  }
+ })();
+ return monsterDataLoadPromise;
+}
+
+async function ensureMainDataLoaded(){
+ if(mainDataReady)return true;
+ return await loadAllData();
+}
+window.ensureMainDataLoaded = ensureMainDataLoaded;
+
+async function ensureCompoundDataLoaded(){
+ if(compoundDataReady)return true;
+ if(compoundDataLoadPromise)return compoundDataLoadPromise;
+ compoundDataLoadPromise=(async()=>{
+  setTopStatus("Loading compound data");
+  try{
+   if(typeof ensureLookupDataLoaded==='function'){
+    const lookupOk=await ensureLookupDataLoaded();
+    if(!lookupOk)throw new Error("Required lookup data failed to load before compound data");
+   }
+   await loadScriptOnce('js/data/equip-compound-data.js');
+   const [comp,compCfg]=await Promise.all([
+    fetchFirst(FILES.compounds||[],'? INI'),
+    fetchFirst(FILES.compoundConfigs||[],'??蝬脩?閮剖? JSON')
+   ]);
+   try{
+     compoundConfigData=compCfg.missing?null:JSON.parse(compCfg.text);
+   }catch(e){
+     compoundConfigData=null;
+     console.warn('compound_config.json 閫??憭望?',e);
+   }
+   try{
+     compoundIniRecipes=comp.missing?[]:buildCompoundRecipesFromIni(comp.text);
+   }catch(e){
+     compoundIniRecipes=[];
+     console.warn("COMPOUND.INI parse failed",e);
+   }
+   compoundDataReady=true;
+   setTopStatus("Ready");
+   return true;
+  }catch(e){
+   compoundDataLoadPromise=null;
+   setTopStatus("Compound data load failed");
+   loadLine(String(e.message||e),'bad');
+   return false;
+  }
+ })();
+ return compoundDataLoadPromise;
+}
+
+async function ensureJiangshenToolLoaded(){
+ if(jiangshenToolReady)return true;
+ if(jiangshenToolLoadPromise)return jiangshenToolLoadPromise;
+ jiangshenToolLoadPromise=(async()=>{
+  const groups=window.SZO_SCRIPT_GROUPS||{};
+  const list=[
+   ...(groups.data_jiangshen||[]),
+   ...(groups.data_training||[]),
+   ...(groups.calc_jiangshen||[]),
+   ...(groups.features_jiangshen||[]),
+   ...(groups.enhancements_jiangshen||[])
+  ];
+  try{
+   setTopStatus("Loading jiangshen tool");
+   byId("reader").innerHTML="<section class=\"card\"><h1>Jiangshen tool loading</h1><div class=\"muted\">Loading jiangshen data and calculator.</div></section>";
+   for(const src of list)await loadScriptOnce(src);
+   jiangshenToolReady=true;
+   setTopStatus("Ready");
+   return true;
+  }catch(e){
+   jiangshenToolLoadPromise=null;
+   setTopStatus("Jiangshen tool load failed");
+   loadLine(String(e.message||e),'bad');
+   return false;
+  }
+ })();
+ return jiangshenToolLoadPromise;
+}
+window.ensureJiangshenToolLoaded = ensureJiangshenToolLoaded;
+
+async function ensureSoulDataLoaded(){
+ if(soulIniReady && typeof window.renderSoulCalcPage==='function')return true;
+ if(soulIniLoadPromise)return soulIniLoadPromise;
+ soulIniLoadPromise=(async()=>{
+  try{
+   const groups=window.SZO_SCRIPT_GROUPS||{};
+   const list=[
+    ...(groups.data_soul||[]),
+    ...(groups.features_soul||[])
+   ];
+   byId('reader').innerHTML='<section class="card"><h1>Soul tool loading</h1><div class="muted">Loading soul data only when this tool is opened.</div></section>';
+   for(const src of list)await loadScriptOnce(src);
+   if(typeof buildSoulDataFromChangeBodyIni!=='function')throw new Error('Soul data tool is not loaded');
+   const cb=await fetchFirst(FILES.changebody||[],'甇阡? INI');
+   changeBodyIniSouls=cb.missing?[]:buildSoulDataFromChangeBodyIni(cb.text);
+   window.changeBodyIniSouls=changeBodyIniSouls;
+   soulIniReady=true;
+   return true;
+  }catch(e){
+   soulIniReady=true;
+   changeBodyIniSouls=[];
+   window.changeBodyIniSouls=changeBodyIniSouls;
+   console.warn('甇阡? INI 霈?仃??雿輻?批??鞈?',e);
+   return true;
+  }
+ })();
+ return soulIniLoadPromise;
 }
 function locOf(n){return monsterLocations[n]||''}
 // [V201] monsterSearchText moved to js/monster.js
@@ -289,19 +707,7 @@ function searchMonsters(){searchMonstersMain();}
 // [V201] showMonsterDropPage moved to js/monster.js
 
 
-function compactWan(n){
- n=Math.max(0,Math.round(Number(n)||0));
- if(n>=10000){let v=n/10000; return (Math.round(v*10)/10).toString().replace(/\.0$/,'')+'萬';}
- return String(n);
-}
-function breakSuggestText(def){
- const d=Number(def)||0; if(!d)return '';
- const r=64893/87946; // 依玩家參考值：力 87946 / 敏 64893
- const s=d/(2+r/2), x=s*r;
- const ar=38612/60583; // 暗器 / 術者參考：力 38612 / 敏 60583
- const ax=d/(2+ar/2), as=ax*ar;
- return compactWan(s)+'力 / '+compactWan(x)+'敏；暗器約 '+compactWan(as)+'力 / '+compactWan(ax)+'敏';
-}
+// V227: compactWan / breakSuggestText moved to js/calc/jiangshen-calc.js.
 // [V201] showMonster moved to js/monster.js
 
 // [V210] itemSearchText moved active to js/item.js
@@ -330,98 +736,87 @@ function searchItems(){
   (max===null||intOf(it.Level)<=max)
  ).slice(0,150);
 
- box.innerHTML=arr.map(it=>`<button class="resultItem" data-item="${esc(it.ID)}"><div class="rName">${esc(nameOf(it))}</div><div class="rSub">Lv.${esc(it.Level||'')}｜${esc(itemTypeName(it.Type)||it.Type||'')}｜ID ${esc(it.ID)}</div></button>`).join('')||'<div class="muted">找不到道具</div>';
+ box.innerHTML=arr.map(it=>`<button class="resultItem" data-item="${esc(it.ID)}"><div class="rName">${esc(nameOf(it))}</div><div class="rSub">Lv.${esc(it.Level||'')}嚚?{esc(itemTypeName(it.Type)||it.Type||'')}嚚D ${esc(it.ID)}</div></button>`).join('')||'<div class="muted">?曆??圈???/div>';
 }
 // [V210] showItem moved active to js/item.js
 
 
 
-// [V208] searchReverseItems moved active to js/reverse.js
-
-// [V208] showReverse moved active to js/reverse.js
+// V226: searchReverseItems / showReverse moved active to js/pages/reverse-page.js.
 
 
 
-// v88o 修練機制資料：由上傳的 shenzhou_training_data_with_ability(3).json 內嵌，避免額外讀取 JSON 檔
-// V212: TRAINING_DATA 已移到 js/data/training-data.js，由 script-manifest.js 在 app-core.js 前載入。
-
+// v88o 靽桃毀璈鞈?嚗銝??shenzhou_training_data_with_ability(3).json ?批?嚗??憭???JSON 瑼?// V212: TRAINING_DATA 撌脩宏??js/data/training-data.js嚗 script-manifest.js ??app-core.js ???乓?
 
 // Jiangshen mobile
-const STATS = DATA.stats; const DISPLAY_NAMES = DATA.displayNames; const EXP_ITEMS={'乙太 8000億':8000n*100000000n,'鑽石 3000億':3000n*100000000n,'真元 500億':500n*100000000n};
-function canonicalName(n){n=String(n??'').trim();if(!n||n==='空格')return null;if(DATA.aliases[n])return DATA.aliases[n];if(DATA.baseStats[n])return n;return null}
-function ability(n,star){const c=canonicalName(n); if(!c)throw new Error('找不到降神：'+n); const base=DATA.baseStats[c], out={}; for(const st of STATS)out[st]=Number(base[st]||0)*Number(DATA.starMultipliers[st][star]||1); return out}
-function scaleAbility(src,rate=1){const out={}; for(const st of STATS)out[st]=Number(src[st]||0)*rate; return out}
-function activeCombos(names){const set=new Set(names.map(canonicalName).filter(Boolean)), res=[]; for(const [combo,members] of Object.entries(DATA.comboMembers)){const need=members.map(canonicalName).filter(Boolean); if(need.length&&need.every(x=>set.has(x)))res.push(combo)} return res}
-function comboBonus(combos){const total=Object.fromEntries(STATS.map(s=>[s,0])); for(const c of combos){const b=DATA.comboBonuses[c]||{}; for(const st of STATS)total[st]+=Number(b[st]||0)} return total}
-function comboText(c){const b=DATA.comboBonuses[c]||{}, parts=[]; for(const st of STATS){if(b[st])parts.push(`${st}+${fmt(b[st])}`)} return parts.join('、')||'無'}
+// V227: STATS / DISPLAY_NAMES / EXP_ITEMS and jiangshen formula helpers moved to js/calc/jiangshen-calc.js.
 function fillJiangFields(kind){
- const opts='<option value="">空白</option>'+DISPLAY_NAMES.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
- const stars1=Array.from({length:21},(_,i)=>`<option value="${i}" ${i===1?'selected':''}>${i} 星</option>`).join('');
- const stars20=Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} 星</option>`).join('');
+ const opts='<option value="">蝛箇</option>'+DISPLAY_NAMES.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+ const stars1=Array.from({length:21},(_,i)=>`<option value="${i}" ${i===1?'selected':''}>${i} ??/option>`).join('');
+ const stars20=Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} ??/option>`).join('');
 
  if(kind==='support'){
-  // V222: 舊版副降神模擬頁已停用。
-  // 正式副降神頁由 js/features/jiangshen/support-slots-compare.js 接管。
+  // V222: support comparison is handled by js/features/jiangshen/support-slots-compare.js.
   if(typeof window.renderSupportSlotsPage === 'function'){
     window.renderSupportSlotsPage();
   }else{
-    byId('reader').innerHTML='<section class="card"><h1>副降神試算</h1><div class="notice">副降神模組載入中，請稍候再點一次。</div></section>';
+    byId("reader").innerHTML="<section class=\"card\"><h1>Support comparison</h1><div class=\"notice\">Support comparison is loading.</div></section>";
   }
  }
 
 
  if(kind==='compare'){
-  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>主降神比較</h2><div class="kvGrid">
-  <div class="kv"><div class="k">降神 A</div><div class="v"><select id="jsA">${opts}</select><label>星等</label><select id="jsAS">${stars20}</select></div></div>
-  <div class="kv"><div class="k">降神 B</div><div class="v"><select id="jsB">${opts}</select><label>星等</label><select id="jsBS">${stars20}</select></div></div>
-  </div><div class="quick"><button id="calcCompare">產生比較頁<small>比較兩位主降神能力差異</small></button></div></section>`;
+  byId('reader').innerHTML=`<section class="card"><h1>????撽耨蝺渲岫蝞?/h1><h2>銝駁?蟡?頛?/h2><div class="kvGrid">
+  <div class="kv"><div class="k">?? A</div><div class="v"><select id="jsA">${opts}</select><label>??</label><select id="jsAS">${stars20}</select></div></div>
+  <div class="kv"><div class="k">?? B</div><div class="v"><select id="jsB">${opts}</select><label>??</label><select id="jsBS">${stars20}</select></div></div>
+  </div><div class="quick"><button id="calcCompare">?Ｙ?瘥???small>瘥??拐?銝駁?蟡?榆??/small></button></div></section>`;
  }
 
  if(kind==='stars'){
-  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>20星等</h2><div class="muted">選擇降神後，產生 0～20 星完整能力總表。</div><div class="kvGrid">
-  <div class="kv"><div class="k">選擇降神</div><div class="v"><select id="jsStarName">${opts}</select></div></div>
-  </div><div class="quick"><button id="calcStars">產生 0～20 星能力總表<small>完整顯示各星等能力</small></button></div></section>`;
+  byId('reader').innerHTML=`<section class="card"><h1>????撽耨蝺渲岫蝞?/h1><h2>20??</h2><div class="muted">?豢???敺??Ｙ? 0嚚?0 ???渲?蜇銵具?/div><div class="kvGrid">
+  <div class="kv"><div class="k">?豢???</div><div class="v"><select id="jsStarName">${opts}</select></div></div>
+  </div><div class="quick"><button id="calcStars">?Ｙ? 0嚚?0 ??蜇銵?small>摰憿舐內??蝑??/small></button></div></section>`;
  }
 
  if(kind==='starAura'){
-  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>星等 / 靈氣</h2>
-  <h3>星等：需要的降神數量</h3>
+  byId('reader').innerHTML=`<section class="card"><h1>????撽耨蝺渲岫蝞?/h1><h2>?? / ?除</h2>
+  <h3>??嚗?閬????賊?</h3>
   <div class="kvGrid">
-    <div class="kv"><div class="k">目前星等</div><div class="v"><select id="needCur">${Array.from({length:21},(_,i)=>`<option value="${i}">${i} 星</option>`).join('')}</select></div></div>
-    <div class="kv"><div class="k">目標星等</div><div class="v"><select id="needTar">${Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} 星</option>`).join('')}</select></div></div>
-    <div class="kv"><div class="k">已有降神魂數量</div><div class="v"><input id="needOwned" type="number" value="0"></div></div>
-    <div class="kv"><div class="k">降神倍率</div><div class="v"><input id="needRate" type="number" value="1"></div></div>
+    <div class="kv"><div class="k">?桀???</div><div class="v"><select id="needCur">${Array.from({length:21},(_,i)=>`<option value="${i}">${i} ??/option>`).join('')}</select></div></div>
+    <div class="kv"><div class="k">?格???</div><div class="v"><select id="needTar">${Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} ??/option>`).join('')}</select></div></div>
+    <div class="kv"><div class="k">撌脫???擳??/div><div class="v"><input id="needOwned" type="number" value="0"></div></div>
+    <div class="kv"><div class="k">????</div><div class="v"><input id="needRate" type="number" value="1"></div></div>
   </div>
-  <h3>靈氣：所需靈氣</h3>
+  <h3>?除嚗???除</h3>
   <div class="kvGrid">
-    <div class="kv"><div class="k">目前等級</div><div class="v"><input id="auraCur" type="number" value="1"></div></div>
-    <div class="kv"><div class="k">目標等級</div><div class="v"><input id="auraTar" type="number" value="20"></div></div>
+    <div class="kv"><div class="k">?桀?蝑?</div><div class="v"><input id="auraCur" type="number" value="1"></div></div>
+    <div class="kv"><div class="k">?格?蝑?</div><div class="v"><input id="auraTar" type="number" value="20"></div></div>
   </div>
-  <div class="quick"><button id="calcStarAura">計算<small>計算需要的降神數量與靈氣數</small></button></div></section>`;
+  <div class="quick"><button id="calcStarAura">閮?<small>閮??閬????賊???瘞?</small></button></div></section>`;
  }
 
  if(kind==='expPill'){
-  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>等級 / 經驗丹</h2>
+  byId('reader').innerHTML=`<section class="card"><h1>????撽耨蝺渲岫蝞?/h1><h2>蝑? / 蝬?銝?/h2>
   <div class="calcTabs">
-    <button class="calcTab active" data-exp-tab="need">等級經驗</button>
-    <button class="calcTab" data-exp-tab="eat">經驗丹升等</button>
+    <button class="calcTab active" data-exp-tab="need">蝑?蝬?</button>
+    <button class="calcTab" data-exp-tab="eat">蝬?銝孵?蝑?/button>
   </div>
   <div id="expTabNeed">
-    <h3>等級：需要的經驗值</h3>
+    <h3>蝑?嚗?閬?蝬???/h3>
     <div class="kvGrid">
-      <div class="kv"><div class="k">現在等級</div><div class="v"><input id="expCur" type="number" value="1"></div></div>
-      <div class="kv"><div class="k">目標等級</div><div class="v"><input id="expTar" type="number" value="2000"></div></div>
+      <div class="kv"><div class="k">?曉蝑?</div><div class="v"><input id="expCur" type="number" value="1"></div></div>
+      <div class="kv"><div class="k">?格?蝑?</div><div class="v"><input id="expTar" type="number" value="2000"></div></div>
     </div>
-    <div class="quick"><button id="calcExpNeed">計算需要經驗<small>換算乙太、聖鑽、真元顆數</small></button></div>
+    <div class="quick"><button id="calcExpNeed">閮??閬?撽?small>??銋云???賬?????/small></button></div>
   </div>
   <div id="expTabEat" style="display:none">
-    <h3>經驗丹：吃丹可提升到幾等</h3>
+    <h3>蝬?銝對??號?舀??撟曄?</h3>
     <div class="kvGrid">
-      <div class="kv"><div class="k">現在等級</div><div class="v"><input id="eatStartLv" type="number" value="1"></div></div>
-      <div class="kv"><div class="k">經驗丹單位（億）</div><div class="v"><input id="eatUnitYi" type="number" value="100"></div></div>
-      <div class="kv"><div class="k">經驗丹數量</div><div class="v"><input id="eatCount" type="number" value="1"></div></div>
+      <div class="kv"><div class="k">?曉蝑?</div><div class="v"><input id="eatStartLv" type="number" value="1"></div></div>
+      <div class="kv"><div class="k">蝬?銝孵雿???</div><div class="v"><input id="eatUnitYi" type="number" value="100"></div></div>
+      <div class="kv"><div class="k">蝬?銝寞??/div><div class="v"><input id="eatCount" type="number" value="1"></div></div>
     </div>
-    <div class="quick"><button id="calcEatPill">計算升等<small>例如單位填 100 代表 100 億</small></button></div>
+    <div class="quick"><button id="calcEatPill">閮???<small>靘??桐?憛?100 隞?” 100 ??/small></button></div>
   </div>
   </section>`;
  }
@@ -442,524 +837,51 @@ function updateSupportOptions(){
  for(const sel of selects){
   const self=sel.value;
   const current=self;
-  sel.innerHTML='<option value="">空白</option>'+DISPLAY_NAMES.filter(n=>n===current || !chosen.includes(n)).map(n=>`<option value="${esc(n)}" ${n===current?'selected':''}>${esc(n)}</option>`).join('');
+  sel.innerHTML='<option value="">蝛箇</option>'+DISPLAY_NAMES.filter(n=>n===current || !chosen.includes(n)).map(n=>`<option value="${esc(n)}" ${n===current?'selected':''}>${esc(n)}</option>`).join('');
  }
 }
-let eqState={main:'',series:'',tier:'',type:'',q:'',uid:'',recipeCounts:{},simTotals:null,simCount:0,simRecipeCounts:{}};
-
-
-// V106：CHANGEBODYITEM.INI 武魂資料讀取。
-// [V207] parseChangeBodyIniBlocks moved active to external module.
-
-// [V207] soulNum moved active to external module.
-
-// [V207] buildSoulDataFromChangeBodyIni moved active to external module.
-
-// [V207] getSoulListV106 moved active to external module.
-
-
-// V104：COMPOUND.INI 配方讀取。
-// 注意：COMPOUND.INI 欄位不足時，材料會從原內嵌配方備援補上，避免材料頁壞掉。
-function parseCompoundIniMulti(text){
- const data=[];let cur=null;
- function push(){if(cur&&Object.keys(cur).length)data.push(cur);cur=null}
- for(const raw of String(text||'').replace(/^\ufeff/,'').split(/\r?\n/)){
-  const line=String(raw||'').trim();
-  if(!line||line.startsWith('//')||line.startsWith(';'))continue;
-  if(line.startsWith('[')&&line.endsWith(']')){push();cur={};continue}
-  const p=line.indexOf('='); if(p<0)continue;
-  const k=line.slice(0,p).trim(),v=line.slice(p+1).trim();
-  if(/^ID$/i.test(k)&&cur&&(cur.ID!==undefined))push();
-  if(!cur)cur={};
-  if(k==='Type'){
-   if(!Array.isArray(cur.Type))cur.Type=cur.Type?[cur.Type]:[];
-   cur.Type.push(v);
-  }else if(cur[k]!==undefined){
-   if(!Array.isArray(cur[k]))cur[k]=[cur[k]];
-   cur[k].push(v);
-  }else cur[k]=v;
- }
- push();return data.filter(x=>x&&(x.ID!==undefined||x.Name!==undefined||x.Item!==undefined));
+// V238: restored Chinese training calculator UI and filtering.
+function trainingData(){
+ return (typeof TRAINING_DATA!=="undefined"&&TRAINING_DATA&&Array.isArray(TRAINING_DATA.data))?TRAINING_DATA.data:[];
 }
-function compTypeToDisplay(code){return ITEM_TYPE_MAP[String(code||'').trim()]||String(code||'').trim()}
-function compGroupFromStable(stable,types){
- const s=Number(stable)||0;
- const isUnder=(types||[]).includes('UNDER_BOOT');
- if(isUnder||s>=70)return 'stable_70';
- if(s>=50)return 'stable_50';
- if(s>=12)return 'stable_12';
- return 'stable_1';
+function trainingGroupOrder(){
+ return (typeof TRAINING_DATA!=="undefined"&&TRAINING_DATA&&Array.isArray(TRAINING_DATA.groupOrder))?TRAINING_DATA.groupOrder:[];
 }
-function compGroupLabel(g){return g==='stable_70'?'安定值70':g==='stable_50'?'安定值50':g==='stable_12'?'安定值12':'安定值1'}
-function compEffectList(r){
- const defs=[
-  ['ConMin','ConMax','con','體魄'],['StrMin','StrMax','str','力量'],['IntMin','IntMax','int','智慧'],['DexMin','DexMax','dex','靈敏'],
-  ['HPMin','HPMax','hp','生命'],['MPMin','MPMax','mp','精力'],['DamageMin','DamageMax','damage','傷害'],['MagicAttackMin','MagicAttackMax','m_attack','術法攻擊'],
-  ['ExtraDefMin','ExtraDefMax','def','物理防禦'],['MagicDefMin','MagicDefMax','m_def','術法防禦'],
-  ['FireAttMin','FireAttMax','fire_attack','火傷'],['IceAttMin','IceAttMax','ice_attack','冰傷'],['LightningAttMin','LightningAttMax','lightning_attack','雷傷'],['DarkAttMin','DarkAttMax','dark_attack','冥傷'],
-  ['FireProbMin','FireProbMax','fire_prob','火傷機率'],['IceProbMin','IceProbMax','ice_prob','冰傷機率'],['LightningProbMin','LightningProbMax','lightning_prob','雷傷機率'],['DarkProbMin','DarkProbMax','dark_prob','冥傷機率']
- ];
- const out=[];
- for(const [a,b,stat,label] of defs){
-  const mn=Number(r[a]),mx=Number(r[b]);
-  if(Number.isFinite(mn)||Number.isFinite(mx)){
-   const min=Number.isFinite(mn)?mn:(Number.isFinite(mx)?mx:0);
-   const max=Number.isFinite(mx)?mx:min;
-   if(min!==0||max!==0)out.push({stat,label,min,max,stackable:true,raw_fields:[a,b]});
-  }
- }
- return out;
-}
-function buildCompoundRecipesFromIni(text){
- const rows=parseCompoundIniMulti(text);
- const old=(((compoundConfigData&&compoundConfigData.recipes)||((typeof EQUIP_COMPOUND_DATA!=='undefined')&&EQUIP_COMPOUND_DATA.recipes))||[]);
- const oldByItem={},oldByName={};
- old.forEach(o=>{if(o.item_id)oldByItem[String(o.item_id)]=o;if(o.name)oldByName[o.name]=o});
- return rows.map(r=>{
-  const itemId=String(r.Item||'').trim();
-  const name=String(r.Name||('配方 '+(r.ID||itemId))).trim();
-  const types=Array.isArray(r.Type)?r.Type:(r.Type?[r.Type]:[]);
-  const group=compGroupFromStable(r.Stable,types);
-  const fallback=oldByItem[itemId]||oldByName[name]||{};
-  const effects=compEffectList(r);
-  return Object.assign({},fallback,{
-   id:Number(r.ID)||fallback.id||name,
-   item_id:Number(itemId)||fallback.item_id||null,
-   item_name:name,
-   name,
-   group,
-   group_label:compGroupLabel(group),
-   stable_value:Number(r.Stable)||fallback.stable_value||0,
-   max_ref:Number(r.MaxRef)||fallback.max_ref||0,
-   fail_rate:(r.Fail!==undefined&&r.Fail!=='')?Number(r.Fail):fallback.fail_rate,
-   value:(r.Value!==undefined&&r.Value!=='')?Number(r.Value):fallback.value,
-   type_codes:types.length?types:(fallback.type_codes||[]),
-   display_types:types.length?types.map(compTypeToDisplay).filter(Boolean):(fallback.display_types||[]),
-   first_raw:r.First!==undefined?Number(r.First):fallback.first_raw,
-   effects:effects.length?effects:(fallback.effects||[]),
-   materials:fallback.materials||[],
-   _recipe_source:'COMPOUND.INI'
-  });
- }).filter(r=>r.name);
-}
-
-function eqData(){
- const fallback=EQUIP_COMPOUND_DATA||{equipment:[],recipes:[],type_order:[],calc_rules:{}};
- const cfg=compoundConfigData||fallback;
- const base=Object.assign({},fallback,cfg);
- if(compoundIniRecipes&&compoundIniRecipes.length){
-  base.recipes=mergeCompoundIniRecipesWithConfig(compoundIniRecipes,(cfg.recipes||fallback.recipes||[]));
- }
- return base;
-}
-function mergeCompoundIniRecipesWithConfig(iniRecipes,configRecipes){
- const cfgByItem={},cfgByName={};
- (configRecipes||[]).forEach(r=>{
-  if(r.item_id!==undefined&&r.item_id!==null)cfgByItem[String(r.item_id)]=r;
-  if(r.name)cfgByName[String(r.name)]=r;
- });
- const cfgRecipeNames=new Set((configRecipes||[]).map(x=>String(x.name||'').trim()).filter(Boolean));
- const cfgRecipeItems=new Set((configRecipes||[]).map(x=>String(x.item_id||'').trim()).filter(Boolean));
- return (iniRecipes||[]).map(r=>{
-  const cfg=cfgByItem[String(r.item_id)]||cfgByName[String(r.name)]||{};
-  // 只有 compound_config.json 白名單內的配方才顯示
-  const inWhitelist=
-    cfgRecipeNames.has(String(r.name||'').trim()) ||
-    cfgRecipeItems.has(String(r.item_id||'').trim());
-
-  const out=Object.assign({},cfg,r);
-
-  // 白名單外直接隱藏
-  if(!inWhitelist) out.hidden=true;
-
-  // config 控制網站邏輯
-  out.materials=(cfg.materials&&cfg.materials.length)?cfg.materials:(r.materials||[]);
-  if(cfg.hidden!==undefined)out.hidden=cfg.hidden;
-  if(cfg.display===false)out.hidden=true;
-
-  if(cfg.group_override)out.group=cfg.group_override;
-  if(cfg.group_label_override)out.group_label=cfg.group_label_override;
-  if(cfg.sort_order!==undefined)out.sort_order=cfg.sort_order;
-
-  out._recipe_source='COMPOUND.INI + compound_config.json';
-  return out;
- }).filter(r=>!r.hidden);
-}
-function eqUnique(arr){return [...new Set(arr.filter(v=>v!==undefined&&v!==null&&String(v).trim()!==''))]}
-
-// V104：合成裝備能力優先讀 ITEM.INI；讀不到才用內嵌備援。
-function eqEquipList(){return (eqData().equipment||[]).map(eqMergeItemIniStats)}
-function eqMergeItemIniStats(eq){
- if(!eq)return eq;
- const id=String(eq.item_id||eq.Item||'').trim();
- const ini=(typeof itemIndex!=='undefined'&&itemIndex)?itemIndex[id]:null;
- if(!ini)return eq;
- const copy=Object.assign({},eq);
- copy.raw_item=ini;
- copy.base_stats=eqBuildBaseStatsFromItemIni(ini,eq.base_stats||{});
- copy._stats_source='ITEM.INI';
- return copy;
-}
-function eqNumOrUndef(v){if(v===undefined||v===null||v==='')return undefined;const n=Number(v);return Number.isFinite(n)?n:undefined}
-function eqAddStatFromIni(base,key,label,val){const n=eqNumOrUndef(val);if(n!==undefined&&n!==0)base[key]={label,value:n}}
-function eqAddRangeFromIni(base,key,label,min,max){
- const a=eqNumOrUndef(min),b=eqNumOrUndef(max);
- if(a!==undefined||b!==undefined){const mn=a!==undefined?a:(b||0),mx=b!==undefined?b:mn;if(mn!==0||mx!==0)base[key]={label,min:mn,max:mx}}
-}
-function eqBuildBaseStatsFromItemIni(raw,fallback){
- const base={};
- if(raw.Level!==undefined)base.level={label:'等級',value:eqNumOrUndef(raw.Level)||0};
- if(raw.CLevel!==undefined)base.clevel={label:'職等(CL)',value:eqNumOrUndef(raw.CLevel)||0};
- eqAddStatFromIni(base,'con','體魄',raw.Con);
- eqAddStatFromIni(base,'str','力量',raw.Str);
- eqAddStatFromIni(base,'int','智慧',raw.Int);
- eqAddStatFromIni(base,'dex','靈敏',raw.Dex);
- eqAddStatFromIni(base,'hp','生命',raw.HP);
- eqAddStatFromIni(base,'mp','精力',raw.MP);
- eqAddRangeFromIni(base,'damage','傷害',raw.DamageMin,raw.DamageMax);
- eqAddStatFromIni(base,'m_attack','術法攻擊',raw.MagicAttack);
- eqAddStatFromIni(base,'def','物理防禦',raw.ExtraDef);
- eqAddStatFromIni(base,'m_def','術法防禦',raw.MagicDef);
- eqAddStatFromIni(base,'fire_attack','火傷',raw.FireAttack);
- eqAddStatFromIni(base,'ice_attack','冰傷',raw.IceAttack);
- eqAddStatFromIni(base,'lightning_attack','雷傷',raw.LightningAttack);
- eqAddStatFromIni(base,'dark_attack','冥傷',raw.DarkAttack);
- eqAddStatFromIni(base,'fire_prob','火傷機率',raw.FireProb);
- eqAddStatFromIni(base,'ice_prob','冰傷機率',raw.IceProb);
- eqAddStatFromIni(base,'lightning_prob','雷傷機率',raw.LightningProb);
- eqAddStatFromIni(base,'dark_prob','冥傷機率',raw.DarkProb);
- eqAddStatFromIni(base,'ice_def','冰防',raw.IceDef);
- eqAddStatFromIni(base,'fire_def','火防',raw.FireDef);
- eqAddStatFromIni(base,'lightning_def','雷防',raw.LightningDef);
- eqAddStatFromIni(base,'dark_def','冥防',raw.DarkDef);
- eqAddStatFromIni(base,'paralysis_res','抗定身',raw.ParalysisRes);
- eqAddStatFromIni(base,'poison_res','抗毒',raw.PosionRes??raw.PoisonRes);
- eqAddStatFromIni(base,'blind_res','抗盲目',raw.BlindRes);
- eqAddStatFromIni(base,'silent_res','抗禁咒',raw.SilentRes);
- eqAddStatFromIni(base,'durability','耐久',raw.Durabulity??raw.Durability);
- eqAddStatFromIni(base,'weight','重量',raw.Weight);
- for(const k of ['level','clevel'])if(base[k]===undefined&&fallback[k]!==undefined)base[k]=fallback[k];
- return base;
-}
-
-function eqRecipesForType(tp){return (eqData().recipes||[]).filter(r=>(r.display_types||[]).includes(tp))}
-function eqFmtVal(v){return v===undefined||v===null||v===''?'':fmt(Number(v)||0)}
-function eqStatValueText(o){if(!o)return''; if(o.min!==undefined||o.max!==undefined)return `${eqFmtVal(o.min)}～${eqFmtVal(o.max)}`; return eqFmtVal(o.value)}
-function eqStatNum(o,side){if(!o)return 0; if(o.value!==undefined)return Number(o.value)||0; if(side==='max')return Number(o.max)||0; return Number(o.min)||0}
-function eqFilteredEquipment(){
- const q=(eqState.q||'').trim().toLowerCase();
- return eqEquipList().filter(e=>(!eqState.main||e.main_category===eqState.main)&&(!eqState.series||e.series_group===eqState.series)&&(!eqState.tier||String(e.tier||e.series_grade||'')===String(eqState.tier))&&(!eqState.type||e.display_type===eqState.type)&&(!q||String(e.search_text||e.name||'').toLowerCase().includes(q))).slice(0,160);
-}
-function eqFillSelect(id,vals,allLabel,cur){const el=byId(id); if(!el)return; el.innerHTML=`<option value="">${esc(allLabel)}</option>`+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join(''); el.value=cur||'';}
-function eqRefreshFilters(){
- const all=eqEquipList();
- eqFillSelect('eqMain',eqUnique(all.map(e=>e.main_category)),'全部種類',eqState.main);
- const a1=all.filter(e=>!eqState.main||e.main_category===eqState.main);
- eqFillSelect('eqSeries',eqUnique(a1.map(e=>e.series_group)),'全部系列',eqState.series);
- const a2=a1.filter(e=>!eqState.series||e.series_group===eqState.series);
- const tiers=eqUnique(a2.map(e=>e.tier||e.series_grade)).sort((a,b)=>{const na=Number(a),nb=Number(b); if(!isNaN(na)&&!isNaN(nb))return na-nb; return String(a).localeCompare(String(b),'zh-Hant')});
- eqFillSelect('eqTier',tiers,'全部階級 / 等級',eqState.tier);
- const typeOrder=eqData().type_order||[];
- const types=eqUnique(a2.filter(e=>!eqState.tier||String(e.tier||e.series_grade||'')===String(eqState.tier)).map(e=>e.display_type)).sort((a,b)=>{let ia=typeOrder.indexOf(a),ib=typeOrder.indexOf(b); if(ia<0)ia=999;if(ib<0)ib=999; return ia-ib;});
- eqFillSelect('eqType',types,'全部類型 / 部位',eqState.type);
-}
-function eqRefreshList(){
- const box=byId('eqList'); if(!box)return;
- const arr=eqFilteredEquipment();
- box.innerHTML=arr.map(e=>`<button class="resultItem" data-eq-uid="${esc(e.uid)}"><div class="rName">${esc(e.name)}</div><div class="rSub">${esc(e.main_category||'')}｜${esc(e.series||e.series_group||'')}｜${esc(e.display_type||'')}｜Lv.${esc(e.base_stats?.level||e.raw_item?.Level||'')}｜ID ${esc(e.item_id||'')}</div></button>`).join('') || '<div class="empty">請調整篩選條件，或找不到裝備。</div>';
-}
-function eqSelected(){return eqEquipList().find(e=>e.uid===eqState.uid)||null}
-function eqAllowedRecipes(){
- const eq=eqSelected(); if(!eq)return [];
- const tp=eq.display_type;
- return eqRecipesForType(tp);
-}
-function eqRecipeById(id){return (eqData().recipes||[]).find(r=>String(r.id)===String(id))||null}
-function eqSelectedRecipes(){
- const allowed=new Set(eqAllowedRecipes().map(r=>String(r.id)));
- return eqSortRecipePicks(Object.entries(eqState.recipeCounts||{}).filter(([id,c])=>allowed.has(String(id)) && Number(c)>0).map(([id,c])=>({recipe:eqRecipeById(id),count:Math.max(1,intOf(c,1))})).filter(x=>x.recipe));
-}
-function eqRecipeDefaultCount(recipe){return Math.max(1,intOf(recipe?.default_use_count,1)||1)}
-function eqRecipeGroupRank(recipe){
- const g=recipe?.group||'';
- if(g==='stable_1')return 1;
- if(g==='stable_12')return 2;
- if(g==='stable_50')return 3;
- if(g==='stable_70')return 4;
- return 99;
-}
-function eqRecipeOrderIndex(recipe){
- const arr=eqData().recipes||[];
- const i=arr.findIndex(r=>String(r.id)===String(recipe?.id));
- return i<0?99999:i;
-}
-function eqSortRecipeObjects(arr){
- return (arr||[]).slice().sort((a,b)=>eqRecipeGroupRank(a)-eqRecipeGroupRank(b)||eqRecipeOrderIndex(a)-eqRecipeOrderIndex(b)||String(a.name||'').localeCompare(String(b.name||''),'zh-Hant'));
-}
-function eqSortRecipePicks(arr){
- return (arr||[]).slice().sort((a,b)=>eqRecipeGroupRank(a.recipe)-eqRecipeGroupRank(b.recipe)||eqRecipeOrderIndex(a.recipe)-eqRecipeOrderIndex(b.recipe)||String(a.recipe?.name||'').localeCompare(String(b.recipe?.name||''),'zh-Hant'));
-}
-function eqAddRecipe(id){
- const r=eqRecipeById(id); if(!r)return;
- eqState.recipeCounts=eqState.recipeCounts||{};
- if(!eqState.recipeCounts[String(id)]) eqState.recipeCounts[String(id)]=eqRecipeDefaultCount(r);
- eqResetRandom(false);
- eqRenderPreview(true);
-}
-function eqSimAddRecipe(id){
- const r=eqRecipeById(id); if(!r)return;
- eqState.simSelectedRecipes=eqState.simSelectedRecipes||{};
- eqState.simSelectedRecipes[String(id)]=true;
- renderEquipmentRandomPage(true);
-}
-
-function eqToggleRecipe(id){
- const r=eqRecipeById(id); if(!r)return;
- eqState.recipeCounts=eqState.recipeCounts||{};
- if(eqState.recipeCounts[String(id)]) delete eqState.recipeCounts[String(id)];
- else eqState.recipeCounts[String(id)]=eqRecipeDefaultCount(r);
- eqResetRandom();
- eqRenderPreview();
-}
-function eqSetRecipeCount(id,val){
- eqState.recipeCounts=eqState.recipeCounts||{};
- if(eqState.recipeCounts[String(id)]!==undefined){eqState.recipeCounts[String(id)]=Math.max(1,intOf(val,1)); eqResetRandom(); eqRenderPreview();}
-}
-function eqEffectAccumulator(){
- const acc={};
- for(const {recipe,count} of eqSelectedRecipes()){
-  for(const e of recipe.effects||[]){
-   const k=e.stat; if(!acc[k])acc[k]={stat:k,label:e.label||eqData().stat_labels?.[k]||k,min:0,max:0,value:0,unit:e.unit||'',hasRange:false,hasValue:false,stackable:e.stackable!==false, parts:[]};
-   const mult=e.stackable===false?1:count;
-   if(e.min!==undefined||e.max!==undefined){acc[k].hasRange=true; acc[k].min+=(Number(e.min)||0)*mult; acc[k].max+=(Number(e.max)||0)*mult; acc[k].parts.push(`${recipe.name} × ${count}：+${fmt((Number(e.min)||0)*mult)}${(Number(e.max)||0)!=(Number(e.min)||0)?'～'+fmt((Number(e.max)||0)*mult):''}`);}
-   else {acc[k].hasValue=true; acc[k].value+=(Number(e.value)||0)*mult; acc[k].parts.push(`${recipe.name} × ${count}：${(Number(e.value)||0)>=0?'+':''}${fmt((Number(e.value)||0)*mult)}${e.unit||''}`);}
-  }
- }
- return acc;
-}
-function eqBaseStatsWithRaw(eq){
- const base=Object.assign({},eq?.base_stats||{});
- const raw=eq?.raw_item||{};
- const add=(key,label,value)=>{if(value!==undefined&&value!==null&&value!==''&&base[key]===undefined)base[key]={label,value:Number(value)||0};};
- const addRange=(key,label,min,max)=>{if((min!==undefined||max!==undefined)&&base[key]===undefined)base[key]={label,min:Number(min)||0,max:Number(max??min)||0};};
- add('m_attack','術法攻擊',raw.MagicAttack);
- add('def','物理防禦',raw.ExtraDef);
- add('m_def','術法防禦',raw.MagicDef);
- add('ice_def','冰防',raw.IceDef);
- add('fire_def','火防',raw.FireDef);
- add('lightning_def','雷防',raw.LightningDef);
- add('dark_def','冥防',raw.DarkDef);
- add('paralysis_res','抗定身',raw.ParalysisRes);
- add('poison_res','抗毒',raw.PosionRes ?? raw.PoisonRes);
- add('blind_res','抗盲目',raw.BlindRes);
- add('silent_res','抗禁咒',raw.SilentRes);
- addRange('damage','傷害',raw.DamageMin,raw.DamageMax);
- add('level','等級',raw.Level);
- add('clevel','職等(CL)',raw.CLevel);
- return base;
-}
-function eqCLevelText(v){
- const n=Number(v);
- const map={0:'無',1:'一轉',2:'二轉',3:'三轉',4:'四轉',5:'五轉'};
- return map[n]||String(v||'');
-}
-function eqStatLabel(k,o,e){
- if(k==='m_attack')return '術法攻擊';
- if(k==='def')return '物理防禦';
- if(k==='m_def')return '術法防禦';
- if(k==='ice_def')return '冰防';
- if(k==='fire_def')return '火防';
- if(k==='lightning_def')return '雷防';
- if(k==='dark_def')return '冥防';
- if(k==='paralysis_res')return '抗定身';
- if(k==='poison_res')return '抗毒';
- if(k==='blind_res')return '抗盲目';
- if(k==='silent_res')return '抗禁咒';
- if(k==='level')return '等級';
- if(k==='clevel')return '職等(CL)';
- return o?.label||e?.label||eqData().stat_labels?.[k]||k;
-}
-function eqDisplayStatText(k,o){
- if(k==='clevel' && o)return eqCLevelText(o.value);
- return eqStatValueText(o)||'-';
-}
-function eqMetaLine(eq){
- const base=eqBaseStatsWithRaw(eq);
- const level=base.level?.value||eq?.raw_item?.Level||'';
- const clevel=base.clevel?.value??eq?.raw_item?.CLevel??'';
- const main=['等級 '+(level||'-'),'職等(CL) '+eqCLevelText(clevel)];
- const rest=['ID '+eq.item_id,eq.main_category,eq.series||eq.series_group,eq.display_type,(eq._stats_source||'內嵌備援')].filter(Boolean);
- return `<div class="eqTopMeta">${main.map(x=>`<span class="pill" style="font-size:14px;border-color:#60a5fa;color:#e0f2fe">${esc(x)}</span>`).join('')}${rest.map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>`;
-}
-function eqRenderStats(eq,includeEffects=true){
- const base=eqBaseStatsWithRaw(eq); const effMap=includeEffects?eqEffectAccumulator():{};
- const keys=eqUnique([...Object.keys(base),...Object.keys(effMap)]);
- const order=['level','clevel','con','str','int','dex','hp','mp','damage','m_attack','def','m_def','ice_def','fire_def','lightning_def','dark_def','fire_attack','ice_attack','lightning_attack','dark_attack','fire_prob','ice_prob','lightning_prob','dark_prob','paralysis_res','poison_res','blind_res','silent_res','attack','attack_range','durability','weight'];
- keys.sort((a,b)=>(order.indexOf(a)<0?999:order.indexOf(a))-(order.indexOf(b)<0?999:order.indexOf(b)) || String(a).localeCompare(String(b),'zh-Hant'));
- const left=keys.map(k=>{const o=base[k]; const label=eqStatLabel(k,o,null); return `<div class="kv"><div class="k">${esc(label)}</div><div class="v">${esc(eqDisplayStatText(k,o))}</div></div>`}).join('');
- if(!includeEffects){return `<div class="card" style="box-shadow:none"><h2 class="eqCompactTitle">目前裝備能力</h2><div class="eqStatGrid">${left}</div></div>`;}
- const right=keys.map(k=>{
-  const o=base[k]; const e=effMap[k]; const label=eqStatLabel(k,o,e);
-  let baseText=eqDisplayStatText(k,o); let addText=''; let finalText=baseText;
-  if(e){
-   if(e.hasRange){const bm=eqStatNum(o,'min'), bx=eqStatNum(o,'max'); const am=e.min, ax=e.max; addText=`<div class="eqYellow">+${fmt(am)}${am!==ax?'～'+fmt(ax):''}${e.unit||''}</div>`; finalText=`${fmt(bm+am)}${(bx+ax)!==(bm+am)?'～'+fmt(bx+ax):''}`;}
-   else {const av=e.value; addText=`<div class="eqYellow">${av>=0?'+':''}${fmt(av)}${e.unit||''}</div>`; finalText=e.stackable===false?`${baseText} / ${fmt(av)}${e.unit||''}`:fmt(eqStatNum(o,'min')+av);}
-   if(e.parts.length)addText+=`<div class="rSub">${esc(e.parts.join('、'))}</div>`;
-  }
-  return `<div class="kv"><div class="k">${esc(label)}</div><div class="v">${esc(finalText)}${addText}</div></div>`;
- }).join('');
- return `<div class="eqPreviewGrid"><div class="card" style="box-shadow:none"><h2 class="eqCompactTitle">裝備能力</h2><div class="eqStatGrid">${left}</div></div><div class="card" style="box-shadow:none"><h2 class="eqCompactTitle">合成後能力</h2><div class="eqSmall">白字為原有能力，黃字為所有已勾選配方的累加值。</div><div class="eqStatGrid">${right}</div></div></div>`;
-}
-function eqToggleRecipe(id){
- const r=eqRecipeById(id); if(!r)return;
- eqState.recipeCounts=eqState.recipeCounts||{};
- if(eqState.recipeCounts[String(id)]) delete eqState.recipeCounts[String(id)];
- else eqState.recipeCounts[String(id)]=eqRecipeDefaultCount(r);
- eqResetRandom(false);
- eqRenderPreview(true);
-}
-function eqSetRecipeCount(id,val){
- eqState.recipeCounts=eqState.recipeCounts||{};
- if(eqState.recipeCounts[String(id)]!==undefined){
-  eqState.recipeCounts[String(id)]=Math.max(1,intOf(val,1));
-  eqResetRandom(false);
-  eqRenderPreview(true);
- }
-}
-function eqRenderRecipeArea(){
- const eq=eqSelected(); if(!eq)return '<div class="empty">請先選擇裝備。</div>';
- const recipes=eqSortRecipeObjects(eqAllowedRecipes());
- const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50']];
- const groupRecipes=g=>recipes.filter(r=>g==='stable_50'?(r.group==='stable_50'||r.group==='stable_70'):r.group===g);
- const groupSelected=g=>eqSelectedRecipes().filter(x=>g==='stable_50'?(x.recipe.group==='stable_50'||x.recipe.group==='stable_70'):x.recipe.group===g);
- const renderSelected=g=>{
-  const rows=groupSelected(g);
-  if(!rows.length)return '<div class="muted" style="margin-top:8px">尚未加入這個安定值的配方。</div>';
-  return `<div class="tableWrap" style="margin-top:10px"><table><thead><tr><th>已選配方</th><th>次數</th><th>操作</th></tr></thead><tbody>${rows.map(({recipe,count})=>`<tr><td><b>${esc(recipe.name)}</b><div class="rSub">${esc(recipe.effect_summary||'')}</div></td><td style="width:120px"><input class="eqRecipeCount" data-eq-recipe-count="${esc(recipe.id)}" type="number" min="1" value="${esc(count)}"></td><td style="width:90px"><button class="ghost" data-eq-recipe="${esc(recipe.id)}">移除</button></td></tr>`).join('')}</tbody></table></div>`;
- };
- return `<h3 id="eqRecipeAnchor">選擇配方</h3><div class="notice">配方改為下拉式加入，可跨安定值累加；材料清單會依安定值 1 → 12 → 50 的順序列出。</div>
- ${groups.map(([g,label])=>{const arr=groupRecipes(g);return `<div class="card" style="box-shadow:none"><h3>${esc(label)}</h3><label>加入配方</label><select data-eq-recipe-select="${esc(g)}"><option value="">請選擇要加入的配方</option>${arr.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}${r.effect_summary?'｜'+esc(r.effect_summary):''}</option>`).join('')}</select>${renderSelected(g)}</div>`}).join('')}
- <div class="quick"><button class="primary" id="eqOpenRandom">進入亂數模擬頁<small>進入後再選配方，像骰子一樣累計次數與材料</small></button><button class="primary" id="eqShowMaterials">產出所需材料清單<small>另開材料頁，並可返回</small></button></div>`;
-}
-function renderEquipmentCompoundPage(){
- window.v86LastView='item';
- byId('reader').innerHTML=`<section class="card"><h1>裝備合成模擬</h1><div class="muted">先篩選裝備，點選裝備後會進入合成模擬頁。</div>
- <div class="eqFilterGrid"><div><label>種類（武器 / 防具 / 仙器）</label><select id="eqMain"></select></div><div><label>系列</label><select id="eqSeries"></select></div><div><label>階級 / 等級</label><select id="eqTier"></select></div><div><label>類型 / 部位</label><select id="eqType"></select></div><div style="grid-column:1/-1"><label>搜尋裝備名稱 / ID</label><input id="eqQ" value="${esc(eqState.q||'')}" placeholder="例如：椒圖、宮殤、劍、300"></div></div>
- <h3>選擇裝備</h3><div class="results" id="eqList"></div></section>`;
- eqRefreshFilters(); eqRefreshList();
- closeDrawer();
- window.scrollTo({top:0,behavior:'smooth'});
-}
-function eqRefreshSelect(){}
-function openEquipmentSim(uid){eqState.uid=uid||eqState.uid; eqResetRandom(false); eqRenderPreview();}
-function eqRenderPreview(keepScroll=false){
- const y=window.scrollY||document.documentElement.scrollTop||0;
- const eq=eqSelected();
- if(!eq){renderEquipmentCompoundPage();return;}
- byId('reader').innerHTML=`<section class="card"><button class="backBtn" id="eqBackToList">← 返回裝備篩選</button><h1>裝備合成模擬</h1><h2>${esc(eq.name)}</h2>${eqMetaLine(eq)}${eqRenderStats(eq,true)}${eqRenderRecipeArea()}</section>`;
- closeDrawer();
- if(keepScroll)setTimeout(()=>window.scrollTo(0,y),0); else window.scrollTo({top:0,behavior:'smooth'});
-}
-function eqMaterials(recipe,count){const map={}; for(const st of recipe?.steps||[]){for(const m of st.materials||[]){const key=m.item_id||m.name; if(!map[key])map[key]={name:m.name||('ID '+m.item_id),item_id:m.item_id,qty:0}; map[key].qty+=(Number(m.qty)||0)*count;}} return Object.values(map);}
-function eqAllMaterials(){const map={}; for(const {recipe,count} of eqSelectedRecipes()){for(const m of eqMaterials(recipe,count)){const key=m.item_id||m.name; if(!map[key])map[key]={name:m.name,item_id:m.item_id,qty:0}; map[key].qty+=m.qty;}} return Object.values(map);}
-function showEquipmentMaterials(){
- const eq=eqSelected(), picks=eqSelectedRecipes(); if(!eq||!picks.length){empty('請先選擇裝備與至少一個配方');return}
- const sections=picks.map(({recipe,count})=>{const mats=eqMaterials(recipe,count); return `<h3>${esc(recipe.name)} × ${fmt(count)}</h3><div class="tableWrap"><table class="eqMatTable"><thead><tr><th>材料</th><th>數量</th></tr></thead><tbody>${mats.map(m=>`<tr><td>${esc(m.name)}</td><td>${fmt(m.qty)}</td></tr>`).join('')}</tbody></table></div>`;}).join('');
- byId('reader').innerHTML=`<section class="card"><button class="backBtn" id="eqBackToSim">← 返回裝備合成模擬</button><h1>所需材料清單</h1><div class="notice"><b>${esc(eq.name)}</b><br>材料依配方分開顯示，方便核對。</div>${sections}</section>`;
- window.scrollTo({top:0,behavior:'smooth'});
-}
-function eqResetRandom(clearSelection=true){eqState.simTotals={};eqState.simCount=0;eqState.simRecipeCounts={}; if(clearSelection)eqState.simSelectedRecipes={};}
-function eqRollEffectValue(e){
- if(e.min!==undefined||e.max!==undefined){const min=Number(e.min)||0,max=Number(e.max)||min; return min+Math.floor(Math.random()*(max-min+1));}
- return Number(e.value)||0;
-}
-function eqSimToggleRecipe(id){eqState.simSelectedRecipes=eqState.simSelectedRecipes||{}; if(eqState.simSelectedRecipes[String(id)])delete eqState.simSelectedRecipes[String(id)]; else eqState.simSelectedRecipes[String(id)]=true; renderEquipmentRandomPage(true);}
-function eqSimSelectedRecipes(){
- const allowed=new Set(eqAllowedRecipes().map(r=>String(r.id)));
- return Object.keys(eqState.simSelectedRecipes||{}).filter(id=>allowed.has(String(id))).map(id=>eqRecipeById(id)).filter(Boolean);
-}
-function eqRandomOnce(){
- if(!eqState.simTotals)eqState.simTotals={};
- if(!eqState.simRecipeCounts)eqState.simRecipeCounts={};
- const picks=eqSimSelectedRecipes(); if(!picks.length){alert('請先在亂數模擬頁勾選至少一個配方');return;}
- for(const recipe of picks){
-  eqState.simRecipeCounts[String(recipe.id)]=(Number(eqState.simRecipeCounts[String(recipe.id)])||0)+1;
-  for(const e of recipe.effects||[]){
-   if(e.stackable===false)continue;
-   const k=e.stat,label=e.label||eqData().stat_labels?.[k]||k;
-   if(!eqState.simTotals[k])eqState.simTotals[k]={label,value:0};
-   eqState.simTotals[k].value+=eqRollEffectValue(e);
-  }
- }
- eqState.simCount++;
-}
-function eqRandomMaterialRows(){
- const counts=eqState.simRecipeCounts||{};
- const byRecipe=[];
- for(const [id,c] of Object.entries(counts)){
-  const recipe=eqRecipeById(id); const count=Number(c)||0; if(!recipe||count<=0)continue;
-  byRecipe.push({recipe,count,mats:eqMaterials(recipe,count)});
- }
- return byRecipe.sort((a,b)=>eqRecipeGroupRank(a.recipe)-eqRecipeGroupRank(b.recipe)||eqRecipeOrderIndex(a.recipe)-eqRecipeOrderIndex(b.recipe));
-}
-function eqRenderRandomRecipePicker(){
- const recipes=eqSortRecipeObjects(eqAllowedRecipes());
- const groups=[['stable_1','安定值 1'],['stable_12','安定值 12'],['stable_50','安定值 50']];
- const groupRecipes=g=>recipes.filter(r=>g==='stable_50'?(r.group==='stable_50'||r.group==='stable_70'):r.group===g);
- const groupSelected=g=>eqSortRecipeObjects(eqSimSelectedRecipes()).filter(r=>g==='stable_50'?(r.group==='stable_50'||r.group==='stable_70'):r.group===g);
- const renderSelected=g=>{
-  const rows=groupSelected(g);
-  if(!rows.length)return '<div class="muted" style="margin-top:8px">尚未加入這個安定值的模擬配方。</div>';
-  return `<div class="tableWrap" style="margin-top:10px"><table><thead><tr><th>已選配方</th><th>已用次數</th><th>操作</th></tr></thead><tbody>${rows.map(recipe=>{const used=Number((eqState.simRecipeCounts||{})[String(recipe.id)])||0;return `<tr><td><b>${esc(recipe.name)}</b><div class="rSub">${esc(recipe.effect_summary||'')}</div></td><td>${fmt(used)}</td><td><button class="ghost" data-eq-sim-recipe="${esc(recipe.id)}">移除</button></td></tr>`}).join('')}</tbody></table></div>`;
- };
- return `<h3>選擇要模擬的配方</h3><div class="notice">這裡獨立選擇亂數模擬要用的配方，不需要先在上一頁勾好。每按一次「模擬一次」，目前加入的配方各計 1 次材料。</div>${groups.map(([g,label])=>{const arr=groupRecipes(g);return `<div class="card" style="box-shadow:none"><h3>${esc(label)}</h3><label>加入模擬配方</label><select data-eq-sim-recipe-select="${esc(g)}"><option value="">請選擇要加入的配方</option>${arr.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}${r.effect_summary?'｜'+esc(r.effect_summary):''}</option>`).join('')}</select>${renderSelected(g)}</div>`}).join('')}`;
-}
-function renderEquipmentRandomPage(keepScroll=false){
- const y=window.scrollY||document.documentElement.scrollTop||0;
- const eq=eqSelected(); if(!eq){empty('請先選擇裝備');return;}
- const totals=eqState.simTotals||{};
- const rows=Object.entries(totals).map(([k,o])=>`<tr><td>${esc(o.label)}</td><td>+${fmt(o.value)}</td></tr>`).join('')||'<tr><td colspan="2">尚未模擬，請按「模擬一次」。</td></tr>';
- const usedRecipes=eqAllowedRecipes().filter(r=>Number((eqState.simRecipeCounts||{})[String(r.id)])>0);
- const usedRows=usedRecipes.map(recipe=>{const used=Number((eqState.simRecipeCounts||{})[String(recipe.id)])||0;return `<tr><td>${esc(recipe.name)}</td><td>${fmt(used)}</td></tr>`;}).join('')||'<tr><td colspan="2">尚未使用任何配方。</td></tr>';
- const materialSections=eqRandomMaterialRows().map(({recipe,count,mats})=>`<h3>${esc(recipe.name)} × ${fmt(count)}</h3><div class="tableWrap"><table class="eqMatTable"><thead><tr><th>材料</th><th>數量</th></tr></thead><tbody>${mats.map(m=>`<tr><td>${esc(m.name)}</td><td>${fmt(m.qty)}</td></tr>`).join('')}</tbody></table></div>`).join('')||'<div class="empty">尚未模擬，材料數量為 0。</div>';
- byId('reader').innerHTML=`<section class="card"><button class="backBtn" id="eqBackToSim">← 返回裝備合成模擬</button><h1>合成亂數模擬</h1><h2>${esc(eq.name)}</h2>${eqMetaLine(eq)}${eqRenderStats(eq,false)}${eqRenderRandomRecipePicker()}<div class="quick"><button type="button" class="primary" id="eqSimOnce">模擬一次<small>隨機產生本次合成增加值，並依配方累計材料</small></button><button type="button" id="eqSimClear" class="ghost">清空重新計算<small>歸零累計次數、能力與材料，保留目前勾選配方</small></button></div><div class="kvGrid"><div class="kv"><div class="k">累計模擬次數</div><div class="v">${fmt(eqState.simCount||0)}</div></div></div><h3>配方使用次數</h3><div class="tableWrap"><table><thead><tr><th>配方</th><th>已用次數</th></tr></thead><tbody>${usedRows}</tbody></table></div><h3>累計結果</h3><div class="tableWrap"><table><thead><tr><th>能力</th><th>累計增加</th></tr></thead><tbody>${rows}</tbody></table></div><h3>依模擬次數累計材料</h3>${materialSections}</section>`;
- if(keepScroll)setTimeout(()=>window.scrollTo(0,y),0); else window.scrollTo({top:0,behavior:'smooth'});
-}
-
-
 function trainingGroupRank(g){
- const order=(TRAINING_DATA&&TRAINING_DATA.groupOrder)||[];
- const idx=order.indexOf(g||'');
+ const idx=trainingGroupOrder().indexOf(g||'');
  return idx>=0?idx:999;
 }
 function trainingElementRank(text){
  const s=String(text||'');
- const order=['玄武','體宇','體魄','白虎','力宇','力量','青龍','智宇','智慧','朱雀','敏宇','靈敏','麒麟','血宇','生命','騰蛇','精宇','精力','梅冠','菱冠','心冠','桃冠','同花'];
+ const order=['體魄','力量','智慧','靈敏','血量','精力','攻擊','防禦','術防','抗性'];
  const idx=order.findIndex(k=>s.includes(k));
  return idx>=0?idx:999;
 }
-function trainingDisplayName(name){
- return String(name||'').replace(/五鑽連貫心元/g,'五鑽連貫心');
-}
+function trainingDisplayName(name){return String(name||'');}
+function trainingDiamondGroups(){return trainingGroupOrder().slice(5,8).filter(Boolean);}
+function trainingEtherGroups(){return trainingGroupOrder().slice(8,10).filter(Boolean);}
 function trainingFilterGroups(value){
- if(value==='group_diamond')return ['聖鑽','同花大聖鑽','五鑽連貫心'];
- if(value==='group_ether')return ['以太核','六宇聚變核'];
+ if(value==='group_diamond')return trainingDiamondGroups();
+ if(value==='group_ether')return trainingEtherGroups();
  return value?[value]:[];
 }
 function trainingGroupLabel(g){
- if(g==='group_diamond')return '聖鑽(聖鑽、同花大聖鑽、五鑽連貫心)';
- if(g==='group_ether')return '以太核(以太核、六宇聚變核)';
+ const order=trainingGroupOrder();
+ const labels=['四聖諦','天照珠玉','靈丹','聖靈煉金','真元'];
+ const idx=order.indexOf(g||'');
+ if(idx>=0&&idx<labels.length)return labels[idx];
+ if(g==='group_diamond')return '聖鑽相關';
+ if(g==='group_ether')return '乙太相關';
  return g||'全部分類';
 }
 function trainingViewGroupValue(g){
- if(['聖鑽','同花大聖鑽','五鑽連貫心'].includes(g))return 'group_diamond';
- if(['以太核','六宇聚變核'].includes(g))return 'group_ether';
+ if(trainingDiamondGroups().includes(g))return 'group_diamond';
+ if(trainingEtherGroups().includes(g))return 'group_ether';
  return g||'';
 }
 function sortedTrainingData(){
- const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
- return data.map((x,i)=>({x,i})).sort((a,b)=>{
-  const ga=trainingGroupRank(a.x.group), gb=trainingGroupRank(b.x.group);
+ return trainingData().map((x,i)=>({x,i})).sort((a,b)=>{
+  const ga=trainingGroupRank(a.x.group),gb=trainingGroupRank(b.x.group);
   if(ga!==gb)return ga-gb;
   const ea=trainingElementRank((a.x.item||'')+trainingDisplayName(a.x.name)+(a.x.stat||''));
   const eb=trainingElementRank((b.x.item||'')+trainingDisplayName(b.x.name)+(b.x.stat||''));
@@ -967,55 +889,32 @@ function sortedTrainingData(){
   return trainingDisplayName(a.x.name).localeCompare(trainingDisplayName(b.x.name),'zh-Hant');
  });
 }
-function materialRank(item){
- const s=String(item||'');
- let group=99;
- if(s.includes('四聖諦'))group=0;
- else if(s.includes('天照'))group=1;
- else if(s.includes('靈丹'))group=2;
- else if(s.includes('賢者之石'))group=3;
- else if(s.includes('真元'))group=4;
- else if(s.includes('聖鑽'))group=5;
- else if(s.includes('以太核'))group=6;
- else if(s.includes('六宇'))group=7;
- return [group,trainingElementRank(s),s];
-}
 function sortMaterialEntries(entries){
- return entries.sort((a,b)=>{
-  const ra=materialRank(a[0]), rb=materialRank(b[0]);
-  if(ra[0]!==rb[0])return ra[0]-rb[0];
-  if(ra[1]!==rb[1])return ra[1]-rb[1];
-  return ra[2].localeCompare(rb[2],'zh-Hant');
- });
+ return entries.sort((a,b)=>String(a[0]||'').localeCompare(String(b[0]||''),'zh-Hant'));
 }
-function appendTrainingNote(x){
- if((x.group||'')==='五鑽連貫心'){
-  return '不需要手動選階、請找『王都盧索』安全區「冥司印曷闐」啟用';
- }
- let note=x.note||'';
- note=note.replace(/六宇聚變核原始表第28階[^。]*。?/g,'').trim();
- note=note.replace(/原始表第28階看起來寫成 \+272；此版按前後規律修正為 \+372/g,'').trim();
- return note;
+function appendTrainingNote(x){return String((x&&x.note)||'').trim();}
+function trainingLevelNeed(x,cur,tar){
+ let need=0;
+ for(let lv=cur;lv<tar;lv++)need+=Number((x.costs||[])[lv]||0);
+ return need;
 }
 function renderTrainingCalc(){
- const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
- const groupOptions=['四聖諦','天照珠玉','靈丹','聖靈煉金','真元','group_diamond','group_ether'];
+ const order=trainingGroupOrder();
+ const groupOptions=[...order.slice(0,5), 'group_diamond', 'group_ether'].filter(Boolean);
  const groupOpts='<option value="">全部分類</option>'+groupOptions.map(g=>`<option value="${esc(g)}">${esc(trainingGroupLabel(g))}</option>`).join('');
  function card(pair){
-  const x=pair.x, i=pair.i;
-  const displayName=trainingDisplayName(x.name||'');
-  const viewGroup=trainingViewGroupValue(x.group||'');
+  const x=pair.x,i=pair.i;
   const max=Number(x.maxLevel||0);
   const cur=Math.min(max,Math.max(0,Number(x.defaultCurrentLevel||0)));
   const tar=Math.min(max,Math.max(cur,Number(x.defaultTargetLevel||max)));
-  const sub=x.subGroup?`｜${x.subGroup}`:'';
-  const fullNeed=(x.costs||[]).reduce((a,b)=>a+Number(b||0),0);
-  const defaultNeed=(x.costs||[]).slice(cur,tar).reduce((a,b)=>a+Number(b||0),0);
+  const fullNeed=trainingLevelNeed(x,0,max);
+  const defaultNeed=trainingLevelNeed(x,cur,tar);
+  const sub=x.subGroup?` / ${x.subGroup}`:'';
   const note=appendTrainingNote(x);
   const derived=x.inputMode==='derived';
-  return `<div class="trainCard" data-train-row="${i}" data-group="${esc(viewGroup)}">
-    <div class="trainCardHead"><div><div class="trainName">${esc(displayName)}</div><div class="trainSub">${esc((x.group||'')+sub)}｜${esc(trainingDisplayName(x.stat||''))}</div></div><div class="trainBadge">滿階 ${max}</div></div>
-    <div class="trainNeedBox"><b>需求數量：</b>${esc(x.item||'')} × <span class="trainNeed" data-i="${i}">${fmt(defaultNeed)}</span><div class="rSub">0 → 滿階：${fmt(fullNeed)}</div></div>
+  return `<div class="trainCard" data-train-row="${i}" data-group="${esc(trainingViewGroupValue(x.group||''))}">
+    <div class="trainCardHead"><div><div class="trainName">${esc(trainingDisplayName(x.name||''))}</div><div class="trainSub">${esc(trainingGroupLabel(x.group||'')+sub)} / ${esc(trainingDisplayName(x.stat||''))}</div></div><div class="trainBadge">滿階 ${max}</div></div>
+    <div class="trainNeedBox"><b>需要材料</b>${esc(x.item||'材料')} x <span class="trainNeed" data-i="${i}">${fmt(defaultNeed)}</span><div class="rSub">0 到滿階：${fmt(fullNeed)}</div></div>
     ${note?`<div class="trainNote">${esc(note)}</div>`:''}
     <div class="trainLevels">
       <div><label>目前階</label><input class="trainCur" data-i="${i}" type="number" min="0" max="${max}" value="${cur}" ${derived?'readonly':''}></div>
@@ -1027,17 +926,32 @@ function renderTrainingCalc(){
  <div class="notice">選擇目前階與目標階，會計算需要材料，以及從目前階提升到目標階增加的能力。計算結果預設隱藏，按下「計算修練」後才會顯示。</div>
  <div class="kvGrid">
   <div class="kv"><div class="k">分類篩選</div><div class="v"><select id="trainGroupFilter">${groupOpts}</select></div></div>
-  <div class="kv"><div class="k">快速設定</div><div class="v"><div class="quick" style="margin-top:0"><button id="trainAllMax">全部 0 → 滿階<small>把目前階設 0、目標階設最大</small></button><button id="trainClear">目前階 = 目標階<small>只保留目前設定，不計算提升</small></button></div></div></div>
+  <div class="kv"><div class="k">快速設定</div><div class="v"><div class="quick" style="margin-top:0"><button id="trainCurrentZero" type="button">目前階歸0<small>只把目前階設為 0，目標階不變</small></button><button id="trainCurrentMax" type="button">目前階滿階<small>只把目前階設為滿階，目標階不變</small></button></div></div></div>
  </div>
  <h3>修練項目</h3>
  <div class="trainingList">${sortedTrainingData().map(card).join('')}</div>
- <div class="quick"><button id="calcTraining">計算修練<small>只統計目前分類篩選內的項目</small></button></div>
+ <div class="quick"><button id="calcTraining" type="button">計算修練<small>只統計目前分類篩選內的項目</small></button></div>
  <div id="trainingResultWrap" style="display:none"><div id="trainingResult"></div></div>
  </section>`;
+ bindTrainingControls();
  applyTrainingDerivedLevels();
  updateTrainingNeeds();
  closeDrawer();
  window.scrollTo({top:0,behavior:'smooth'});
+}
+function bindTrainingControls(){
+ const group=byId('trainGroupFilter');
+ if(group)group.onchange=function(){filterTrainingRows();};
+ const zero=byId('trainCurrentZero');
+ if(zero)zero.onclick=function(e){e.preventDefault();setTrainingCurrentZero();};
+ const max=byId('trainCurrentMax');
+ if(max)max.onclick=function(e){e.preventDefault();setTrainingCurrentMax();};
+ const calc=byId('calcTraining');
+ if(calc)calc.onclick=function(e){e.preventDefault();calcTraining();};
+ document.querySelectorAll('.trainCur,.trainTar').forEach(el=>{
+  el.oninput=function(){updateTrainingNeeds();};
+  el.onchange=function(){clampTrainingInputs();updateTrainingNeeds();};
+ });
 }
 function filterTrainingRows(){
  const g=byId('trainGroupFilter')?.value||'';
@@ -1045,7 +959,7 @@ function filterTrainingRows(){
  const wrap=byId('trainingResultWrap'); if(wrap)wrap.style.display='none';
 }
 function applyTrainingDerivedLevels(){
- const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
+ const data=trainingData();
  const idToIndex=Object.fromEntries(data.map((x,i)=>[x.id,i]));
  data.forEach((x,i)=>{
   if(x.inputMode!=='derived'||!x.deriveRule||!Array.isArray(x.deriveRule.sourceIds))return;
@@ -1066,8 +980,7 @@ function applyTrainingDerivedLevels(){
  });
 }
 function clampTrainingInputs(){
- const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
- data.forEach((x,i)=>{
+ trainingData().forEach((x,i)=>{
   if(x.inputMode==='derived')return;
   const max=Number(x.maxLevel||0);
   const curEl=document.querySelector(`.trainCur[data-i="${i}"]`);
@@ -1083,52 +996,46 @@ function clampTrainingInputs(){
 }
 function updateTrainingNeeds(){
  applyTrainingDerivedLevels();
- const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
- data.forEach((x,i)=>{
+ trainingData().forEach((x,i)=>{
   const max=Number(x.maxLevel||0);
   const curEl=document.querySelector(`.trainCur[data-i="${i}"]`);
   const tarEl=document.querySelector(`.trainTar[data-i="${i}"]`);
   const needEl=document.querySelector(`.trainNeed[data-i="${i}"]`);
   if(!curEl||!tarEl||!needEl)return;
-  let cur=Math.max(0,Math.min(max,intOf(curEl.value,0)));
-  let tar=Math.max(cur,Math.min(max,intOf(tarEl.value,max)));
-  let need=0;
-  for(let lv=cur;lv<tar;lv++)need+=Number((x.costs||[])[lv]||0);
-  needEl.textContent=fmt(need);
+  const cur=Math.max(0,Math.min(max,intOf(curEl.value,0)));
+  const tar=Math.max(cur,Math.min(max,intOf(tarEl.value,max)));
+  needEl.textContent=fmt(trainingLevelNeed(x,cur,tar));
  });
 }
-function setTrainingAllMax(){
- const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
- data.forEach((x,i)=>{
+function setTrainingCurrentZero(){
+ trainingData().forEach((x,i)=>{
+  if(x.inputMode==='derived')return;
+  const curEl=document.querySelector(`.trainCur[data-i="${i}"]`);
+  if(curEl)curEl.value=0;
+ });
+ updateTrainingNeeds();
+}
+function setTrainingCurrentMax(){
+ trainingData().forEach((x,i)=>{
   if(x.inputMode==='derived')return;
   const max=Number(x.maxLevel||0);
   const curEl=document.querySelector(`.trainCur[data-i="${i}"]`);
-  const tarEl=document.querySelector(`.trainTar[data-i="${i}"]`);
-  if(curEl)curEl.value=0;
-  if(tarEl)tarEl.value=max;
+  if(curEl)curEl.value=max;
  });
  updateTrainingNeeds();
 }
-function clearTrainingTargets(){
- const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
- data.forEach((x,i)=>{
-  if(x.inputMode==='derived')return;
-  const curEl=document.querySelector(`.trainCur[data-i="${i}"]`);
-  const tarEl=document.querySelector(`.trainTar[data-i="${i}"]`);
-  if(curEl&&tarEl)tarEl.value=curEl.value;
- });
- updateTrainingNeeds();
-}
+function setTrainingAllMax(){setTrainingCurrentZero();}
+function clearTrainingTargets(){setTrainingCurrentMax();}
 function calcTraining(){
  window.v86LastView='jiang';
  clampTrainingInputs();
  const selectedGroup=byId('trainGroupFilter')?.value||'';
  const selectedGroups=trainingFilterGroups(selectedGroup);
- const data=(TRAINING_DATA&&TRAINING_DATA.data)||[];
- const effectOrder=(TRAINING_DATA&&TRAINING_DATA.effectStatOrder)||['體魄','力量','智慧','靈敏','生命','精力','自由分配能力值'];
+ const effectOrder=(typeof TRAINING_DATA!=="undefined"&&TRAINING_DATA&&TRAINING_DATA.effectStatOrder)||[];
  const costByItem={};
  const gainByStat=Object.fromEntries(effectOrder.map(s=>[s,0]));
  const detail=[];
+ const data=trainingData();
  for(let i=0;i<data.length;i++){
   const x=data[i];
   if(selectedGroups.length && !selectedGroups.includes(x.group))continue;
@@ -1139,46 +1046,42 @@ function calcTraining(){
   const cur=Math.max(0,Math.min(max,intOf(curEl.value,0)));
   const tar=Math.max(cur,Math.min(max,intOf(tarEl.value,max)));
   if(tar<=cur)continue;
-  let cost=0;
-  for(let lv=cur;lv<tar;lv++)cost+=Number((x.costs||[])[lv]||0);
-  if(cost && !x.excludeFromItemSummary){costByItem[x.item||'未命名材料']=(costByItem[x.item||'未命名材料']||0)+cost;}
+  const cost=trainingLevelNeed(x,cur,tar);
+  if(cost && !x.excludeFromItemSummary){costByItem[x.item||'材料']=(costByItem[x.item||'材料']||0)+cost;}
   const curEff=(x.effectsByLevel||[])[cur]||{};
   const tarEff=(x.effectsByLevel||[])[tar]||{};
   const gains={};
   const keys=new Set([...Object.keys(curEff),...Object.keys(tarEff),...(x.effectStats||[])]);
-  keys.forEach(k=>{
-   const v=Number(tarEff[k]||0)-Number(curEff[k]||0);
-   if(v){gains[k]=v; gainByStat[k]=(gainByStat[k]||0)+v;}
-  });
+  keys.forEach(k=>{const v=Number(tarEff[k]||0)-Number(curEff[k]||0); if(v){gains[k]=v; gainByStat[k]=(gainByStat[k]||0)+v;}});
   detail.push({name:trainingDisplayName(x.name||''), group:x.group||'', subGroup:x.subGroup||'', item:x.item||'', cur, tar, cost, gains, note:appendTrainingNote(x), noCost:!!x.excludeFromItemSummary});
  }
  const costRows=sortMaterialEntries(Object.entries(costByItem)).map(([item,n])=>`<tr><td>${esc(item)}</td><td>${fmt(n)}</td></tr>`).join('');
  const allStats=[...effectOrder,...Object.keys(gainByStat).filter(s=>!effectOrder.includes(s))];
  const gainRows=allStats.filter(s=>gainByStat[s]).map(s=>`<tr><td>${esc(trainingDisplayName(s))}</td><td>+${fmt(gainByStat[s])}</td></tr>`).join('');
- const detailRows=detail.sort((a,b)=>{
-  const ga=trainingGroupRank(a.group),gb=trainingGroupRank(b.group); if(ga!==gb)return ga-gb;
-  const ea=trainingElementRank(a.item+a.name),eb=trainingElementRank(b.item+b.name); if(ea!==eb)return ea-eb;
-  return a.name.localeCompare(b.name,'zh-Hant');
- }).map(d=>{
+ const detailRows=detail.sort((a,b)=>trainingGroupRank(a.group)-trainingGroupRank(b.group)||trainingElementRank(a.item+a.name)-trainingElementRank(b.item+b.name)||a.name.localeCompare(b.name,'zh-Hant')).map(d=>{
   const gainText=Object.entries(d.gains).map(([k,v])=>`${trainingDisplayName(k)}+${fmt(v)}`).join('、')||'-';
-  const sub=d.subGroup?`｜${d.subGroup}`:'';
-  const materialText=d.noCost?'無消耗':`${d.item} × ${fmt(d.cost)}`;
-  return `<tr><td><b>${esc(d.name)}</b><div class="rSub">${esc(d.group+sub)}</div>${d.note?`<div class="rSub">${esc(d.note)}</div>`:''}</td><td>${d.cur} → ${d.tar}</td><td>${esc(materialText)}</td><td>${esc(gainText)}</td></tr>`;
+  const sub=d.subGroup?` / ${d.subGroup}`:'';
+  const materialText=d.noCost?'不列入材料統計':`${d.item} x ${fmt(d.cost)}`;
+  return `<tr><td><b>${esc(d.name)}</b><div class="rSub">${esc(trainingGroupLabel(d.group)+sub)}</div>${d.note?`<div class="rSub">${esc(d.note)}</div>`:''}</td><td>${d.cur} → ${d.tar}</td><td>${esc(materialText)}</td><td>${esc(gainText)}</td></tr>`;
  }).join('');
  const title=selectedGroup?`計算結果：${esc(trainingGroupLabel(selectedGroup))}`:'計算結果';
  byId('trainingResult').innerHTML=`<h3>${title}</h3>
- ${detail.length?'': '<div class="empty">目前沒有任何提升項目，請把目標階調高後再計算。</div>'}
- ${costRows?`<h3>材料統計</h3><div class="tableWrap"><table><thead><tr><th>材料</th><th>數量</th></tr></thead><tbody>${costRows}</tbody></table></div>`:''}
+ ${detail.length?'':'<div class="empty">目前沒有選擇要提升的項目，請調整目標階後再計算。</div>'}
+ ${costRows?`<h3>材料總計</h3><div class="tableWrap"><table><thead><tr><th>材料</th><th>數量</th></tr></thead><tbody>${costRows}</tbody></table></div>`:''}
  ${gainRows?`<h3>增加能力</h3><div class="tableWrap"><table><thead><tr><th>能力</th><th>增加值</th></tr></thead><tbody>${gainRows}</tbody></table></div>`:''}
  ${detailRows?`<h3>明細</h3><div class="tableWrap"><table><thead><tr><th>項目</th><th>階數</th><th>材料</th><th>增加能力</th></tr></thead><tbody>${detailRows}</tbody></table></div>`:''}`;
  const wrap=byId('trainingResultWrap'); if(wrap)wrap.style.display='block';
  byId('trainingResult').scrollIntoView({behavior:'smooth',block:'start'});
 }
-
-
-function goBackToPrevious(){
- const v=window.v86LastView||currentView||'home';
- if(v==='item')setView('item');
+function goBackToPrevious(targetView){
+ const v=targetView||window.v86LastView||currentView||'home';
+ if(v==='item'){
+  openItemMenuOnly();
+  Promise.resolve(renderItemPage('item')).then(()=>{
+   closeDrawer();
+   window.scrollTo({top:0,behavior:'smooth'});
+  });
+ }
  else if(v==='reverse')setView('reverse');
  else if(v==='monster')setView('monster');
  else if(v==='jiang')setView('jiang');
@@ -1190,7 +1093,7 @@ window.addEventListener('popstate',()=>goBackToPrevious());
 function backLabelFor(view){
  if(view==='monster')return '返回怪物查詢';
  if(view==='item')return '返回道具查詢';
- if(view==='reverse')return '返回掉落反查';
+ if(view==='reverse')return '返回道具反查';
  if(view==='jiang')return '返回降神、經驗、修練試算';
  return '返回首頁';
 }
@@ -1201,7 +1104,7 @@ function backButtonHTML(view){
 function initEvents(){
  byId('openMenuBtn').onclick=openDrawer;byId('closeMenuBtn').onclick=closeDrawer;byId('backdrop').onclick=closeDrawer;
  document.addEventListener('change',e=>{if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions(); if(e.target.classList&&(e.target.classList.contains('trainCur')||e.target.classList.contains('trainTar'))){clampTrainingInputs(); updateTrainingNeeds();}});
- document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v){if(v==='jiang')openJiangMenuOnly();else setView(v);}const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);if(window.innerWidth<980)openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo)}const io=e.target.closest('[data-item-open]')?.dataset.itemOpen;if(io){setItemSub(io)}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid){e.preventDefault();e.stopPropagation();showMonster(mid);return;}const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);const equid=e.target.closest('[data-eq-uid]')?.dataset.eqUid;if(equid){openEquipmentSim(equid);}const eg=e.target.closest('[data-eq-group]')?.dataset.eqGroup;if(eg){eqRenderPreview();}const er=e.target.closest('[data-eq-recipe]')?.dataset.eqRecipe;if(er){eqToggleRecipe(er);}const esr=e.target.closest('[data-eq-sim-recipe]')?.dataset.eqSimRecipe;if(esr){eqSimToggleRecipe(esr);}if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds();if(e.target.id==='calcStarAura')calcStarAura();if(e.target.id==='calcExpNeed')calcExpNeed();if(e.target.id==='calcEatPill')calcEatPill();if(e.target.id==='calcTraining')calcTraining();if(e.target.id==='eqShowMaterials')showEquipmentMaterials();if(e.target.id==='eqBackToSim')eqRenderPreview();if(e.target.id==='eqBackToList')renderEquipmentCompoundPage();if(e.target.id==='eqOpenRandom')renderEquipmentRandomPage();if(e.target.id==='eqSimOnce'){eqRandomOnce();renderEquipmentRandomPage();}if(e.target.id==='eqSimClear'){const keep=Object.assign({},eqState.simSelectedRecipes||{});eqResetRandom(false);eqState.simSelectedRecipes=keep;renderEquipmentRandomPage(true);}if(e.target.id==='trainAllMax')setTrainingAllMax();if(e.target.id==='trainClear')clearTrainingTargets();const et=e.target.closest('[data-exp-tab]');if(et){document.querySelectorAll('.calcTab').forEach(b=>b.classList.remove('active'));et.classList.add('active');byId('expTabNeed').style.display=et.dataset.expTab==='need'?'block':'none';byId('expTabEat').style.display=et.dataset.expTab==='eat'?'block':'none';}});
+ document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v){if(v==='jiang')openJiangMenuOnly();else setView(v);}const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);if(window.innerWidth<980)openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo)}const io=e.target.closest('[data-item-open]')?.dataset.itemOpen;if(io){setItemSub(io)}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid){e.preventDefault();e.stopPropagation();showMonster(mid);return;}const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);const equid=e.target.closest('[data-eq-uid]')?.dataset.eqUid;if(equid){openEquipmentSim(equid);}const eg=e.target.closest('[data-eq-group]')?.dataset.eqGroup;if(eg){eqRenderPreview();}const er=e.target.closest('[data-eq-recipe]')?.dataset.eqRecipe;if(er){eqToggleRecipe(er);}const esr=e.target.closest('[data-eq-sim-recipe]')?.dataset.eqSimRecipe;if(esr){eqSimToggleRecipe(esr);}if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds();if(e.target.id==='calcStarAura')calcStarAura();if(e.target.id==='calcExpNeed')calcExpNeed();if(e.target.id==='calcEatPill')calcEatPill();if(e.target.id==='calcTraining')calcTraining();if(e.target.id==='eqShowMaterials')showEquipmentMaterials();if(e.target.id==='eqBackToSim')eqRenderPreview();if(e.target.id==='eqBackToList')renderEquipmentCompoundPage();if(e.target.id==='eqOpenRandom')renderEquipmentRandomPage();if(e.target.id==='eqSimOnce'){eqRandomOnce();renderEquipmentRandomPage(true);}if(e.target.id==='eqSimClear'){const keep=Object.assign({},eqState.simSelectedRecipes||{});eqResetRandom(false);eqState.simSelectedRecipes=keep;renderEquipmentRandomPage(true);}if(e.target.id==='trainCurrentZero'||e.target.id==='trainAllMax')setTrainingCurrentZero();if(e.target.id==='trainCurrentMax'||e.target.id==='trainClear')setTrainingCurrentMax();const et=e.target.closest('[data-exp-tab]');if(et){document.querySelectorAll('.calcTab').forEach(b=>b.classList.remove('active'));et.classList.add('active');byId('expTabNeed').style.display=et.dataset.expTab==='need'?'block':'none';byId('expTabEat').style.display=et.dataset.expTab==='eat'?'block':'none';}});
  ['monsterQ','monsterMin','monsterMax'].forEach(id=>{const el=byId(id); if(el)el.addEventListener('input',searchMonsters);});
  
  
@@ -1209,9 +1112,16 @@ function initEvents(){
  if(['monsterQMain','monsterMinMain','monsterMaxMain','monsterRaceMain','monsterSubtypeMain'].includes(e.target.id))searchMonstersMain();if(['itemQ','itemMin','itemMax'].includes(e.target.id))searchItems();if(e.target.id==='reverseQ')searchReverseItems();});
  document.addEventListener('change',e=>{if(e.target.id==='itemType')searchItems();if(e.target.id==='trainGroupFilter')filterTrainingRows();if(['eqMain','eqSeries','eqTier','eqType'].includes(e.target.id)){eqState[e.target.id.replace('eq','').toLowerCase()]=e.target.value; if(e.target.id==='eqMain'){eqState.series='';eqState.tier='';eqState.type='';} if(e.target.id==='eqSeries'){eqState.tier='';eqState.type='';} if(e.target.id==='eqTier'){eqState.type='';} eqState.uid='';eqState.recipeId='';renderEquipmentCompoundPage();} if(e.target.id==='eqSelect'){openEquipmentSim(e.target.value);} if(e.target.matches('[data-eq-recipe-select]')&&e.target.value){eqAddRecipe(e.target.value);} if(e.target.matches('[data-eq-sim-recipe-select]')&&e.target.value){eqSimAddRecipe(e.target.value);}});
  document.addEventListener('click',e=>{const tab=e.target.closest('[data-item-tab]')?.dataset.itemTab;if(tab){renderItemPage(tab);}});
- byId('manualFiles').addEventListener('change',async e=>{alert('v86 先以自動讀取為主，手動載入下一版再補。')});
+ byId('manualFiles').addEventListener('change',async e=>{alert('這個版本目前不需要手動載入檔案。');});
 }
 function initAuth(){ if(!AUTH_REQUIRED)return true; try{const key=localStorage.getItem('combined_manual_tool_license_key'); if(key&&typeof validateLicenseKey==='function'){validateLicenseKey(key);return true}}catch(e){} byId('mainShell').style.display='none';byId('licenseModal').style.display='flex';return false}
-function init(){initEvents();renderHome(); const ok=initAuth(); if(ok)loadAllData();}
-// V212: init 交給 js/script-loader.js 在所有模組/patch 載入完成後呼叫，避免 patch 還沒掛上就先初始化。
+async function init(){
+ initEvents();
+ adoptPreloadedMonsterBundle();
+ renderHome();
+ const ok=initAuth();
+ if(ok){
+  setTimeout(()=>ensureMonsterDataLoaded().then(()=>{if(currentView==='home')renderHome();}),500);
+ }
+}
 window.SZOAppInit = init;

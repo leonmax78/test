@@ -1,11 +1,9 @@
-// V202b item.js
-// Safe item module copy.
-// Important: app-core.js still keeps original item functions in this version.
-// This file is a staged module copy for future extraction, so reverse/compound remain stable.
+// V256: clean item/reverse pages, latest item list, and bundle self-loading.
+let itemOptionalRefreshPromise=null;
+let itemSeriesMapCache=null;
+let itemSeriesOptionsCache=null;
+let itemSeriesRefreshPromise=null;
 
-// V101 fix: ITEM_TYPE_MAP is provided by app-core.js; avoid redeclaring global const.
-// V101 fix: ITEM_DETAIL_RENAME is provided by app-core.js; avoid redeclaring global const.
-// V101 fix: ITEM_DETAIL_ORDER is provided by app-core.js; avoid redeclaring global const.
 function itemTypeName(t){return ITEM_TYPE_MAP[String(t||'').trim()]||''}
 
 function itemKind(it){
@@ -13,8 +11,8 @@ function itemKind(it){
  for(const v of candidates){
   const h=normHex(v);
   if(h&&h!=='0x00000000'){
-    const n=raceName(h);
-    if(n)return n;
+   const n=raceName(h);
+   if(n)return n;
   }
  }
  return '';
@@ -22,17 +20,9 @@ function itemKind(it){
 
 function itemStatus(it){
  const raw=String(it?.ExtraStatus||'').trim();
- if(!raw || raw==='0')return '';
+ if(!raw||raw==='0')return '';
  const parts=raw.split(/[,\s;]+/).filter(Boolean);
- const names=parts
-   .map(x=>{
-     const n=statusName(x)||magicName(x);
-     if(n)return n;
-     // 舊版會在無法轉名時顯示 StatusID，但只限數字或 0x 代碼。
-     if(/^\d+$/.test(String(x))||/^0x/i.test(String(x)))return `StatusID:${x}`;
-     return '';
-   })
-   .filter(Boolean);
+ const names=parts.map(x=>statusName(x)||magicName(x)||(/^\d+$/.test(String(x))||/^0x/i.test(String(x))?`StatusID:${x}`:'')).filter(Boolean);
  return [...new Set(names)].join('、');
 }
 
@@ -54,11 +44,11 @@ function itemDetailRows(it){
    continue;
   }
   if(k==='ExtraStatus'){
-   const statusName=itemStatus(it);
-   if(statusName)rows.push(['特殊能力',statusName]);
+   const st=itemStatus(it);
+   if(st)rows.push(['特殊能力',st]);
    continue;
   }
-  if(k in it && String(it[k]??'').trim()!=='')rows.push([ITEM_DETAIL_RENAME[k]||k,it[k]]);
+  if(k in it&&String(it[k]??'').trim()!=='')rows.push([ITEM_DETAIL_RENAME[k]||k,it[k]]);
  }
  if(it.Help)rows.push(['說明',it.Help]);
  return rows;
@@ -67,33 +57,232 @@ function itemDetailRows(it){
 function itemAbilityFields(it){
  const abilityKeys=new Set(['CLevel','HP','MP','Con','Str','Int','Dex','ExtraDef','Damage','MagicAttack','MagicDef','IceDef','FireDef','LightningDef','DarkDef','ParalysisRes','PosionRes','BlindRes','SilentRes','Value']);
  return itemDetailRows(it).filter(([label])=>{
-   const reverse=Object.entries(ITEM_DETAIL_RENAME).find(([,v])=>v===label)?.[0];
-   if(label==='傷害')return true;
-   return abilityKeys.has(reverse||label);
+  const reverse=Object.entries(ITEM_DETAIL_RENAME).find(([,v])=>v===label)?.[0];
+  if(label==='傷害')return true;
+  return abilityKeys.has(reverse||label);
  });
 }
 
-function itemSearchText(it){return `${nameOf(it)} ${it.ID||''} ${it.Level||''} ${it.Type||''} ${itemTypeName(it.Type)} ${it.Help||''}`.toLowerCase()}
+function itemSearchText(it){
+ return `${nameOf(it)} ${it.ID||''} ${it.Level||''} ${it.Type||''} ${itemTypeName(it.Type)} ${itemKind(it)} ${it.Help||''}`.toLowerCase();
+}
 
-function renderItemPage(tab='item'){
+function uniqText(arr){
+ return [...new Set((arr||[]).map(v=>String(v??'').trim()).filter(Boolean))];
+}
+
+function optionHtml(values,selected,label){
+ return `<option value="">${esc(label)}</option>`+(values||[]).map(v=>`<option value="${esc(v)}" ${String(v)===String(selected||'')?'selected':''}>${esc(v)}</option>`).join('');
+}
+
+function itemEquipmentRows(){
+ try{
+  if(typeof eqEquipList==='function')return (eqEquipList()||[]).filter(Boolean);
+  if(typeof eqData==='function')return ((eqData().equipment)||[]).filter(Boolean);
+ }catch(e){}
+ try{return ((typeof EQUIP_COMPOUND_DATA!=='undefined'&&EQUIP_COMPOUND_DATA&&EQUIP_COMPOUND_DATA.equipment)||[]).filter(Boolean)}catch(e){}
+ return [];
+}
+
+function itemEquipmentId(eq){
+ return String(eq?.item_id||eq?.Item||eq?.ID||'').trim();
+}
+
+function itemEquipmentSeries(eq){
+ return String(eq?.series_group||eq?.series||'').trim();
+}
+
+function itemSeriesLabel(series){
+ const raw=String(series||'').trim();
+ if(!raw)return '';
+ return raw.replace(/\(.+\)$/,'');
+}
+
+function itemSeriesMap(){
+ if(itemSeriesMapCache)return itemSeriesMapCache;
+ const map=new Map();
+ for(const eq of itemEquipmentRows()){
+  const id=itemEquipmentId(eq);
+  const series=itemSeriesLabel(itemEquipmentSeries(eq));
+  if(!id||!series)continue;
+  if(!map.has(id))map.set(id,new Set());
+  map.get(id).add(series);
+ }
+ itemSeriesMapCache=map;
+ return itemSeriesMapCache;
+}
+
+function resetItemSeriesCache(){
+ itemSeriesMapCache=null;
+ itemSeriesOptionsCache=null;
+}
+
+function itemSeriesOptions(){
+ if(itemSeriesOptionsCache)return itemSeriesOptionsCache;
+ const preferred=['職業裝','世貿裝','特仕裝','五佐','五絕','掉寶','經驗','仙器'];
+ const rawSeries=uniqText(itemEquipmentRows().map(eq=>itemSeriesLabel(itemEquipmentSeries(eq))));
+ itemSeriesOptionsCache=rawSeries.sort((a,b)=>{
+  const ia=preferred.indexOf(a),ib=preferred.indexOf(b);
+  if(ia>=0||ib>=0)return (ia>=0?ia:999)-(ib>=0?ib:999);
+  return a.localeCompare(b,'zh-Hant');
+ });
+ return itemSeriesOptionsCache;
+}
+
+function fillItemAdvancedFilters(){
+ const typeSel=byId('itemType');
+ if(typeSel){
+  typeSel.innerHTML='<option value="">全部類型</option>'+Object.entries(ITEM_TYPE_MAP||{}).map(([k,v])=>`<option value="${esc(k)}">${esc(v)}</option>`).join('');
+  typeSel.value=window.v86ItemType||'';
+ }
+ const kindSel=byId('itemKind');
+ if(kindSel){
+  const kinds=uniqText((items||[]).map(it=>itemKind(it))).sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+  kindSel.innerHTML=optionHtml(kinds,window.v110ItemKind||'','全部專剋');
+ }
+ const seriesSel=byId('itemEqSeries');
+ if(seriesSel){
+  const series=itemSeriesOptions();
+  seriesSel.innerHTML=optionHtml(series,window.v110ItemEqSeries||'',series.length?'全部系列':'系列載入中');
+ }
+}
+
+function itemMatchesSeries(it,series){
+ if(!series)return true;
+ const map=itemSeriesMap();
+ const hit=map.get(String(it?.ID||'').trim());
+ return !!(hit&&hit.has(series));
+}
+
+function refreshItemSeriesWhenReady(){
+ const seriesSel=byId('itemEqSeries');
+ if(!seriesSel||itemSeriesRefreshPromise)return;
+ if(typeof ensureCompoundDataLoaded!=='function')return;
+ itemSeriesRefreshPromise=ensureCompoundDataLoaded().then(ok=>{
+  if(!ok||!byId('itemEqSeries'))return;
+  resetItemSeriesCache();
+  fillItemAdvancedFilters();
+  searchItems();
+ }).finally(()=>{
+  itemSeriesRefreshPromise=null;
+ });
+}
+
+function hasItemData(){
+ return (Array.isArray(window.items)&&window.items.length)||(window.SZO_DATA&&Array.isArray(window.SZO_DATA.items)&&window.SZO_DATA.items.length);
+}
+
+function hasReverseData(){
+ const d=window.SZO_DATA||{};
+ return (d.dropReverse&&Object.keys(d.dropReverse).length)||(window.dropReverse&&Object.keys(window.dropReverse).length);
+}
+
+async function ensureReverseBundlesLoaded(){
+ if(hasReverseData())return true;
+ if(typeof window.ensureLookupDataLoaded==='function'){
+  const ok=await window.ensureLookupDataLoaded();
+  if(ok)return hasReverseData();
+ }
+ try{
+  if(typeof loadDataBundle==='function'){
+   const itemData=await loadDataBundle('items');
+   const monsterData=await loadDataBundle('monsters');
+   if(Array.isArray(itemData)&&itemData.length){
+    items=itemData;
+    itemIndex={};
+    for(const it of items)itemIndex[String(it.ID).trim()]=it;
+   }
+   if(Array.isArray(monsterData)&&monsterData.length){
+    monsters=monsterData;
+    dropReverse={};
+    for(const m of monsters){
+     for(const [iid,rate] of parseDrop(m.DropItem)){
+      if(!dropReverse[iid])dropReverse[iid]=[];
+      dropReverse[iid].push({monster:m,rate});
+     }
+    }
+    for(const iid of Object.keys(dropReverse))dropReverse[iid].sort((a,b)=>(b.rate||0)-(a.rate||0));
+   }
+   if(typeof window.SZO_SYNC_DATA==='function')window.SZO_SYNC_DATA();
+  }
+ }catch(e){console.warn('ensureReverseBundlesLoaded failed',e)}
+ return hasReverseData();
+}
+
+function ensureItemOptionalData(id){
+ if(itemOptionalRefreshPromise)return itemOptionalRefreshPromise;
+ if((statusIndex&&Object.keys(statusIndex).length)&&(magicIndex&&Object.keys(magicIndex).length))return Promise.resolve(true);
+ if(typeof loadDataBundle!=='function')return Promise.resolve(false);
+ itemOptionalRefreshPromise=Promise.allSettled([
+  loadDataBundle('status').then(data=>{if(Array.isArray(data))statuses=data;}),
+  loadDataBundle('magic').then(data=>{if(Array.isArray(data))magics=data;})
+ ]).then(()=>{
+  statusIndex={};magicIndex={};
+  for(const s of statuses||[])statusIndex[String(intOf(s.ID))]=s;
+  for(const m of magics||[])magicIndex[String(m.ID).trim()]=m;
+  try{if(typeof SZO_SYNC_DATA==='function')SZO_SYNC_DATA();}catch(e){}
+  itemOptionalRefreshPromise=null;
+  if(id&&location.hash==='#item-'+id)showItem(id,true);
+  return true;
+ }).catch(()=>{itemOptionalRefreshPromise=null;return false;});
+ return itemOptionalRefreshPromise;
+}
+
+function latestItemsHTML(limit=320){
+ if(!hasItemData())return '<div class="muted">資料載入中，請稍等。</div>';
+ return (items||[]).slice().reverse().slice(0,limit).map(it=>`<button type="button" class="resultItem" data-item="${esc(it.ID)}"><div class="rName">${esc(nameOf(it))}</div><div class="rSub">Lv.${esc(it.Level||'')}｜${esc(itemTypeName(it.Type)||it.Type||'')}｜ID ${esc(it.ID||'')}</div></button>`).join('');
+}
+
+async function renderItemPage(tab='item'){
  const activeItem=tab==='item';
  const activeReverse=tab==='reverse';
- if(tab==='compound'){renderEquipmentCompoundPage();return;}
- byId('reader').innerHTML=activeItem?`<section class="card"><h1>道具查詢</h1>
-  <div class="kvGrid">
-    <div class="kv"><div class="k">道具名稱 / ID / 類型</div><div class="v"><input id="itemQ" placeholder="例如：火神砲、錦囊、277" value="${esc(window.v86ItemQ||'')}"></div></div>
-    <div class="kv"><div class="k">類型</div><div class="v"><select id="itemType"></select></div></div>
-    <div class="kv"><div class="k">等級起</div><div class="v"><input id="itemMin" type="number" value="${esc(window.v86ItemMin||'')}"></div></div>
-    <div class="kv"><div class="k">等級迄</div><div class="v"><input id="itemMax" type="number" value="${esc(window.v86ItemMax||'')}"></div></div>
+ if(tab==='compound'){
+  if(typeof ensureCompoundDataLoaded==='function'){
+   const ok=await ensureCompoundDataLoaded();
+   if(!ok)return;
+  }
+  renderEquipmentCompoundPage();
+  return;
+ }
+ byId('reader').innerHTML=activeItem?`<section class="card latestSearchPage itemAdvancedSearchPage"><h1>道具查詢</h1>
+  <div class="latestQueryLayout">
+    <div class="latestMainPane">
+      <div class="kvGrid">
+        <div class="kv"><div class="k">道具名稱 / ID / 類型</div><div class="v"><input id="itemQ" placeholder="例如：經驗丹、藥草、277、火傷" value="${esc(window.v86ItemQ||'')}" oninput="searchItems()"></div></div>
+        <div class="kv"><div class="k">類型</div><div class="v"><select id="itemType" onchange="searchItems()"></select></div></div>
+        <div class="kv"><div class="k">最低 Lv</div><div class="v"><input id="itemMin" type="number" value="${esc(window.v86ItemMin||'')}" oninput="searchItems()"></div></div>
+        <div class="kv"><div class="k">最高 Lv</div><div class="v"><input id="itemMax" type="number" value="${esc(window.v86ItemMax||'')}" oninput="searchItems()"></div></div>
+        <div class="kv"><div class="k">系列快選</div><div class="v"><select id="itemEqSeries" onchange="searchItems()"></select></div></div>
+        <div class="kv"><div class="k">專剋屬性</div><div class="v"><select id="itemKind" onchange="searchItems()"></select></div></div>
+      </div>
+      <div class="notice itemFilterNote">系列快選依合成模擬清單建立；類型依 ITEM.INI 原始欄位篩選。</div>
+      <div class="results" id="itemResults"></div>
+    </div>
+    <aside class="latestSidePane">
+      <div class="latestSideTitle">最新道具清單</div>
+      <div class="latestSideHint">依 ITEM.INI 原始順序反向顯示，越新的道具越上面。</div>
+      <div class="latestList" id="itemLatestList">${latestItemsHTML()}</div>
+    </aside>
   </div>
-  <div class="results" id="itemResults"></div>
  </section>`:`<section class="card"><h1>掉落反查</h1>
-  <div class="kvGrid"><div class="kv"><div class="k">輸入道具名稱</div><div class="v"><input id="reverseQ" placeholder="例如：侯氏兵甲福袋2020" value="${esc(window.v86ReverseQ||'')}"></div></div></div>
+  <div class="kvGrid"><div class="kv"><div class="k">輸入道具名稱</div><div class="v"><input id="reverseQ" placeholder="例如：獄魔灼血、30200" value="${esc(window.v86ReverseQ||'')}" oninput="searchReverseItems()"></div></div></div>
   <div class="results" id="reverseResults"></div>
  </section>`;
- const sel=byId('itemType');
- if(sel){sel.innerHTML='<option value="">全部類型</option>'+Object.entries(ITEM_TYPE_MAP).map(([k,v])=>`<option value="${esc(k)}">${esc(v)}</option>`).join(''); sel.value=window.v86ItemType||'';}
- if(activeItem)searchItems(); else if(activeReverse)searchReverseItems();
+ fillItemAdvancedFilters();
+ if(activeItem){
+  if(hasItemData())searchItems();
+  else{
+   byId('itemResults').innerHTML='<div class="muted">資料載入中，請稍等。</div>';
+   if(typeof window.ensureLookupDataLoaded==='function')window.ensureLookupDataLoaded().then(ok=>{if(ok)renderItemPage('item');else byId('itemResults').innerHTML='<div class="empty">道具資料載入失敗。</div>';});
+  }
+  refreshItemSeriesWhenReady();
+ }else if(activeReverse){
+  if(hasReverseData())searchReverseItems();
+  else{
+   byId('reverseResults').innerHTML='<div class="muted">資料載入中，請稍等。</div>';
+   ensureReverseBundlesLoaded().then(ok=>{if(ok)searchReverseItems();else byId('reverseResults').innerHTML='<div class="empty">反查資料載入失敗。</div>';});
+  }
+ }
 }
 
 function openItemMenuOnly(){
@@ -104,11 +293,11 @@ function openItemMenuOnly(){
  byId('reader').innerHTML='';
 }
 
-function setItemSub(kind){
+async function setItemSub(kind){
  openItemMenuOnly();
- if(kind==='item'){renderItemPage('item'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
- if(kind==='reverse'){renderItemPage('reverse'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
- if(kind==='compound'){renderEquipmentCompoundPage(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
+ if(kind==='item'){await renderItemPage('item');closeDrawer();window.scrollTo({top:0,behavior:'smooth'});}
+ if(kind==='reverse'){await renderItemPage('reverse');closeDrawer();window.scrollTo({top:0,behavior:'smooth'});}
+ if(kind==='compound'){await renderItemPage('compound');closeDrawer();window.scrollTo({top:0,behavior:'smooth'});}
 }
 
 function searchItems(){
@@ -117,83 +306,48 @@ function searchItems(){
  window.v86ItemType=byId('itemType')?.value||'';
  window.v86ItemMin=byId('itemMin')?.value||'';
  window.v86ItemMax=byId('itemMax')?.value||'';
-
+ window.v110ItemEqSeries=byId('itemEqSeries')?.value||'';
+ window.v110ItemKind=byId('itemKind')?.value||'';
  const q=itemQ.value.trim().toLowerCase();
  const type=window.v86ItemType;
  const min=window.v86ItemMin?intOf(window.v86ItemMin):null;
  const max=window.v86ItemMax?intOf(window.v86ItemMax):null;
-
- const hasFilter = !!(q || type || window.v86ItemMin || window.v86ItemMax);
- const box=byId('itemResults');
- if(!box)return;
- if(!hasFilter){box.innerHTML='';return;}
-
+ const series=window.v110ItemEqSeries;
+ const kind=window.v110ItemKind;
+ const box=byId('itemResults'); if(!box)return;
+ if(!hasItemData()){box.innerHTML='<div class="muted">資料載入中，請稍等。</div>';return;}
+ if(!(q||type||window.v86ItemMin||window.v86ItemMax||series||kind)){box.innerHTML='';return;}
  const arr=items.filter(it=>
-  (!q||itemSearchText(it).includes(q)) &&
-  (!type||it.Type===type) &&
-  (min===null||intOf(it.Level)>=min) &&
-  (max===null||intOf(it.Level)<=max)
- ).slice(0,150);
-
- box.innerHTML=arr.map(it=>`<button class="resultItem" data-item="${esc(it.ID)}"><div class="rName">${esc(nameOf(it))}</div><div class="rSub">Lv.${esc(it.Level||'')}｜${esc(itemTypeName(it.Type)||it.Type||'')}｜ID ${esc(it.ID)}</div></button>`).join('')||'<div class="muted">找不到道具</div>';
+  (!q||itemSearchText(it).includes(q))&&
+  (!type||it.Type===type)&&
+  (min===null||intOf(it.Level)>=min)&&
+  (max===null||intOf(it.Level)<=max)&&
+  (!kind||itemKind(it)===kind)&&
+  itemMatchesSeries(it,series)
+ ).slice(0,180);
+ box.innerHTML=arr.map(it=>{
+  const parts=[`Lv.${esc(it.Level||'')}`,esc(itemTypeName(it.Type)||it.Type||''),itemKind(it)?`專剋 ${esc(itemKind(it))}`:'',`ID ${esc(it.ID)}`].filter(Boolean);
+  return `<button class="resultItem" data-item="${esc(it.ID)}"><div class="rName">${esc(nameOf(it))}</div><div class="rSub">${parts.join(' / ')}</div></button>`;
+ }).join('')||'<div class="muted">沒有符合的道具。</div>';
 }
 
-function showItem(id){
+function showItem(id,skipPush){
  window.v86LastView='item';
- history.pushState({app:'detail',view:'item'},'','#item-'+id);
+ if(!skipPush){try{history.pushState({app:'detail',view:'item'},'','#item-'+id);}catch(e){}}
  const it=itemIndex[String(id).trim()]; if(!it)return;
- const allRows=itemDetailRows(it);
- const dataLabels=new Set(['ID','名稱','等級','職等','類型','專剋','特殊能力','說明']);
- const dataRows=allRows.filter(([k])=>dataLabels.has(k));
- const abilityRows=allRows.filter(([k])=>!dataLabels.has(k));
- const showRows=rows=>rows.filter(x=>x[1]!==''&&x[1]!==undefined&&x[1]!==null&&String(x[1]).trim()!=='0');
- const kvHtml=(rows,cls='')=>`<div class="kvGrid ${cls}">${showRows(rows).map(([k,v])=>`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('')}</div>`;
- const data=showRows(dataRows), abilities=showRows(abilityRows);
- byId('reader').innerHTML=`<section class="card monsterCompact itemCompact"><button class="backBtn" type="button" onclick="goBackToPrevious()">← 返回查詢</button><h1>${esc(nameOf(it))}</h1><div class="monsterGrid"><div class="monsterPanel"><h3>道具資料</h3>${kvHtml(data,'itemDataGrid')}</div>${abilities.length?`<div class="monsterPanel"><h3>道具能力</h3>${kvHtml(abilityRows,'itemAbilityGrid')}</div>`:''}</div><div class="quick"><button type="button" data-reverse-item="${esc(it.ID)}">反查哪些怪物掉落這個道具<small>查看怪物與掉落機率</small></button></div></section>`;
- closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});
+ ensureItemOptionalData(String(id));
+ const rows=itemDetailRows(it).filter(x=>x[1]!==''&&x[1]!==undefined&&x[1]!==null&&String(x[1]).trim()!=='0');
+ const kvHtml=rows.map(([k,v])=>{
+  const cls=k==='說明'?' itemFullRow itemHelpRow':(String(v).length>32?' itemFullRow':'');
+  return `<div class="kv${cls}"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`;
+ }).join('');
+ byId('reader').innerHTML=`<section class="card itemCompact"><button class="backBtn" type="button" onclick="goBackToPrevious('item')">← 返回道具查詢</button><h1>${esc(nameOf(it))}</h1><div class="kvGrid">${kvHtml}</div><div class="quick"><button type="button" data-reverse-item="${esc(it.ID)}">反查掉落怪物<small>查看哪些怪物會掉這個道具</small></button></div></section>`;
+ closeDrawer();window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// V202b does not override current app behavior.
-// It only exposes a namespace for future migration.
-window.SZO_ITEM_MODULE = {
-  itemTypeName: (typeof itemTypeName==='function'?itemTypeName:null),
-  itemKind: (typeof itemKind==='function'?itemKind:null),
-  itemStatus: (typeof itemStatus==='function'?itemStatus:null),
-  itemDetailRows: (typeof itemDetailRows==='function'?itemDetailRows:null),
-  itemAbilityFields: (typeof itemAbilityFields==='function'?itemAbilityFields:null),
-  itemSearchText: (typeof itemSearchText==='function'?itemSearchText:null),
-  renderItemPage: (typeof renderItemPage==='function'?renderItemPage:null),
-  openItemMenuOnly: (typeof openItemMenuOnly==='function'?openItemMenuOnly:null),
-  setItemSub: (typeof setItemSub==='function'?setItemSub:null),
-  searchItems: (typeof searchItems==='function'?searchItems:null),
-  showItem: (typeof showItem==='function'?showItem:null)
-};
-
-
-// V210 active item exports
-try{
-  if(typeof itemTypeName==='function')window.itemTypeName=itemTypeName;
-  if(typeof itemKind==='function')window.itemKind=itemKind;
-  if(typeof itemStatus==='function')window.itemStatus=itemStatus;
-  if(typeof itemDetailRows==='function')window.itemDetailRows=itemDetailRows;
-  if(typeof itemAbilityFields==='function')window.itemAbilityFields=itemAbilityFields;
-  if(typeof itemSearchText==='function')window.itemSearchText=itemSearchText;
-  if(typeof showItem==='function')window.showItem=showItem;
-}catch(e){console.warn('V210 item active export failed',e);}
-
-
-// V210a itemSearchText fallback
-try{
-  if(typeof itemSearchText==='function'){
-    window.itemSearchText = itemSearchText;
-  }else{
-    window.itemSearchText = function(it){
-      return String(
-        (it?.Name||'')+' '+
-        (it?.ID||'')+' '+
-        (it?.Level||'')+' '+
-        (it?.Type||'')
-      ).toLowerCase();
-    };
-  }
-}catch(e){console.warn('V210a itemSearchText fallback failed',e);}
+window.SZO_ITEM_MODULE={itemTypeName,itemKind,itemStatus,itemDetailRows,itemAbilityFields,itemSearchText,renderItemPage,openItemMenuOnly,setItemSub,searchItems,showItem};
+window.renderItemPage=renderItemPage;
+window.openItemMenuOnly=openItemMenuOnly;
+window.setItemSub=setItemSub;
+window.searchItems=searchItems;
+window.showItem=showItem;
