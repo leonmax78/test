@@ -1571,3 +1571,93 @@ body.isHomeView .reader{
     max-width:160px!important;
   }
 }
+
+
+/* V317 visitor counter bottom fix.
+   1. 網頁瀏覽人數固定在左側功能選單最下面
+   2. badge 左側文字縮短成「瀏覽」，避免和數字擠在一起
+*/
+.drawer{
+  display:flex!important;
+  flex-direction:column!important;
+}
+
+.drawerBody{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:auto!important;
+}
+
+#navGroup{
+  flex:0 0 auto!important;
+}
+
+#manualGroup{
+  flex:0 0 auto!important;
+}
+
+.visitorCounter{
+  margin: auto 12px 12px!important;
+  padding:14px 10px 12px!important;
+  border-top:1px solid rgba(148,163,184,.22)!important;
+  text-align:center!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:10px!important;
+}
+
+.visitorCounterTitle{
+  display:block!important;
+  width:100%!important;
+  color:#b9d4ff!important;
+  font-size:13px!important;
+  font-weight:900!important;
+  letter-spacing:.1em!important;
+  line-height:1.45!important;
+  text-align:center!important;
+  margin:0!important;
+  white-space:nowrap!important;
+}
+
+.visitorCounter img{
+  display:block!important;
+  width:auto!important;
+  max-width:96px!important;
+  height:auto!important;
+  margin:0 auto!important;
+  object-fit:contain!important;
+  image-rendering:auto!important;
+}
+
+/* 桌機固定滿高時，確保計數器貼在最下面。 */
+@media(min-width:980px){
+  .drawer{
+    height:calc(100dvh - 60px)!important;
+  }
+  .drawerBody{
+    height:100%!important;
+  }
+  .visitorCounter{
+    margin-top:auto!important;
+    margin-bottom:14px!important;
+  }
+}
+
+/* 手機抽屜內也放在選單最下面，但不要太貼底。 */
+@media(max-width:979px){
+  .visitorCounter{
+    margin:auto 10px calc(16px + env(safe-area-inset-bottom,0px))!important;
+    padding:15px 8px 12px!important;
+    gap:10px!important;
+  }
+  .visitorCounterTitle{
+    font-size:14px!important;
+  }
+  .visitorCounter img{
+    max-width:104px!important;
+  }
+}
