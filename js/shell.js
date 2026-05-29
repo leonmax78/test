@@ -44,7 +44,9 @@
     </div>
     <div class="visitorCounter" aria-label="網頁瀏覽人數">
       <div class="visitorCounterTitle">網頁瀏覽人數</div>
-      <div class="visitorCounterValue" id="visitorCounterValue" aria-live="polite">--</div>
+      <span class="visitorBadgePill" aria-hidden="true">
+        <img src="https://visitor-badge.laobi.icu/badge?page_id=leonmax78.test&left_text=%E7%80%8F%E8%A6%BD" alt="網頁瀏覽人數" loading="lazy">
+      </span>
     </div>
   </div>
 </aside>
@@ -77,22 +79,6 @@
     window.SZO_OPEN_MENU = open;
     window.SZO_CLOSE_MENU = close;
   }
-  async function initVisitorCounterValue(){
-    const el = document.getElementById('visitorCounterValue');
-    if(!el) return;
-    el.textContent = '...';
-    try{
-      // 優先使用 countapi，顯示數字徽章，不再依賴裁切外部圖片
-      const url = 'https://api.countapi.xyz/hit/leonmax78.github.io/fengyutongzhou';
-      const res = await fetch(url, { cache: 'no-store' });
-      if(!res.ok) throw new Error('counter http ' + res.status);
-      const data = await res.json();
-      const value = Number(data && data.value);
-      if(Number.isFinite(value)){
-        el.textContent = String(value);
-      }else{
-        throw new Error('invalid counter value');
-      }
     }catch(err){
       console.warn('visitor counter load failed', err);
       // 備援：不要顯示 failed，維持簡潔
@@ -114,5 +100,4 @@
     if(st) st.textContent = '模組載入中，請稍候再點一次';
   }, true);
 
-  initVisitorCounterValue();
 })();
