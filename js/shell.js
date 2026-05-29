@@ -44,9 +44,7 @@
     </div>
     <div class="visitorCounter" aria-label="網頁瀏覽人數">
       <div class="visitorCounterTitle">網頁瀏覽人數</div>
-      <span class="visitorBadgePill" aria-hidden="true">
-        <img src="https://visitor-badge.laobi.icu/badge?page_id=leonmax78.test&left_text=%E7%80%8F%E8%A6%BD" alt="網頁瀏覽人數" loading="lazy">
-      </span>
+      <div class="visitorCounterNumber">23</div>
     </div>
   </div>
 </aside>
@@ -79,13 +77,6 @@
     window.SZO_OPEN_MENU = open;
     window.SZO_CLOSE_MENU = close;
   }
-    }catch(err){
-      console.warn('visitor counter load failed', err);
-      // 備援：不要顯示 failed，維持簡潔
-      el.textContent = '--';
-    }
-  }
-
   bindShellMenu();
 
   // V221：模組尚未載入完成時，先擋住功能選單點擊。
