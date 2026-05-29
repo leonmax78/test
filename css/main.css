@@ -1908,3 +1908,48 @@ body.isHomeView .reader{
     transform:translateX(-44px)!important;
   }
 }
+
+
+/* V322 visitor counter tighter crop.
+   再加強裁切，把左邊殘留灰底完全切掉。
+*/
+.visitorBadgeCrop{
+  width:24px!important;
+  height:20px!important;
+  min-width:24px!important;
+  max-width:24px!important;
+  flex:0 0 24px!important;
+  overflow:hidden!important;
+  border-radius:999px!important;
+  position:relative!important;
+  background:transparent!important;
+}
+
+.visitorBadgeCrop img{
+  display:block!important;
+  width:76px!important;
+  min-width:76px!important;
+  max-width:none!important;
+  height:20px!important;
+  margin:0!important;
+  object-fit:fill!important;
+  transform:translateX(-50px)!important;
+  transform-origin:left top!important;
+  border-radius:0!important;
+}
+
+@media(max-width:979px){
+  .visitorBadgeCrop{
+    width:25px!important;
+    height:21px!important;
+    min-width:25px!important;
+    max-width:25px!important;
+    flex-basis:25px!important;
+  }
+  .visitorBadgeCrop img{
+    width:78px!important;
+    min-width:78px!important;
+    height:21px!important;
+    transform:translateX(-52px)!important;
+  }
+}
