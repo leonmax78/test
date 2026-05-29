@@ -1522,8 +1522,10 @@ body.isHomeView .reader{
 
 
 
-/* V325 recover + simple visitor counter.
-   先恢復網頁可正常開啟，瀏覽人數區改成純文字數字膠囊，不再依賴外部 badge 圖片。
+
+/* V326 visitor counter dynamic badge.
+   保留目前喜歡的版型，但數字改回真的會計數的 visitor badge。
+   left_text 使用零寬字元，左右顏色相同，所以視覺上只像藍色數字膠囊。
 */
 .visitorCounter{
   margin:auto 12px 14px!important;
@@ -1550,26 +1552,21 @@ body.isHomeView .reader{
   white-space:nowrap!important;
 }
 
-.visitorCounterNumber{
-  display:inline-flex!important;
-  align-items:center!important;
-  justify-content:center!important;
+.visitorCounterBadge{
+  display:inline-block!important;
+  width:auto!important;
   min-width:34px!important;
   height:22px!important;
-  padding:0 10px!important;
+  margin:0!important;
+  border:0!important;
   border-radius:999px!important;
-  background:linear-gradient(135deg,#55b8ff,#0787dc)!important;
-  color:#fff!important;
-  font-size:13px!important;
-  font-weight:900!important;
-  line-height:1!important;
-  box-shadow:0 0 0 1px rgba(255,255,255,.08) inset!important;
+  vertical-align:middle!important;
 }
 
-.visitorCounter img,
+.visitorCounterNumber,
+.visitorCounterValue,
 .visitorBadgeCrop,
-.visitorBadgePill,
-.visitorCounterValue{
+.visitorBadgePill{
   display:none!important;
 }
 
@@ -1589,9 +1586,8 @@ body.isHomeView .reader{
   .visitorCounterTitle{
     font-size:14px!important;
   }
-  .visitorCounterNumber{
+  .visitorCounterBadge{
     min-width:36px!important;
     height:24px!important;
-    font-size:14px!important;
   }
 }
