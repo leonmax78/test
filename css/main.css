@@ -1953,3 +1953,83 @@ body.isHomeView .reader{
     transform:translateX(-52px)!important;
   }
 }
+
+
+/* V323 visitor counter real fix.
+   不再裁切外部 badge，直接改成「網頁瀏覽人數 + 數字膠囊」。
+*/
+.visitorCounter,
+.visitorCounter *{
+  box-sizing:border-box!important;
+}
+
+.visitorCounter{
+  margin:auto 12px 14px!important;
+  padding:14px 10px 12px!important;
+  border-top:1px solid rgba(148,163,184,.22)!important;
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  text-align:center!important;
+  flex-wrap:nowrap!important;
+}
+
+.visitorCounterTitle{
+  display:inline-flex!important;
+  width:auto!important;
+  margin:0!important;
+  color:#b9d4ff!important;
+  font-size:13px!important;
+  font-weight:900!important;
+  letter-spacing:.08em!important;
+  line-height:1.15!important;
+  white-space:nowrap!important;
+}
+
+.visitorCounterValue{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-width:34px!important;
+  height:22px!important;
+  padding:0 10px!important;
+  border-radius:999px!important;
+  background:linear-gradient(135deg,#5eb7ff,#0b84dc)!important;
+  color:#ffffff!important;
+  font-size:13px!important;
+  font-weight:900!important;
+  line-height:1!important;
+  box-shadow:0 0 0 1px rgba(255,255,255,.06) inset!important;
+  white-space:nowrap!important;
+}
+
+.visitorCounter img,
+.visitorBadgeCrop{
+  display:none!important;
+}
+
+@media(min-width:980px){
+  .visitorCounter{
+    margin-top:auto!important;
+    margin-bottom:16px!important;
+  }
+}
+
+@media(max-width:979px){
+  .visitorCounter{
+    margin:auto 10px calc(16px + env(safe-area-inset-bottom,0px))!important;
+    padding:14px 8px 12px!important;
+    gap:8px!important;
+  }
+  .visitorCounterTitle{
+    font-size:14px!important;
+  }
+  .visitorCounterValue{
+    min-width:36px!important;
+    height:24px!important;
+    padding:0 10px!important;
+    font-size:14px!important;
+  }
+}
