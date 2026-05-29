@@ -1591,3 +1591,105 @@ body.isHomeView .reader{
     height:24px!important;
   }
 }
+
+
+/* V327 visitor counter format fix.
+   保留會計數的 visitor badge，但用固定小盒子承載，
+   避免 badge 隱形左側把「網頁瀏覽人數」擠歪。
+*/
+.visitorCounter{
+  margin:auto 12px 14px!important;
+  padding:14px 10px 12px!important;
+  border-top:1px solid rgba(148,163,184,.22)!important;
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;
+  text-align:center!important;
+  flex-wrap:nowrap!important;
+}
+
+.visitorCounterTitle{
+  display:inline-flex!important;
+  width:auto!important;
+  margin:0!important;
+  color:#b9d4ff!important;
+  font-size:13px!important;
+  font-weight:900!important;
+  letter-spacing:.08em!important;
+  line-height:1.15!important;
+  white-space:nowrap!important;
+}
+
+.visitorCounterBadgeBox{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:34px!important;
+  min-width:34px!important;
+  max-width:34px!important;
+  height:22px!important;
+  flex:0 0 34px!important;
+  overflow:hidden!important;
+  border-radius:999px!important;
+  background:#0b84dc!important;
+}
+
+.visitorCounterBadgeBox .visitorCounterBadge{
+  display:block!important;
+  width:46px!important;
+  min-width:46px!important;
+  max-width:46px!important;
+  height:22px!important;
+  margin:0!important;
+  border:0!important;
+  object-fit:cover!important;
+  object-position:right center!important;
+  transform:translateX(-6px)!important;
+}
+
+.visitorCounterBadge,
+.visitorCounter img.visitorCounterBadge{
+  border-radius:0!important;
+}
+
+.visitorCounterNumber,
+.visitorCounterValue,
+.visitorBadgeCrop,
+.visitorBadgePill,
+.visitorCounter > img{
+  display:none!important;
+}
+
+@media(min-width:980px){
+  .visitorCounter{
+    margin-top:auto!important;
+    margin-bottom:16px!important;
+  }
+}
+
+@media(max-width:979px){
+  .visitorCounter{
+    margin:auto 10px calc(16px + env(safe-area-inset-bottom,0px))!important;
+    padding:14px 8px 12px!important;
+    gap:7px!important;
+  }
+  .visitorCounterTitle{
+    font-size:14px!important;
+  }
+  .visitorCounterBadgeBox{
+    width:36px!important;
+    min-width:36px!important;
+    max-width:36px!important;
+    height:24px!important;
+    flex-basis:36px!important;
+  }
+  .visitorCounterBadgeBox .visitorCounterBadge{
+    width:48px!important;
+    min-width:48px!important;
+    max-width:48px!important;
+    height:24px!important;
+    transform:translateX(-6px)!important;
+  }
+}
