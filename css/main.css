@@ -1519,3 +1519,55 @@ body.isHomeView .reader{
     height:calc(100dvh - 68px)!important;
   }
 }
+
+
+/* V316 visitor counter spacing fix.
+   左側選單底部的瀏覽人數不要擠在一起。
+*/
+.visitorCounter{
+  margin:18px 10px 8px!important;
+  padding:14px 10px!important;
+  border-top:1px solid rgba(148,163,184,.18)!important;
+  text-align:center!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+}
+
+.visitorCounterTitle{
+  display:block!important;
+  width:100%!important;
+  color:#b9d4ff!important;
+  font-size:13px!important;
+  font-weight:900!important;
+  letter-spacing:.08em!important;
+  line-height:1.45!important;
+  text-align:center!important;
+  margin:0!important;
+}
+
+.visitorCounter img{
+  display:block!important;
+  max-width:150px!important;
+  width:auto!important;
+  height:auto!important;
+  margin:0 auto!important;
+  object-fit:contain!important;
+}
+
+/* 手機抽屜裡也保持寬鬆一點 */
+@media(max-width:979px){
+  .visitorCounter{
+    margin:18px 8px 12px!important;
+    padding:14px 8px!important;
+    gap:9px!important;
+  }
+  .visitorCounterTitle{
+    font-size:14px!important;
+  }
+  .visitorCounter img{
+    max-width:160px!important;
+  }
+}
