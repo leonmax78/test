@@ -1750,3 +1750,71 @@ body.isHomeView .reader{
     height:21px!important;
   }
 }
+
+
+/* V320 visitor counter crop right number.
+   visitor-badge 不能用空 left_text，否則會顯示 failed。
+   所以保留 left_text=瀏覽，但用 CSS 裁切，只露出右側數字。
+*/
+.visitorCounter{
+  margin:auto 12px 14px!important;
+  padding:14px 10px 12px!important;
+  border-top:1px solid rgba(148,163,184,.22)!important;
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;
+  text-align:center!important;
+  flex-wrap:nowrap!important;
+}
+
+.visitorCounterTitle{
+  display:inline-flex!important;
+  width:auto!important;
+  margin:0!important;
+  color:#b9d4ff!important;
+  font-size:13px!important;
+  font-weight:900!important;
+  letter-spacing:.08em!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+}
+
+/* 裁切外部 badge，只顯示右邊藍色數字，不顯示左邊「瀏覽」。 */
+.visitorCounter img{
+  display:inline-block!important;
+  width:34px!important;
+  min-width:34px!important;
+  max-width:34px!important;
+  height:20px!important;
+  margin:0!important;
+  object-fit:cover!important;
+  object-position:right center!important;
+  border-radius:999px!important;
+  overflow:hidden!important;
+}
+
+@media(min-width:980px){
+  .visitorCounter{
+    margin-top:auto!important;
+    margin-bottom:16px!important;
+  }
+}
+
+@media(max-width:979px){
+  .visitorCounter{
+    margin:auto 10px calc(16px + env(safe-area-inset-bottom,0px))!important;
+    padding:14px 8px 12px!important;
+    gap:8px!important;
+  }
+  .visitorCounterTitle{
+    font-size:14px!important;
+  }
+  .visitorCounter img{
+    width:36px!important;
+    min-width:36px!important;
+    max-width:36px!important;
+    height:21px!important;
+  }
+}
