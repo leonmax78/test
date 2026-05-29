@@ -1661,3 +1661,92 @@ body.isHomeView .reader{
     max-width:104px!important;
   }
 }
+
+
+/* V318 visitor counter badge width fix.
+   讓「瀏覽 15」徽章不要被縮得太窄。
+*/
+.visitorCounter img{
+  width:132px!important;
+  min-width:132px!important;
+  max-width:132px!important;
+  height:28px!important;
+  margin:0 auto!important;
+  object-fit:contain!important;
+}
+
+@media(max-width:979px){
+  .visitorCounter img{
+    width:138px!important;
+    min-width:138px!important;
+    max-width:138px!important;
+    height:30px!important;
+  }
+}
+
+
+/* V319 visitor counter inline count.
+   把徽章左側文字刪掉，讓數字放在「網頁瀏覽人數」右邊。
+*/
+.visitorCounter{
+  margin:auto 12px 14px!important;
+  padding:14px 10px 12px!important;
+  border-top:1px solid rgba(148,163,184,.22)!important;
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;
+  text-align:center!important;
+  flex-wrap:nowrap!important;
+}
+
+.visitorCounterTitle{
+  display:inline-flex!important;
+  width:auto!important;
+  margin:0!important;
+  color:#b9d4ff!important;
+  font-size:13px!important;
+  font-weight:900!important;
+  letter-spacing:.08em!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+}
+
+.visitorCounter img{
+  display:inline-block!important;
+  width:32px!important;
+  min-width:32px!important;
+  max-width:32px!important;
+  height:20px!important;
+  margin:0!important;
+  object-fit:cover!important;
+  object-position:right center!important;
+  border-radius:999px!important;
+}
+
+/* 桌機固定滿高時，仍貼在左側選單最下面。 */
+@media(min-width:980px){
+  .visitorCounter{
+    margin-top:auto!important;
+    margin-bottom:16px!important;
+  }
+}
+
+/* 手機抽屜內同樣一行顯示。 */
+@media(max-width:979px){
+  .visitorCounter{
+    margin:auto 10px calc(16px + env(safe-area-inset-bottom,0px))!important;
+    padding:14px 8px 12px!important;
+    gap:8px!important;
+  }
+  .visitorCounterTitle{
+    font-size:14px!important;
+  }
+  .visitorCounter img{
+    width:34px!important;
+    min-width:34px!important;
+    max-width:34px!important;
+    height:21px!important;
+  }
+}

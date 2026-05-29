@@ -44,7 +44,7 @@
     </div>
     <div class="visitorCounter" aria-label="網頁瀏覽人數">
       <div class="visitorCounterTitle">網頁瀏覽人數</div>
-      <img src="https://visitor-badge.laobi.icu/badge?page_id=leonmax78.test&left_text=%E7%80%8F%E8%A6%BD" alt="網頁瀏覽人數" loading="lazy">
+      <img src="https://visitor-badge.laobi.icu/badge?page_id=leonmax78.test&left_text=" alt="網頁瀏覽人數" loading="lazy">
     </div>
   </div>
 </aside>
