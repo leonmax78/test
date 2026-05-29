@@ -116,6 +116,7 @@ window.SZO_SYNC_DATA = SZO_SYNC_DATA;
 // V220: setTopStatus moved to js/utils/common-utils.js.
 
 function renderJiangHome(){
+ document.body.classList.remove('isHomeView');
  byId('reader').innerHTML='';
 }
 
@@ -138,6 +139,7 @@ function openJiangMenuOnly(){
  renderJiangHome();
 }
 async function setView(view){
+ if(view!=='home') document.body.classList.remove('isHomeView');
  currentView=view;
  document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
  document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
@@ -145,6 +147,7 @@ async function setView(view){
  else if(view==='jiang'){openJiangMenuOnly();}
  else if(view==='monster'){renderMonsterPage(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
  else if(view==='item'){openItemMenuOnly();}
+ else if(view==='shop'){if(typeof renderShopPage==='function')renderShopPage();}
  else if(view==='soul'){
   currentView='soul';
   document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='soul'));
@@ -214,7 +217,8 @@ async function setItemSub(kind){
  if(kind==='compound'){if(await ensureCompoundDataLoaded())renderEquipmentCompoundPage(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
 }
 function renderHome(){
- byId('reader').innerHTML='<section class="homeBlank" aria-label="首頁"></section>';
+ document.body.classList.add('isHomeView');
+ byId('reader').innerHTML='<section class="homeBlank" aria-label="首頁"><div class="homeSignatureText" aria-label="文昌 慕容淵"><span class="sigCol sigWenchang">文昌</span><span class="sigCol sigMurong">慕容淵</span><span class="sigSeal" aria-hidden="true">文</span></div></section>';
 }
 function renderLoad(){
  const old=byId('loadCard');
@@ -1094,6 +1098,7 @@ function backLabelFor(view){
  if(view==='monster')return '返回怪物查詢';
  if(view==='item')return '返回道具查詢';
  if(view==='reverse')return '返回道具反查';
+ if(view==='shop')return '返回商店販賣資訊';
  if(view==='jiang')return '返回降神、經驗、修練試算';
  return '返回首頁';
 }

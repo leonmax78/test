@@ -1,5 +1,6 @@
-// V105：讀取 data/config.json，讓標題、署名、授權設定不用再寫死在 index.html
+// Loads the small site config after the shell is ready.
 window.SZO_SITE_CONFIG = window.SZO_SITE_CONFIG || {};
+
 async function loadSiteConfigV105(){
   try{
     const res = await fetch('data/config.json?ts=' + Date.now(), {cache:'no-store'});
@@ -10,13 +11,9 @@ async function loadSiteConfigV105(){
     if(cfg.title){
       const el = document.getElementById('siteTitle') || document.querySelector('.brandTitle');
       if(el) el.textContent = cfg.title;
-      document.title = cfg.title + (cfg.version ? '｜' + cfg.version : '');
+      document.title = cfg.title;
     }
-
-    if(cfg.maker){
-      const mk = document.getElementById('siteMaker') || document.querySelector('.maker');
-      if(mk) mk.textContent = cfg.maker;
-    }
+    { const mk = document.getElementById('siteMaker') || document.querySelector('.maker'); if(mk) mk.textContent = ''; }
 
     if(typeof cfg.authRequired === 'boolean'){
       window.AUTH_REQUIRED_FROM_CONFIG = cfg.authRequired;
@@ -30,7 +27,8 @@ async function loadSiteConfigV105(){
       }
     }
   }catch(err){
-    console.warn('config.json 讀取失敗，改用 index 內建設定', err);
+    console.warn('config.json load failed; using shell defaults.', err);
   }
 }
+
 loadSiteConfigV105();

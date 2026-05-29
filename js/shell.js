@@ -4,8 +4,8 @@
   root.innerHTML = `<div id="mainShell">
 <header class="topbar"><div class="topline">
   <button class="menuBtn" id="openMenuBtn">☰</button>
-  <div class="brand"><div class="brandTitle" id="siteTitle">神州降神、經驗、修練試算、掉落查詢系統</div></div>
-  <div class="maker" id="siteMaker">讀取署名中...</div>
+  <div class="brand"><div class="brandTitle" id="siteTitle">文昌－風雨同舟</div></div>
+  <div class="maker" id="siteMaker" aria-hidden="true"></div>
   <button class="shellSettingsBtn" id="openUiSettingsBtn" type="button">網頁外觀</button>
   <div class="status" id="topStatus">準備中</div>
 </div></header>
@@ -35,11 +35,16 @@
         <button class="navBtn sub" data-item-open="compound">裝備合成模擬 <span>›</span></button>
       </div>
       <button class="navBtn major" data-view="soul">武魂能力試算 <span>›</span></button>
+      <button class="navBtn major" data-view="shop">商店販賣資訊 <span>›</span></button>
     </div>
     <div class="navGroup" id="manualGroup" style="display:none">
       <div class="navTitle">備用手動載入</div>
       <div class="muted" style="font-size:12px">自動讀取失敗時才需要。</div>
       <input type="file" id="manualFiles" multiple accept=".ini,.csv,.txt">
+    </div>
+    <div class="visitorCounter" aria-label="網頁瀏覽人數">
+      <div class="visitorCounterTitle">網頁瀏覽人數</div>
+      <img src="https://visitor-badge.laobi.icu/badge?page_id=leonmax78.test&left_text=%E7%B6%B2%E9%A0%81%E7%80%8F%E8%A6%BD" alt="網頁瀏覽人數" loading="lazy">
     </div>
   </div>
 </aside>

@@ -12,11 +12,7 @@ async function loadSiteConfigV105(){
       if(el) el.textContent = cfg.title;
       document.title = cfg.title + (cfg.version ? '｜' + cfg.version : '');
     }
-
-    if(cfg.maker){
-      const mk = document.getElementById('siteMaker') || document.querySelector('.maker');
-      if(mk) mk.textContent = cfg.maker;
-    }
+    { const mk = document.getElementById('siteMaker') || document.querySelector('.maker'); if(mk) mk.textContent = ''; }
 
     if(typeof cfg.authRequired === 'boolean'){
       window.AUTH_REQUIRED_FROM_CONFIG = cfg.authRequired;

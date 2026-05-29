@@ -1,6 +1,6 @@
 {
-  "siteTitle": "文昌工具箱｜神州Online",
-  "version": "V212-core-module-ready",
+  "siteTitle": "文昌－風雨同舟",
+  "version": "V312-title-layout",
   "defaultPage": "home",
   "nav": [
     {
@@ -36,6 +36,11 @@
     {
       "id": "soul",
       "label": "武魂能力試算",
+      "enabled": true
+    },
+    {
+      "id": "shop",
+      "label": "商店販賣資訊",
       "enabled": true
     }
   ],
