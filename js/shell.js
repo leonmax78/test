@@ -4,7 +4,7 @@
   root.innerHTML = `<div id="mainShell">
 <header class="topbar"><div class="topline">
   <button class="menuBtn" id="openMenuBtn">☰</button>
-  <div class="brand"><div class="brandTitle" id="siteTitle">文昌－風雨同舟</div></div>
+  <div class="brand"><div class="brandTitle" id="siteTitle">文昌－四海同舟</div></div>
   <div class="maker" id="siteMaker" aria-hidden="true"></div>
   <button class="shellSettingsBtn" id="openUiSettingsBtn" type="button">網頁外觀</button>
   <div class="status" id="topStatus">準備中</div>
