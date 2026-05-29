@@ -1240,23 +1240,20 @@ section.card:has(.supportPlan) > .notice{
 }
 
 
-/* V313 homepage background fit + fixed full-height menu + separated signature overlay.
-   目的：
-   1. 刪除頂部製作署名顯示
-   2. 首頁桌機/手機底圖完整顯示，不裁掉落款
-   3. 左側功能選單固定滿高
+/* V314 homepage full-image fit + fixed full-height side menu.
+   不再額外疊落款；保留 Codex / 原圖內建落款。
 */
 .maker,
 #siteMaker{
   display:none!important;
 }
 
-/* 預設仍保留淡背景；首頁由 .homeBlank 自己控制圖片，避免 cover 裁切。 */
+/* 首頁由 .homeBlank 自己顯示底圖，避免 body cover 裁切。 */
 html,body{
   background:#07111f!important;
 }
 
-/* 讓首頁變成真正的滿版展示區。 */
+/* 進首頁時不要因內容高度造成底圖被捲走。 */
 body.isHomeView{
   overflow:hidden;
 }
@@ -1268,6 +1265,8 @@ body.isHomeView .reader{
   width:100%!important;
   margin:0!important;
 }
+
+/* 桌機首頁：橫式底圖完整顯示，不裁切。 */
 .homeBlank{
   position:relative!important;
   pointer-events:none;
@@ -1282,54 +1281,7 @@ body.isHomeView .reader{
   overflow:hidden!important;
 }
 
-/* 分離式落款：用真文字疊上去，慕、淵不再交給生圖模型。 */
-.homeSignatureText{
-  position:absolute;
-  right:clamp(18px,3vw,54px);
-  bottom:clamp(18px,3vh,42px);
-  display:grid;
-  grid-template-columns:auto auto;
-  gap:8px;
-  align-items:start;
-  padding:10px 8px 8px;
-  color:rgba(14,14,14,.82);
-  font-family:"DFKai-SB","標楷體","KaiTi","PMingLiU","Microsoft JhengHei",serif;
-  font-weight:900;
-  font-size:clamp(20px,2.1vw,36px);
-  line-height:1.05;
-  letter-spacing:.08em;
-  text-shadow:0 1px 0 rgba(255,255,255,.18);
-  background:rgba(244,239,226,.42);
-  border-radius:10px;
-  backdrop-filter:blur(1px);
-}
-.homeSignatureText .sigCol{
-  writing-mode:vertical-rl;
-  text-orientation:upright;
-  white-space:nowrap;
-}
-.homeSignatureText .sigWenchang{
-  grid-column:2;
-}
-.homeSignatureText .sigMurong{
-  grid-column:1;
-}
-.homeSignatureText .sigSeal{
-  grid-column:1 / -1;
-  justify-self:center;
-  width:28px;
-  height:28px;
-  display:grid;
-  place-items:center;
-  border:2px solid rgba(139,22,22,.86);
-  color:rgba(139,22,22,.92);
-  font-size:14px;
-  line-height:1;
-  border-radius:3px;
-  margin-top:4px;
-}
-
-/* 桌機版：左側選單固定從 header 下緣到畫面底部，整排滿高。 */
+/* 桌機版：左側功能選單固定從 header 下緣到畫面底部，整排滿高。 */
 @media(min-width:980px){
   .topbar{
     height:60px!important;
@@ -1375,7 +1327,7 @@ body.isHomeView .reader{
   }
 }
 
-/* 手機版：只顯示直式底圖，剛好一頁內完整呈現。 */
+/* 手機版：使用直式底圖，盡量一頁內完整顯示。 */
 @media(max-width:979px){
   .topbar{
     position:relative!important;
@@ -1423,23 +1375,9 @@ body.isHomeView .reader{
     background-position:center center!important;
     background-repeat:no-repeat!important;
   }
-  .homeSignatureText{
-    right:clamp(8px,2.2vw,18px);
-    bottom:clamp(8px,1.2vh,14px);
-    font-size:clamp(17px,5vw,23px);
-    gap:5px;
-    padding:7px 5px 6px;
-    background:rgba(244,239,226,.38);
-  }
-  .homeSignatureText .sigSeal{
-    width:21px;
-    height:21px;
-    font-size:11px;
-    border-width:1.5px;
-  }
 }
 
-/* 很矮的手機或 Safari 工具列干擾時，再略縮 header 預留，避免底圖需要捲動。 */
+/* 很矮的手機或 Safari 工具列干擾時，略縮 header 高度，避免底圖需要捲動。 */
 @media(max-width:520px) and (max-height:760px){
   .topbar{
     min-height:112px!important;
@@ -1452,5 +1390,132 @@ body.isHomeView .reader{
   .homeBlank{
     min-height:calc(100dvh - 112px)!important;
     height:calc(100dvh - 112px)!important;
+  }
+}
+
+
+/* V315 mobile header compact fix.
+   手機版：
+   1. 上方列縮矮
+   2. 「網頁外觀」完整顯示
+   3. 首頁底圖重新用較矮 header 計算高度
+*/
+@media(max-width:979px){
+  .topbar{
+    position:relative!important;
+    min-height:74px!important;
+    height:auto!important;
+    padding:calc(8px + env(safe-area-inset-top)) 10px 8px!important;
+    overflow:hidden!important;
+  }
+
+  .topline{
+    width:100%!important;
+    max-width:none!important;
+    grid-template-columns:44px minmax(0,1fr) 108px!important;
+    grid-template-areas:"menu brand settings"!important;
+    gap:8px!important;
+    align-items:center!important;
+  }
+
+  .menuBtn{
+    grid-area:menu!important;
+    width:44px!important;
+    min-width:44px!important;
+    height:44px!important;
+    padding:0!important;
+    border-radius:16px!important;
+    display:grid!important;
+    place-items:center!important;
+    font-size:20px!important;
+  }
+
+  .brand{
+    grid-area:brand!important;
+    min-width:0!important;
+    overflow:hidden!important;
+  }
+
+  .brandTitle{
+    font-size:20px!important;
+    line-height:1.15!important;
+    letter-spacing:.03em!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+
+  .shellSettingsBtn{
+    grid-area:settings!important;
+    width:108px!important;
+    max-width:108px!important;
+    min-width:0!important;
+    height:44px!important;
+    padding:0 10px!important;
+    border-radius:999px!important;
+    font-size:15px!important;
+    line-height:44px!important;
+    text-align:center!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:clip!important;
+  }
+
+  body.isHomeView .content{
+    padding:0!important;
+  }
+
+  .homeBlank{
+    min-height:calc(100dvh - 74px)!important;
+    height:calc(100dvh - 74px)!important;
+    background-image:url("../assets/home_bg_mobile.png")!important;
+    background-size:contain!important;
+    background-position:center center!important;
+    background-repeat:no-repeat!important;
+  }
+}
+
+/* 較窄手機再壓一點，避免右上按鈕被 Safari 邊界吃掉。 */
+@media(max-width:390px){
+  .topbar{
+    padding-left:8px!important;
+    padding-right:8px!important;
+  }
+  .topline{
+    grid-template-columns:42px minmax(0,1fr) 100px!important;
+    gap:7px!important;
+  }
+  .menuBtn{
+    width:42px!important;
+    min-width:42px!important;
+    height:42px!important;
+  }
+  .brandTitle{
+    font-size:18px!important;
+  }
+  .shellSettingsBtn{
+    width:100px!important;
+    max-width:100px!important;
+    height:42px!important;
+    line-height:42px!important;
+    font-size:14px!important;
+    padding:0 8px!important;
+  }
+  .homeBlank{
+    min-height:calc(100dvh - 70px)!important;
+    height:calc(100dvh - 70px)!important;
+  }
+}
+
+/* 覆蓋前一版很矮手機的 112px header 設定，這版不要再留那麼高。 */
+@media(max-width:520px) and (max-height:760px){
+  .topbar{
+    min-height:68px!important;
+    padding-top:calc(7px + env(safe-area-inset-top))!important;
+    padding-bottom:7px!important;
+  }
+  .homeBlank{
+    min-height:calc(100dvh - 68px)!important;
+    height:calc(100dvh - 68px)!important;
   }
 }
