@@ -60,6 +60,37 @@ function loadScriptOnce(src){
  return lazyScriptLoads[src];
 }
 
+function prefetchResourceOnce(href,asType){
+ if(!href||document.querySelector(`link[data-szo-prefetch="${href}"]`))return;
+ const link=document.createElement('link');
+ link.rel='prefetch';
+ link.href=href;
+ if(asType)link.as=asType;
+ link.dataset.szoPrefetch=href;
+ document.head.appendChild(link);
+}
+
+function scheduleIdleTask(fn,delay=1200){
+ const run=()=>{try{fn();}catch(e){console.warn('idle task failed',e);}};
+ if('requestIdleCallback' in window)window.requestIdleCallback(run,{timeout:delay+2500});
+ else setTimeout(run,delay);
+}
+
+function prefetchLookupBundles(){
+ const version=document.body?.dataset?.version||'dev';
+ const files=['data/monsters.bundle.js','data/items.bundle.js','data/drop_reverse.bundle.js','data/magic.bundle.js','data/locations.bundle.js','data/status.bundle.js'];
+ files.forEach(src=>{
+  const join=src.includes('?')?'&':'?';
+  prefetchResourceOnce(`${src}${join}v=${encodeURIComponent(version)}`,'script');
+ });
+}
+
+function warmLookupDataInBackground(){
+ if(mainDataReady||mainDataLoadPromise)return;
+ if(navigator.connection&&navigator.connection.saveData)return;
+ scheduleIdleTask(()=>ensureLookupDataLoaded().then(()=>{if(currentView==='home')renderHome();}),1800);
+}
+
 // V210d: keep shared data references synced for extracted modules.
 function SZO_SYNC_DATA(){
   try{
@@ -528,7 +559,36 @@ async function ensureItemDataLoadedOld(){
 }
 
 async function ensureMonsterDataLoaded(){
- return await ensureLookupDataLoaded();
+ if(monsterDataReady||mainDataReady||adoptPreloadedMonsterBundle())return true;
+ if(monsterDataLoadPromise)return monsterDataLoadPromise;
+ monsterDataLoadPromise=(async()=>{
+  setTopStatus("Loading monster data");
+  try{
+   if(await loadMonsterDataFromJson()){
+    monsterDataReady=true;
+    setTopStatus("Ready");
+    return true;
+   }
+   const mon=await fetchFirst(FILES.monsters,'MONSTER_C.INI');
+   if(mon.missing)throw new Error("Required monster data files failed to load: MONSTER_C.INI");
+   monsters=parseIni(mon.text).filter(x=>{
+    const n=nameOf(x).trim().toUpperCase();
+    return n && n!=='UNKNOWN' && n!=='NULL';
+   });
+   if(!monsters.length)throw new Error("Monster data is empty");
+   monsterDataReady=true;
+   setTopStatus("Ready");
+   try{ if(typeof SZO_SYNC_DATA==='function') SZO_SYNC_DATA(); }catch(e){}
+   loadOptionalMainData();
+   return true;
+  }catch(e){
+   monsterDataLoadPromise=null;
+   setTopStatus("Monster data load failed");
+   loadLine(String(e.message||e),'bad');
+   return false;
+  }
+ })();
+ return monsterDataLoadPromise;
 }
 window.ensureMonsterDataLoaded = ensureMonsterDataLoaded;
 
@@ -1125,7 +1185,8 @@ async function init(){
  renderHome();
  const ok=initAuth();
  if(ok){
-  setTimeout(()=>ensureMonsterDataLoaded().then(()=>{if(currentView==='home')renderHome();}),500);
+  scheduleIdleTask(prefetchLookupBundles,600);
+  warmLookupDataInBackground();
  }
 }
 window.SZOAppInit = init;

@@ -81,9 +81,9 @@ function latestMonstersHTML(limit=260){
 
 function renderMonsterPage(){
  const q=window.v88MonsterQ||'',min=window.v88MonsterMin||'',max=window.v88MonsterMax||'',race=window.v88MonsterRace||'',subtype=window.v88MonsterSubtype||'';
- if(!hasMonsterData()&&typeof window.ensureLookupDataLoaded==='function'){
+ if(!hasMonsterData()&&typeof window.ensureMonsterDataLoaded==='function'){
   byId('reader').innerHTML='<section class="card monsterSearchPage"><h1>怪物查詢</h1><div class="muted">正在載入怪物、道具與反查資料，請稍等。</div></section>';
-  window.ensureLookupDataLoaded().then(ok=>{if(ok)renderMonsterPage();else byId('reader').innerHTML='<section class="card"><h1>怪物查詢</h1><div class="empty">怪物資料載入失敗，請重新整理一次。</div></section>';});
+  window.ensureMonsterDataLoaded().then(ok=>{if(ok)renderMonsterPage();else byId('reader').innerHTML='<section class="card"><h1>怪物查詢</h1><div class="empty">怪物資料載入失敗，請重新整理一次。</div></section>';});
   return;
  }
  byId('reader').innerHTML=`<section class="card monsterSearchPage latestSearchPage"><h1>怪物查詢</h1>
@@ -108,7 +108,7 @@ function renderMonsterPage(){
  if(hasMonsterData())searchMonstersMain();
  else{
   byId('monsterResultsMain').innerHTML='<div class="muted">資料載入中，請稍等。</div>';
-  const loader=typeof window.ensureLookupDataLoaded==='function'?window.ensureLookupDataLoaded:(typeof window.ensureMonsterDataLoaded==='function'?window.ensureMonsterDataLoaded:window.ensureMainDataLoaded);
+  const loader=typeof window.ensureMonsterDataLoaded==='function'?window.ensureMonsterDataLoaded:(typeof window.ensureLookupDataLoaded==='function'?window.ensureLookupDataLoaded:window.ensureMainDataLoaded);
   if(typeof loader==='function')loader().then(ok=>{if(ok)renderMonsterPage();else byId('monsterResultsMain').innerHTML='<div class="empty">怪物資料載入失敗，請重新整理一次。</div>';});
  }
 }

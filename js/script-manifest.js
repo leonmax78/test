@@ -3,8 +3,7 @@
 window.SZO_SCRIPT_GROUPS = {
   "data": [
     "js/data/type-maps.js",
-    "data/build_meta.bundle.js",
-    "data/monsters.bundle.js"
+    "data/build_meta.bundle.js"
   ],
   "data_soul": [
     "js/data/soul-data.js"
