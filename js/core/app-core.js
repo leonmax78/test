@@ -1,4 +1,4 @@
-﻿// V220: AUTH_REQUIRED / RAW_BASE / FILES moved to js/core/app-settings.js.
+// V220: AUTH_REQUIRED / RAW_BASE / FILES moved to js/core/app-settings.js.
 // V234: ??/靽桃毀鞈????賣芋蝯?箇洵銝甈∩蝙?冽????伐??踹?擐?擐活??憭芣??
 // V220: ITEM_TYPE_MAP moved to js/data/type-maps.js.
 // V220: SUBTYPE_MAP moved to js/data/type-maps.js.
@@ -755,39 +755,38 @@ function searchItems(){
 // Jiangshen mobile
 // V227: STATS / DISPLAY_NAMES / EXP_ITEMS and jiangshen formula helpers moved to js/calc/jiangshen-calc.js.
 function fillJiangFields(kind){
- const opts='<option value="">蝛箇</option>'+DISPLAY_NAMES.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
- const stars1=Array.from({length:21},(_,i)=>`<option value="${i}" ${i===1?'selected':''}>${i} ??/option>`).join('');
- const stars20=Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} ??/option>`).join('');
+ const opts='<option value="">請選擇</option>'+DISPLAY_NAMES.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+ const stars1=Array.from({length:21},(_,i)=>`<option value="${i}" ${i===1?'selected':''}>${i} 星</option>`).join('');
+ const stars20=Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} 星</option>`).join('');
 
  if(kind==='support'){
   // V222: support comparison is handled by js/features/jiangshen/support-slots-compare.js.
   if(typeof window.renderSupportSlotsPage === 'function'){
     window.renderSupportSlotsPage();
   }else{
-    byId("reader").innerHTML="<section class=\"card\"><h1>Support comparison</h1><div class=\"notice\">Support comparison is loading.</div></section>";
+    byId("reader").innerHTML=`<section class="card"><h1>副降神試算</h1><div class="notice">副降神資料讀取中，請稍候。</div></section>`;
   }
  }
 
-
  if(kind==='compare'){
-  byId('reader').innerHTML=`<section class="card"><h1>????撽耨蝺渲岫蝞?/h1><h2>銝駁?蟡?頛?/h2><div class="kvGrid">
-  <div class="kv"><div class="k">?? A</div><div class="v"><select id="jsA">${opts}</select><label>??</label><select id="jsAS">${stars20}</select></div></div>
-  <div class="kv"><div class="k">?? B</div><div class="v"><select id="jsB">${opts}</select><label>??</label><select id="jsBS">${stars20}</select></div></div>
-  </div><div class="quick"><button id="calcCompare">?Ｙ?瘥???small>瘥??拐?銝駁?蟡?榆??/small></button></div></section>`;
+  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>主降神比較</h2><div class="kvGrid">
+  <div class="kv"><div class="k">降神 A</div><div class="v"><select id="jsA">${opts}</select><label>星</label><select id="jsAS">${stars20}</select></div></div>
+  <div class="kv"><div class="k">降神 B</div><div class="v"><select id="jsB">${opts}</select><label>星</label><select id="jsBS">${stars20}</select></div></div>
+  </div><div class="quick"><button id="calcCompare">計算比較<small>比較兩位主降神的能力差異</small></button></div></section>`;
  }
 
  if(kind==='stars'){
-  byId('reader').innerHTML=`<section class="card"><h1>????撽耨蝺渲岫蝞?/h1><h2>20??</h2><div class="muted">?豢???敺??Ｙ? 0嚚?0 ???渲?蜇銵具?/div><div class="kvGrid">
-  <div class="kv"><div class="k">?豢???</div><div class="v"><select id="jsStarName">${opts}</select></div></div>
-  </div><div class="quick"><button id="calcStars">?Ｙ? 0嚚?0 ??蜇銵?small>摰憿舐內??蝑??/small></button></div></section>`;
+  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>20 星等</h2><div class="muted">選擇降神後，產生 0 到 20 星的能力總表。</div><div class="kvGrid">
+  <div class="kv"><div class="k">選擇降神</div><div class="v"><select id="jsStarName">${opts}</select></div></div>
+  </div><div class="quick"><button id="calcStars">產生 0 ~ 20 星能力總表<small>完整顯示各星等能力</small></button></div></section>`;
  }
 
  if(kind==='starAura'){
   byId('reader').innerHTML=`<section class="card"><h1>????撽耨蝺渲岫蝞?/h1><h2>?? / ?除</h2>
   <h3>??嚗?閬????賊?</h3>
   <div class="kvGrid">
-    <div class="kv"><div class="k">?桀???</div><div class="v"><select id="needCur">${Array.from({length:21},(_,i)=>`<option value="${i}">${i} ??/option>`).join('')}</select></div></div>
-    <div class="kv"><div class="k">?格???</div><div class="v"><select id="needTar">${Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} ??/option>`).join('')}</select></div></div>
+    <div class="kv"><div class="k">?桀???</div><div class="v"><select id="needCur">${Array.from({length:21},(_,i)=>`<option value="${i}">${i} ?</option>`).join('')}</select></div></div>
+    <div class="kv"><div class="k">?格???</div><div class="v"><select id="needTar">${Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} ?</option>`).join('')}</select></div></div>
     <div class="kv"><div class="k">撌脫???擳??/div><div class="v"><input id="needOwned" type="number" value="0"></div></div>
     <div class="kv"><div class="k">????</div><div class="v"><input id="needRate" type="number" value="1"></div></div>
   </div>
