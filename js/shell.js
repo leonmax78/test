@@ -42,6 +42,10 @@
       <div class="muted" style="font-size:12px">自動讀取失敗時才需要。</div>
       <input type="file" id="manualFiles" multiple accept=".ini,.csv,.txt">
     </div>
+    <div class="siteSupportTools" aria-label="站務連結">
+      <button class="siteSupportBtn" id="openSupportBtn" type="button">贊助本站</button>
+      <button class="siteSupportBtn" id="openContactBtn" type="button">聯絡站長</button>
+    </div>
     <div class="visitorCounter" aria-label="網頁瀏覽人數">
       <div class="visitorCounterTitle">網頁瀏覽人數</div>
       <span class="visitorCounterBadgeBox">
@@ -54,6 +58,15 @@
 </div>
 </div>
 <div class="authModal" id="licenseModal"><div class="authBox"><h2>授權驗證</h2><div class="muted">請貼上授權鑰匙。</div><textarea id="licenseInput"></textarea><div class="error" id="licenseError"></div><button class="primary" id="licenseSubmit">驗證授權</button></div></div>
+<div class="siteModal" id="siteInfoModal" aria-hidden="true">
+  <div class="siteModalBackdrop" data-site-modal-close></div>
+  <section class="siteModalBox" role="dialog" aria-modal="true" aria-labelledby="siteInfoTitle">
+    <button class="siteModalClose" type="button" data-site-modal-close>✕</button>
+    <div class="siteModalEyebrow" id="siteInfoEyebrow">站務資訊</div>
+    <h2 id="siteInfoTitle">贊助本站</h2>
+    <div id="siteInfoBody"></div>
+  </section>
+</div>
 `;
 
   // V213：快速選單保險事件。
@@ -80,6 +93,72 @@
     window.SZO_CLOSE_MENU = close;
   }
   bindShellMenu();
+
+  function bindSiteInfoTools(){
+    const modal = document.getElementById('siteInfoModal');
+    const title = document.getElementById('siteInfoTitle');
+    const eyebrow = document.getElementById('siteInfoEyebrow');
+    const body = document.getElementById('siteInfoBody');
+    if(!modal || !title || !body) return;
+
+    const paypalUrl = 'https://paypal.me/leonmax78';
+    const discordName = 'leonmax78';
+    const gmail = 'leonmax78@gmail.com';
+    const escapeHtml = (value) => String(value || '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+    const open = (kind) => {
+      if(kind === 'contact'){
+        if(eyebrow) eyebrow.textContent = '聯絡站長';
+        title.textContent = '聯絡站長';
+        body.innerHTML = `
+          <p>資料錯誤、功能建議、更新問題，可以透過 Discord 或 Gmail 聯絡站長。</p>
+          <div class="siteInfoList">
+            <div><span>Discord</span><strong>${escapeHtml(discordName)}</strong></div>
+            <div><span>Gmail</span><strong>${escapeHtml(gmail)}</strong></div>
+          </div>
+          <div class="siteModalActions">
+            <button class="primary" type="button" data-copy-text="${escapeHtml(discordName)}">複製 Discord</button>
+            <a class="siteActionLink" href="mailto:${escapeHtml(gmail)}">寄信給站長</a>
+          </div>
+        `;
+      }else{
+        if(eyebrow) eyebrow.textContent = '贊助本站';
+        title.textContent = '贊助本站';
+        body.innerHTML = `
+          <p>如果這個工具對你有幫助，可以自由贊助本站維護。贊助完全自願，不影響任何功能使用，感謝支持。</p>
+          <div class="siteModalActions">
+            <a class="siteActionLink primaryLike" href="${paypalUrl}" target="_blank" rel="noopener">前往 PayPal 贊助</a>
+          </div>
+          <div class="siteInfoHint">PayPal 會開啟新分頁，請確認網址為 paypal.me/leonmax78。</div>
+        `;
+      }
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    };
+    const close = () => {
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+    };
+
+    document.getElementById('openSupportBtn')?.addEventListener('click', (ev) => { ev.preventDefault(); open('support'); });
+    document.getElementById('openContactBtn')?.addEventListener('click', (ev) => { ev.preventDefault(); open('contact'); });
+    modal.addEventListener('click', async (ev) => {
+      const closeHit = ev.target && ev.target.closest && ev.target.closest('[data-site-modal-close]');
+      if(closeHit){ close(); return; }
+      const copyBtn = ev.target && ev.target.closest && ev.target.closest('[data-copy-text]');
+      if(!copyBtn) return;
+      const text = copyBtn.getAttribute('data-copy-text') || '';
+      try{
+        await navigator.clipboard.writeText(text);
+        copyBtn.textContent = '已複製';
+      }catch(err){
+        copyBtn.textContent = text;
+      }
+    });
+    document.addEventListener('keydown', (ev) => {
+      if(ev.key === 'Escape' && modal.classList.contains('open')) close();
+    });
+  }
+  bindSiteInfoTools();
 
   // V221：模組尚未載入完成時，先擋住功能選單點擊。
   // 避免使用者第一次太快點「副降神模擬」時，先跑到舊版頁面，後面初始化又跳回首頁。
