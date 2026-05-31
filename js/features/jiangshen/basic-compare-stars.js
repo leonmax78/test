@@ -20,10 +20,10 @@
     for(const st of stats()) out[st] = Math.ceil(Number(a?.[st] || 0));
     return out;
   }
-  function backBtn(){
-    return typeof backButtonHTML === 'function'
-      ? backButtonHTML('jiang')
-      : '<button class="backBtn" type="button" data-view="jiang">← 返回降神、經驗、修練試算</button>';
+  function backBtn(kind){
+    const target = kind === 'stars' ? 'stars' : 'compare';
+    const label = target === 'stars' ? '??20????' : '?????????';
+    return `<button class="backBtn" type="button" onclick="setJiang('${target}')">? ${label}</button>`;
   }
   function renderCompare(){
     const r = $('reader'); if(!r) return;
@@ -62,7 +62,7 @@
     const as = Number($('jsAS')?.value || 20), bs = Number($('jsBS')?.value || 20);
     const A = intAbility(getAbility(a, as)), B = intAbility(getAbility(b, bs));
     const r = $('reader'); if(!r) return;
-    r.innerHTML = `<section class="card">${backBtn()}
+    r.innerHTML = `<section class="card">${backBtn('compare')}
       <h1>主降神比較</h1>
       <div class="compareNameRow">
         <div class="compareNameCard"><span>降神 A</span><b>${E(a)}</b><small>${as} 星</small></div>
@@ -82,7 +82,7 @@
     const n = $('jsStarName')?.value || names()[0] || '';
     if(!n){ if(typeof empty === 'function') empty('沒有降神資料'); return; }
     const r = $('reader'); if(!r) return;
-    r.innerHTML = `<section class="card">${backBtn()}
+    r.innerHTML = `<section class="card">${backBtn('stars')}
       <h1>${E(n)}｜0 ~ 20 星能力總表</h1>
       <div class="tableWrap"><table><thead><tr><th>星等</th>${stats().map(st=>`<th>${E(st)}</th>`).join('')}</tr></thead><tbody>
       ${Array.from({length:21},(_,lv)=>{
