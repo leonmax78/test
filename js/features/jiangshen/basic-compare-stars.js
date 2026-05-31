@@ -22,8 +22,8 @@
   }
   function backBtn(kind){
     const target = kind === 'stars' ? 'stars' : 'compare';
-    const label = target === 'stars' ? '??20????' : '?????????';
-    return `<button class="backBtn" type="button" onclick="setJiang('${target}')">? ${label}</button>`;
+    const label = target === 'stars' ? '返回20星等選取' : '返回主降神比較選取';
+    return `<button class="backBtn" type="button" onclick="setJiang('${target}')">← ${label}</button>`;
   }
   function renderCompare(){
     const r = $('reader'); if(!r) return;
