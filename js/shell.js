@@ -102,6 +102,7 @@
     if(!modal || !title || !body) return;
 
     const paypalUrl = 'https://paypal.me/leonmax78';
+    const issueUrl = 'https://github.com/leonmax78/SZOjiangshenNokey.github.io/issues';
     const discordName = 'leonmax78';
     const gmail = 'leonmax78@gmail.com';
     const escapeHtml = (value) => String(value || '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
@@ -110,12 +111,14 @@
         if(eyebrow) eyebrow.textContent = '聯絡站長';
         title.textContent = '聯絡站長';
         body.innerHTML = `
-          <p>資料錯誤、功能建議、更新問題，可以透過 Discord 或 Gmail 聯絡站長。</p>
+          <p>資料錯誤、功能建議、更新問題，可以用 GitHub Issues 留紀錄，也可以透過 Discord 或 Gmail 聯絡站長。</p>
           <div class="siteInfoList">
+            <div><span>問題回報</span><strong>GitHub Issues</strong></div>
             <div><span>Discord</span><strong>${escapeHtml(discordName)}</strong></div>
             <div><span>Gmail</span><strong>${escapeHtml(gmail)}</strong></div>
           </div>
           <div class="siteModalActions">
+            <a class="siteActionLink primaryLike" href="${issueUrl}" target="_blank" rel="noopener">開啟問題回報</a>
             <button class="primary" type="button" data-copy-text="${escapeHtml(discordName)}">複製 Discord</button>
             <a class="siteActionLink" href="mailto:${escapeHtml(gmail)}">寄信給站長</a>
           </div>
