@@ -1,4 +1,4 @@
-// V293: Jiangshen main compare + 0~20 star table.
+// V331: Jiangshen main compare + 0~20 star table with clean UTF-8 labels.
 // Support simulation is handled by support-slots-compare.js.
 (function(){
   const $ = id => document.getElementById(id);
@@ -12,9 +12,17 @@
   };
   const optionsNames = (blank=true) => (blank ? '<option value="">請選擇</option>' : '') + names().map(n => `<option value="${E(n)}">${E(n)}</option>`).join('');
   const starOptions = (sel=20) => Array.from({length:21},(_,i)=>`<option value="${i}" ${i===sel?'selected':''}>${i} 星</option>`).join('');
-  function closeMenu(){ try{ if(typeof closeDrawer === 'function') closeDrawer(); }catch(e){} }
-  function scrollTop(){ try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){ window.scrollTo(0,0); } }
-  function getAbility(name, star){ if(typeof ability === 'function') return ability(name, star) || {}; return {}; }
+
+  function closeMenu(){
+    try{ if(typeof closeDrawer === 'function') closeDrawer(); }catch(e){}
+  }
+  function scrollTop(){
+    try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){ window.scrollTo(0,0); }
+  }
+  function getAbility(name, star){
+    if(typeof ability === 'function') return ability(name, star) || {};
+    return {};
+  }
   function intAbility(a){
     const out = {};
     for(const st of stats()) out[st] = Math.ceil(Number(a?.[st] || 0));
@@ -25,6 +33,7 @@
     const label = target === 'stars' ? '返回20星等選取' : '返回主降神比較選取';
     return `<button class="backBtn" type="button" onclick="setJiang('${target}')">← ${label}</button>`;
   }
+
   function renderCompare(){
     const r = $('reader'); if(!r) return;
     r.innerHTML = `<section class="card">
@@ -46,12 +55,14 @@
       <div class="quick"><button id="calcStars" type="button">產生 0 ~ 20 星能力總表<small>完整顯示各星等能力</small></button></div>
     </section>`;
   }
+
   const oldSetJiang = window.setJiang;
   window.setJiang = function(kind){
     if(kind === 'compare'){ renderCompare(); closeMenu(); scrollTop(); return; }
     if(kind === 'stars'){ renderStars(); closeMenu(); scrollTop(); return; }
     if(typeof oldSetJiang === 'function') return oldSetJiang(kind);
   };
+
   window.calcCompare = function(){
     const a = $('jsA')?.value || '', b = $('jsB')?.value || '';
     if(!a || !b){
@@ -78,6 +89,7 @@
     </section>`;
     scrollTop();
   };
+
   window.calcStars = function(){
     const n = $('jsStarName')?.value || names()[0] || '';
     if(!n){ if(typeof empty === 'function') empty('沒有降神資料'); return; }
@@ -93,6 +105,7 @@
     </section>`;
     scrollTop();
   };
+
   document.addEventListener('click', function(e){
     const id = e.target && e.target.id;
     if(id === 'calcCompare' || id === 'calcStars'){
