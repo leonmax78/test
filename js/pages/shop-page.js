@@ -162,7 +162,7 @@
     reader.innerHTML = `<section class="card shopPage">
       <div class="shopHeader">
         <div>
-          <h1>商店販賣資訊</h1>
+          <h1>特殊商店販賣資訊</h1>
         </div>
         <div class="shopCount">${shops.length} 間商店</div>
       </div>
@@ -182,12 +182,12 @@
   async function renderShopPage(){
     window.v86LastView = 'shop';
     const reader = by('reader');
-    if(reader) reader.innerHTML = '<section class="card shopPage"><h1>商店販賣資訊</h1><div class="muted">資料載入中...</div></section>';
+    if(reader) reader.innerHTML = '<section class="card shopPage"><h1>特殊商店販賣資訊</h1><div class="muted">資料載入中...</div></section>';
     try{
       await loadShopData();
       renderLoaded();
     }catch(err){
-      if(reader) reader.innerHTML = '<section class="card shopPage"><h1>商店販賣資訊</h1><div class="empty">商店資料載入失敗，請重新整理一次。</div></section>';
+      if(reader) reader.innerHTML = '<section class="card shopPage"><h1>特殊商店販賣資訊</h1><div class="empty">商店資料載入失敗，請重新整理一次。</div></section>';
     }
     try{ if(typeof closeDrawer === 'function') closeDrawer(); }catch(e){}
     try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){}
@@ -203,7 +203,7 @@
     window.v86LastView = 'shop';
     const itemId = String(id || '').trim();
     const reader = by('reader');
-    if(reader) reader.innerHTML = '<section class="card itemCompact"><button class="backBtn" type="button" data-shop-back>← 返回商店販賣資訊</button><h1>資料載入中...</h1></section>';
+    if(reader) reader.innerHTML = '<section class="card itemCompact"><button class="backBtn" type="button" data-shop-back>← 返回特殊商店販賣資訊</button><h1>資料載入中...</h1></section>';
     if(typeof window.ensureLookupDataLoaded === 'function') await window.ensureLookupDataLoaded();
     const it = getItemIndex()[itemId];
     const title = it ? nameOfSafe(it) : (fallbackName || ('ID ' + itemId));
@@ -222,7 +222,7 @@
     const sourceLine = container ? `<div class="muted">來源資料：${escHtml(nameOfSafe(container))} / ID ${escHtml(container.ID || '')}</div>` : '';
     if(reader){
       reader.innerHTML = `<section class="card itemCompact shopItemDetail">
-        <button class="backBtn" type="button" data-shop-back>← 返回商店販賣資訊</button>
+        <button class="backBtn" type="button" data-shop-back>← 返回特殊商店販賣資訊</button>
         <h1>${escHtml(title)}</h1>
         <div class="muted">商店物品 ID ${escHtml(itemId)}</div>
         <h2>物品說明 ITEM</h2>

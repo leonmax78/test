@@ -4,7 +4,7 @@
   root.innerHTML = `<div id="mainShell">
 <header class="topbar"><div class="topline">
   <button class="menuBtn" id="openMenuBtn">☰</button>
-  <div class="brand"><div class="brandTitle" id="siteTitle">文昌－四海同舟</div></div>
+  <div class="brand"><div class="brandTitle" id="siteTitle">神州-四海同舟</div></div>
   <div class="maker" id="siteMaker" aria-hidden="true"></div>
   <button class="shellSettingsBtn" id="openUiSettingsBtn" type="button">網頁外觀</button>
   <div class="status" id="topStatus">準備中</div>
@@ -32,10 +32,10 @@
         <div class="subMenuNote">道具相關功能</div>
         <button class="navBtn sub" data-item-open="item">道具查詢 <span>›</span></button>
         <button class="navBtn sub" data-item-open="reverse">掉落反查 <span>›</span></button>
-        <button class="navBtn sub" data-item-open="compound">裝備合成模擬 <span>›</span></button>
+        <button class="navBtn sub" data-item-open="compound">常用裝備配方合成模擬 <span>›</span></button>
       </div>
       <button class="navBtn major" data-view="soul">武魂能力試算 <span>›</span></button>
-      <button class="navBtn major" data-view="shop">商店販賣資訊 <span>›</span></button>
+      <button class="navBtn major" data-view="shop">特殊商店販賣資訊 <span>›</span></button>
     </div>
     <div class="navGroup" id="manualGroup" style="display:none">
       <div class="navTitle">備用手動載入</div>

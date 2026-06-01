@@ -1167,7 +1167,7 @@ function backLabelFor(view){
  if(view==='monster')return '返回怪物查詢';
  if(view==='item')return '返回道具查詢';
  if(view==='reverse')return '返回道具反查';
- if(view==='shop')return '返回商店販賣資訊';
+ if(view==='shop')return '返回特殊商店販賣資訊';
  if(view==='jiang')return '返回降神、經驗、修練試算';
  return '返回首頁';
 }
