@@ -71,9 +71,6 @@ window.SZO_SCRIPT_GROUPS = {
     "js/features/safety/button-anchor-guard.js"
   ],
   "features_jiangshen": [
-    "js/features/jiangshen/star-aura-tabs.js",
-    "js/features/jiangshen/star-exp-training.js",
-    "js/features/jiangshen/star-aura-page.js",
     "js/features/jiangshen/basic-compare-stars.js",
     "js/features/jiangshen/support-slots-compare.js"
   ],

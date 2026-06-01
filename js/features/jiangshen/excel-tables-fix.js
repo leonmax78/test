@@ -1,4 +1,4 @@
-// V230: use the Excel-exported jiangshen tables as the single source for star, aura, and exp calculations.
+// V339: clean Excel-table based Jiangshen calculators.
 (function(){
   const $ = id => document.getElementById(id);
   const fmt = n => {
@@ -55,8 +55,7 @@
   function auraCost(cur, tar){
     const max = maxKey(auraTable()) || 400;
     cur = clampInt(cur, 0, max);
-    tar = clampInt(tar, 0, max);
-    if (tar < cur) tar = cur;
+    tar = Math.max(cur, clampInt(tar, 0, max));
     return Math.max(0, auraTotal(tar) - auraTotal(cur));
   }
   function expAt(level){
@@ -88,8 +87,8 @@
       <div id="starTabNeed"><h3>星等：需要的降神數量</h3><div class="kvGrid">
         <div class="kv"><div class="k">目前星等</div><div class="v"><select id="needCur">${starOptions(0)}</select></div></div>
         <div class="kv"><div class="k">目標星等</div><div class="v"><select id="needTar">${starOptions(20)}</select></div></div>
-        <div class="kv"><div class="k">已有降神魂數量</div><div class="v"><input id="needOwned" type="number" value="0"></div></div>
-        <div class="kv"><div class="k">降神倍率</div><div class="v"><input id="needRate" type="number" value="1" step="0.1"></div></div>
+        <div class="kv"><div class="k">已有降神數量</div><div class="v"><input id="needOwned" type="number" value="0"></div></div>
+        <div class="kv"><div class="k">倍率</div><div class="v"><input id="needRate" type="number" value="1" step="0.1"></div></div>
       </div><div class="quick"><button id="calcNeeds" type="button">計算星等<small>依 Excel 降神總表累積</small></button></div><div id="starNeedResult"></div></div>
       <div id="starTabAura" style="display:none"><h3>靈氣：所需靈氣</h3><div class="kvGrid">
         <div class="kv"><div class="k">目前等級</div><div class="v"><input id="auraCur" type="number" value="0"></div></div>
@@ -152,7 +151,7 @@
     const tar = Math.max(cur, clampInt(readNum('auraTar', 20), 0, max));
     const total = auraCost(cur, tar);
     const box = $('auraNeedResult');
-    if (box) box.innerHTML = `<div class="kvGrid" style="margin-top:12px"><div class="kv"><div class="k">等級區間</div><div class="v">${cur} → ${tar}</div></div><div class="kv"><div class="k">需要靈氣</div><div class="v">${fmt(total)}</div></div></div>`;
+    if (box) box.innerHTML = `<div class="kvGrid" style="margin-top:12px"><div class="kv"><div class="k">等級區間</div><div class="v">${cur} → ${tar}</div></div><div class="kv"><div class="k">所需靈氣</div><div class="v">${fmt(total)}</div></div></div>`;
   };
 
   window.calcExpNeed = function(){
@@ -165,7 +164,7 @@
     const diamond = ceilDiv(need, 3000n * 100000000n);
     const zhen = ceilDiv(need, 500n * 100000000n);
     const box = $('expNeedResult');
-    if (box) box.innerHTML = `<div class="kvGrid" style="margin-top:12px"><div class="kv"><div class="k">等級區間</div><div class="v">${cur} → ${tar}</div></div><div class="kv"><div class="k">需要經驗</div><div class="v">${fmtBig(need)}</div></div><div class="kv"><div class="k">約幾億</div><div class="v">${fmtBig(yi)} 億</div></div><div class="kv"><div class="k">乙太 8000億</div><div class="v">${fmtBig(ether)} 顆</div></div><div class="kv"><div class="k">鑽石 3000億</div><div class="v">${fmtBig(diamond)} 顆</div></div><div class="kv"><div class="k">真元 500億</div><div class="v">${fmtBig(zhen)} 顆</div></div></div>`;
+    if (box) box.innerHTML = `<div class="kvGrid" style="margin-top:12px"><div class="kv"><div class="k">等級區間</div><div class="v">${cur} → ${tar}</div></div><div class="kv"><div class="k">需要經驗</div><div class="v">${fmtBig(need)}</div></div><div class="kv"><div class="k">約幾億</div><div class="v">${fmtBig(yi)} 億</div></div><div class="kv"><div class="k">乙太 8000億</div><div class="v">${fmtBig(ether)} 顆</div></div><div class="kv"><div class="k">聖鑽 3000億</div><div class="v">${fmtBig(diamond)} 顆</div></div><div class="kv"><div class="k">真元 500億</div><div class="v">${fmtBig(zhen)} 顆</div></div></div>`;
   };
 
   window.calcEatPill = function(){
