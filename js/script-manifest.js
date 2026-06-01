@@ -95,8 +95,6 @@ window.SZO_SCRIPT_GROUPS = {
 window.SZO_SCRIPT_MANIFEST = [
   ...window.SZO_SCRIPT_GROUPS.data,
   ...window.SZO_SCRIPT_GROUPS.core,
-  ...window.SZO_SCRIPT_GROUPS.pages,
-  ...window.SZO_SCRIPT_GROUPS.features_equipment,
   ...window.SZO_SCRIPT_GROUPS.features_auth,
   ...window.SZO_SCRIPT_GROUPS.features_monster_item_safety,
   ...window.SZO_SCRIPT_GROUPS.enhancements

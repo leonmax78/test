@@ -38,6 +38,7 @@ let jiangshenToolReady=false;
 let jiangshenSetDelegating=false;
 const lazyScriptLoads={};
 const dataBundleLoads={};
+const lazyScriptGroupLoads={};
 
 function loadScriptOnce(src){
  if(!src)return Promise.resolve();
@@ -51,7 +52,9 @@ function loadScriptOnce(src){
  if(existing && existing.dataset.loaded==='1')return Promise.resolve(src);
  lazyScriptLoads[src]=new Promise((resolve,reject)=>{
   const s=document.createElement('script');
-  s.src=src;
+  const version=document.body?.dataset?.version||'dev';
+  const join=src.includes('?')?'&':'?';
+  s.src=/^https?:\/\//i.test(src)?src:`${src}${join}v=${encodeURIComponent(version)}`;
   s.async=false;
   s.onload=()=>{s.dataset.loaded='1';resolve(src);};
   s.onerror=()=>reject(new Error("Failed to load script: "+src));
@@ -59,6 +62,25 @@ function loadScriptOnce(src){
  });
  return lazyScriptLoads[src];
 }
+
+async function loadScriptGroupOnce(groupName){
+ const groups=window.SZO_SCRIPT_GROUPS||{};
+ const list=groups[groupName]||[];
+ if(!list.length)return true;
+ if(lazyScriptGroupLoads[groupName])return lazyScriptGroupLoads[groupName];
+ lazyScriptGroupLoads[groupName]=(async()=>{
+  for(const src of list)await loadScriptOnce(src);
+  return true;
+ })();
+ return lazyScriptGroupLoads[groupName];
+}
+window.loadScriptGroupOnce = loadScriptGroupOnce;
+
+async function ensurePageScriptsLoaded(){
+ if(typeof window.renderMonsterPage==='function'&&typeof window.renderItemPage==='function'&&typeof window.renderShopPage==='function')return true;
+ return await loadScriptGroupOnce('pages');
+}
+window.ensurePageScriptsLoaded = ensurePageScriptsLoaded;
 
 function prefetchResourceOnce(href,asType){
  if(!href||document.querySelector(`link[data-szo-prefetch="${href}"]`))return;
@@ -176,9 +198,9 @@ async function setView(view){
  document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
  if(view==='home'){renderHome(); closeDrawer();}
  else if(view==='jiang'){openJiangMenuOnly();}
- else if(view==='monster'){renderMonsterPage(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
+ else if(view==='monster'){await ensurePageScriptsLoaded(); renderMonsterPage(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
  else if(view==='item'){openItemMenuOnly();}
- else if(view==='shop'){if(typeof renderShopPage==='function')renderShopPage();}
+ else if(view==='shop'){await ensurePageScriptsLoaded(); if(typeof renderShopPage==='function')renderShopPage();}
  else if(view==='soul'){
   currentView='soul';
   document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='soul'));
@@ -187,7 +209,7 @@ async function setView(view){
   if(typeof window.renderSoulCalcPage==='function') window.renderSoulCalcPage();
   closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});
  }
- else if(view==='reverse'){await renderItemPage('reverse'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
+ else if(view==='reverse'){await ensurePageScriptsLoaded(); await renderItemPage('reverse'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
 }
 function setJiang(kind){
  openJiangMenuOnly();
@@ -243,6 +265,7 @@ function openItemMenuOnly(){
 }
 async function setItemSub(kind){
  openItemMenuOnly();
+ await ensurePageScriptsLoaded();
  if(kind==='item'){await renderItemPage('item'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
  if(kind==='reverse'){await renderItemPage('reverse'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
  if(kind==='compound'){if(await ensureCompoundDataLoaded())renderEquipmentCompoundPage(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
@@ -659,6 +682,8 @@ async function ensureCompoundDataLoaded(){
  compoundDataLoadPromise=(async()=>{
   setTopStatus("Loading compound data");
   try{
+   await ensurePageScriptsLoaded();
+   await loadScriptGroupOnce('features_equipment');
    if(typeof ensureLookupDataLoaded==='function'){
     const lookupOk=await ensureLookupDataLoaded();
     if(!lookupOk)throw new Error("Required lookup data failed to load before compound data");
