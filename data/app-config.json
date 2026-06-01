@@ -1,6 +1,6 @@
 {
   "siteTitle": "神州-四海同舟",
-  "version": "V339-clean-jiangshen-text-and-seo",
+  "version": "V340-core-jiangshen-fallback-text",
   "defaultPage": "home",
   "nav": [
     { "id": "home", "label": "首頁", "enabled": true },

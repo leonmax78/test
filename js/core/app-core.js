@@ -854,6 +854,63 @@ function fillJiangFields(kind){
  const stars1=Array.from({length:21},(_,i)=>`<option value="${i}" ${i===1?'selected':''}>${i} 星</option>`).join('');
  const stars20=Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} 星</option>`).join('');
 
+ if(kind==='starAura'){
+  const starOptions=Array.from({length:21},(_,i)=>`<option value="${i}" ${i===20?'selected':''}>${i} 星</option>`).join('');
+  const starOptionsZero=Array.from({length:21},(_,i)=>`<option value="${i}">${i} 星</option>`).join('');
+  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>星等 / 靈氣計算</h2>
+  <div class="calcTabs"><button class="calcTab active" type="button" data-star-tab="star">星等計算</button><button class="calcTab" type="button" data-star-tab="aura">靈氣計算</button></div>
+  <div id="starTabNeed">
+    <h3>星等：需要的降神數量</h3>
+    <div class="kvGrid">
+      <div class="kv"><div class="k">目前星等</div><div class="v"><select id="needCur">${starOptionsZero}</select></div></div>
+      <div class="kv"><div class="k">目標星等</div><div class="v"><select id="needTar">${starOptions}</select></div></div>
+      <div class="kv"><div class="k">已有降神數量</div><div class="v"><input id="needOwned" type="number" value="0"></div></div>
+      <div class="kv"><div class="k">倍率</div><div class="v"><input id="needRate" type="number" value="1" step="0.1"></div></div>
+    </div>
+    <div class="quick"><button id="calcNeeds" type="button">計算星等<small>依 Excel 降神總表累積</small></button></div>
+    <div id="starNeedResult"></div>
+  </div>
+  <div id="starTabAura" style="display:none">
+    <h3>靈氣：所需靈氣</h3>
+    <div class="kvGrid">
+      <div class="kv"><div class="k">目前等級</div><div class="v"><input id="auraCur" type="number" value="0"></div></div>
+      <div class="kv"><div class="k">目標等級</div><div class="v"><input id="auraTar" type="number" value="20"></div></div>
+    </div>
+    <div class="quick"><button id="calcStarAura" type="button">計算靈氣<small>依 Excel 靈氣總表累積</small></button></div>
+    <div id="auraNeedResult"></div>
+  </div></section>`;
+  closeDrawer();
+  window.scrollTo({top:0,behavior:'smooth'});
+  return;
+ }
+
+ if(kind==='expPill'){
+  byId('reader').innerHTML=`<section class="card"><h1>降神、經驗、修練試算</h1><h2>等級 / 經驗丹</h2>
+  <div class="calcTabs"><button class="calcTab active" type="button" data-exp-tab="need">等級經驗</button><button class="calcTab" type="button" data-exp-tab="eat">經驗丹升等</button></div>
+  <div id="expTabNeed">
+    <h3>等級：需要的經驗值</h3>
+    <div class="kvGrid">
+      <div class="kv"><div class="k">現在等級</div><div class="v"><input id="expCur" type="number" value="1"></div></div>
+      <div class="kv"><div class="k">目標等級</div><div class="v"><input id="expTar" type="number" value="2000"></div></div>
+    </div>
+    <div class="quick"><button id="calcExpNeed" type="button">計算需要經驗<small>換算乙太、聖鑽、真元顆數</small></button></div>
+    <div id="expNeedResult"></div>
+  </div>
+  <div id="expTabEat" style="display:none">
+    <h3>經驗丹：吃丹可提升到幾等</h3>
+    <div class="kvGrid">
+      <div class="kv"><div class="k">現在等級</div><div class="v"><input id="eatStartLv" type="number" value="1"></div></div>
+      <div class="kv"><div class="k">經驗丹單位（億）</div><div class="v"><input id="eatUnitYi" type="number" value="100"></div></div>
+      <div class="kv"><div class="k">經驗丹數量</div><div class="v"><input id="eatCount" type="number" value="1"></div></div>
+    </div>
+    <div class="quick"><button id="calcEatPill" type="button">計算升等<small>例如單位填 100 代表 100 億</small></button></div>
+    <div id="eatPillResult"></div>
+  </div></section>`;
+  closeDrawer();
+  window.scrollTo({top:0,behavior:'smooth'});
+  return;
+ }
+
  if(kind==='support'){
   // V222: support comparison is handled by js/features/jiangshen/support-slots-compare.js.
   if(typeof window.renderSupportSlotsPage === 'function'){
