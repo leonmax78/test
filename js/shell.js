@@ -105,6 +105,11 @@
     const issueUrl = 'https://github.com/leonmax78/SZOjiangshenNokey.github.io/issues';
     const discordName = 'leonmax78';
     const gmail = 'leonmax78@gmail.com';
+    const jkopayImage = 'assets/donation-jkopay.jpg';
+    const jkopayCode = '396';
+    const jkopayAccount = '901616056';
+    const ipassBankCode = '391';
+    const ipassAccount = '0000001517184496';
     const escapeHtml = (value) => String(value || '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
     const open = (kind) => {
       if(kind === 'contact'){
@@ -128,17 +133,39 @@
         title.textContent = '贊助本站';
         body.innerHTML = `
           <p>如果這個工具對你有幫助，可以自由贊助本站維護。贊助完全自願，不影響任何功能使用，感謝支持。</p>
+          <div class="donationGrid">
+            <div class="donationPanel">
+              <div class="donationLabel">PayPal</div>
+              <div class="donationTitle">線上贊助</div>
+              <a class="siteActionLink primaryLike" href="${paypalUrl}" target="_blank" rel="noopener">前往 PayPal</a>
+            </div>
+            <div class="donationPanel donationQrPanel">
+              <div class="donationLabel">街口支付</div>
+              <img class="donationQr" src="${jkopayImage}" alt="街口支付收款 QR Code" loading="lazy">
+              <div class="donationCodeList">
+                <div><span>街口代碼</span><strong>${escapeHtml(jkopayCode)}</strong></div>
+                <div><span>街口帳號</span><strong>${escapeHtml(jkopayAccount)}</strong></div>
+              </div>
+            </div>
+            <div class="donationPanel">
+              <div class="donationLabel">iPASS MONEY</div>
+              <div class="donationTitle">手動轉帳資訊</div>
+              <div class="donationCodeList">
+                <div><span>電支機構代號</span><strong>${escapeHtml(ipassBankCode)}</strong></div>
+                <div><span>iPASS MONEY</span><strong>${escapeHtml(ipassAccount)}</strong></div>
+              </div>
+            </div>
+          </div>
           <div class="siteInfoList">
-            <div><span>線上付款</span><strong>PayPal</strong></div>
-            <div><span>台灣常用</span><strong>街口支付 / iPASS MONEY</strong></div>
-            <div><span>收款資訊</span><strong>請私訊站長索取 QR Code</strong></div>
+            <div><span>聯絡站長</span><strong>${escapeHtml(discordName)} / ${escapeHtml(gmail)}</strong></div>
           </div>
           <div class="siteModalActions">
-            <a class="siteActionLink primaryLike" href="${paypalUrl}" target="_blank" rel="noopener">前往 PayPal 贊助</a>
+            <button class="primary" type="button" data-copy-text="${escapeHtml(jkopayAccount)}">複製街口帳號</button>
+            <button class="primary" type="button" data-copy-text="${escapeHtml(ipassAccount)}">複製 iPASS MONEY</button>
             <button class="primary" type="button" data-copy-text="${escapeHtml(discordName)}">複製 Discord</button>
             <a class="siteActionLink" href="mailto:${escapeHtml(gmail)}">寄信聯絡站長</a>
           </div>
-          <div class="siteInfoHint">街口支付與 iPASS MONEY 建議用 QR Code 最穩。等站長提供 QR Code 後，這裡可以改成直接顯示。</div>
+          <div class="siteInfoHint">街口這張收款碼可先當作固定收款用。若有人反應掃碼失敗，可用街口代碼與街口帳號手動輸入。</div>
         `;
       }
       modal.classList.add('open');
