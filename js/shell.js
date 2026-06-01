@@ -156,14 +156,9 @@
               </div>
             </div>
           </div>
-          <div class="siteInfoList">
-            <div><span>聯絡站長</span><strong>${escapeHtml(discordName)} / ${escapeHtml(gmail)}</strong></div>
-          </div>
           <div class="siteModalActions">
             <button class="primary" type="button" data-copy-text="${escapeHtml(jkopayAccount)}">複製街口帳號</button>
             <button class="primary" type="button" data-copy-text="${escapeHtml(ipassAccount)}">複製 iPASS MONEY</button>
-            <button class="primary" type="button" data-copy-text="${escapeHtml(discordName)}">複製 Discord</button>
-            <a class="siteActionLink" href="mailto:${escapeHtml(gmail)}">寄信聯絡站長</a>
           </div>
           <div class="siteInfoHint">街口這張收款碼可先當作固定收款用。若有人反應掃碼失敗，可用街口代碼與街口帳號手動輸入。</div>
         `;

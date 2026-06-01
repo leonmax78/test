@@ -1,6 +1,6 @@
 {
-  "siteTitle": "文昌－四海同舟",
-  "version": "V312-title-layout",
+  "siteTitle": "神州-四海同舟",
+  "version": "V337-site-title-support",
   "defaultPage": "home",
   "nav": [
     {
@@ -30,7 +30,7 @@
     },
     {
       "id": "compound",
-      "label": "裝備合成模擬",
+      "label": "常用裝備配方合成模擬",
       "enabled": true
     },
     {
@@ -40,7 +40,7 @@
     },
     {
       "id": "shop",
-      "label": "商店販賣資訊",
+      "label": "特殊商店販賣資訊",
       "enabled": true
     }
   ],
