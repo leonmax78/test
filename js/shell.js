@@ -128,10 +128,17 @@
         title.textContent = '贊助本站';
         body.innerHTML = `
           <p>如果這個工具對你有幫助，可以自由贊助本站維護。贊助完全自願，不影響任何功能使用，感謝支持。</p>
+          <div class="siteInfoList">
+            <div><span>線上付款</span><strong>PayPal</strong></div>
+            <div><span>台灣常用</span><strong>街口支付 / iPASS MONEY</strong></div>
+            <div><span>收款資訊</span><strong>請私訊站長索取 QR Code</strong></div>
+          </div>
           <div class="siteModalActions">
             <a class="siteActionLink primaryLike" href="${paypalUrl}" target="_blank" rel="noopener">前往 PayPal 贊助</a>
+            <button class="primary" type="button" data-copy-text="${escapeHtml(discordName)}">複製 Discord</button>
+            <a class="siteActionLink" href="mailto:${escapeHtml(gmail)}">寄信聯絡站長</a>
           </div>
-          <div class="siteInfoHint">PayPal 會開啟新分頁，請確認網址為 paypal.me/leonmax78。</div>
+          <div class="siteInfoHint">街口支付與 iPASS MONEY 建議用 QR Code 最穩。等站長提供 QR Code 後，這裡可以改成直接顯示。</div>
         `;
       }
       modal.classList.add('open');

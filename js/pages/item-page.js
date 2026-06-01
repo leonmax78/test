@@ -171,6 +171,27 @@ function refreshItemSeriesWhenReady(){
 function hasItemData(){
  return (Array.isArray(window.items)&&window.items.length)||(window.SZO_DATA&&Array.isArray(window.SZO_DATA.items)&&window.SZO_DATA.items.length);
 }
+function itemSearchIndexRows(){
+ const data=window.SZO_DATA_BUNDLES&&window.SZO_DATA_BUNDLES.search_index;
+ return data&&Array.isArray(data.items)?data.items:[];
+}
+function hasItemSearchIndex(){return itemSearchIndexRows().length>0}
+function itemIndexTypeName(row){return itemTypeName(row.type)||row.type||''}
+function itemIndexSearchText(row){return `${row.name||''} ${row.id||''} ${row.level||''} ${row.type||''} ${itemIndexTypeName(row)}`.toLowerCase()}
+function filterItemIndexList(q,type,min,max){
+ const qText=(q||'').trim().toLowerCase();
+ const minLv=min?intOf(min):null;
+ const maxLv=max?intOf(max):null;
+ return itemSearchIndexRows().filter(it=>
+  (!qText||itemIndexSearchText(it).includes(qText))&&
+  (!type||it.type===type)&&
+  (minLv===null||intOf(it.level)>=minLv)&&
+  (maxLv===null||intOf(it.level)<=maxLv)
+ ).slice(0,180);
+}
+function itemIndexResultsHTML(arr){
+ return arr.map(it=>`<button class="resultItem" data-item="${esc(it.id)}"><div class="rName">${esc(it.name)}</div><div class="rSub">Lv.${esc(it.level||'')} / ${esc(itemIndexTypeName(it))} / ID ${esc(it.id||'')}</div></button>`).join('')||'<div class="muted">找不到符合條件的道具。</div>';
+}
 
 function hasReverseData(){
  const d=window.SZO_DATA||{};
@@ -229,8 +250,11 @@ function ensureItemOptionalData(id){
 }
 
 function latestItemsHTML(limit=320){
+ if(!hasItemData()&&hasItemSearchIndex()){
+  return itemSearchIndexRows().slice().reverse().slice(0,limit).map(it=>`<button type="button" class="resultItem" data-item="${esc(it.id)}"><div class="rName">${esc(it.name)}</div><div class="rSub">Lv.${esc(it.level||'')} / ${esc(itemIndexTypeName(it))} / ID ${esc(it.id||'')}</div></button>`).join('');
+ }
  if(!hasItemData())return '<div class="muted">資料載入中，請稍等。</div>';
- return (items||[]).slice().reverse().slice(0,limit).map(it=>`<button type="button" class="resultItem" data-item="${esc(it.ID)}"><div class="rName">${esc(nameOf(it))}</div><div class="rSub">Lv.${esc(it.Level||'')}｜${esc(itemTypeName(it.Type)||it.Type||'')}｜ID ${esc(it.ID||'')}</div></button>`).join('');
+ return (items||[]).slice().reverse().slice(0,limit).map(it=>`<button type="button" class="resultItem" data-item="${esc(it.ID)}"><div class="rName">${esc(nameOf(it))}</div><div class="rSub">Lv.${esc(it.Level||'')}?${esc(itemTypeName(it.Type)||it.Type||'')}?ID ${esc(it.ID||'')}</div></button>`).join('');
 }
 
 async function renderItemPage(tab='item'){
@@ -270,10 +294,11 @@ async function renderItemPage(tab='item'){
  </section>`;
  fillItemAdvancedFilters();
  if(activeItem){
-  if(hasItemData())searchItems();
+  if(hasItemData()||hasItemSearchIndex())searchItems();
   else{
    byId('itemResults').innerHTML='<div class="muted">資料載入中，請稍等。</div>';
-   if(typeof window.ensureLookupDataLoaded==='function')window.ensureLookupDataLoaded().then(ok=>{if(ok)renderItemPage('item');else byId('itemResults').innerHTML='<div class="empty">道具資料載入失敗。</div>';});
+   const loader=typeof window.ensureSearchIndexLoaded==='function'?window.ensureSearchIndexLoaded:window.ensureLookupDataLoaded;
+   if(typeof loader==='function')loader().then(ok=>{if(ok)renderItemPage('item');else byId('itemResults').innerHTML='<div class="empty">?????????</div>';});
   }
   refreshItemSeriesWhenReady();
  }else if(activeReverse){
@@ -315,8 +340,12 @@ function searchItems(){
  const series=window.v110ItemEqSeries;
  const kind=window.v110ItemKind;
  const box=byId('itemResults'); if(!box)return;
- if(!hasItemData()){box.innerHTML='<div class="muted">資料載入中，請稍等。</div>';return;}
+ if(!hasItemData()&&!hasItemSearchIndex()){box.innerHTML='<div class="muted">資料載入中，請稍等。</div>';return;}
  if(!(q||type||window.v86ItemMin||window.v86ItemMax||series||kind)){box.innerHTML='';return;}
+ if(!hasItemData()){
+  box.innerHTML=itemIndexResultsHTML(filterItemIndexList(q,type,window.v86ItemMin,window.v86ItemMax));
+  return;
+ }
  const arr=items.filter(it=>
   (!q||itemSearchText(it).includes(q))&&
   (!type||it.Type===type)&&
@@ -334,6 +363,11 @@ function searchItems(){
 function showItem(id,skipPush){
  window.v86LastView='item';
  if(!skipPush){try{history.pushState({app:'detail',view:'item'},'','#item-'+id);}catch(e){}}
+ if(!hasItemData()&&typeof window.ensureItemDataLoaded==='function'){
+  byId('reader').innerHTML=`<section class="card"><button class="backBtn" type="button" onclick="goBackToPrevious('item')">← 返回道具查詢</button><h1>道具資料讀取中</h1><div class="muted">正在載入完整道具資料，請稍等。</div></section>`;
+  window.ensureItemDataLoaded().then(ok=>{if(ok)showItem(id,true);});
+  return;
+ }
  const it=itemIndex[String(id).trim()]; if(!it)return;
  ensureItemOptionalData(String(id));
  const rows=itemDetailRows(it).filter(x=>x[1]!==''&&x[1]!==undefined&&x[1]!==null&&String(x[1]).trim()!=='0');

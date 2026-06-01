@@ -31,6 +31,16 @@ function syncMonsterDataForPage(){
  return false;
 }
 function hasMonsterData(){return syncMonsterDataForPage()}
+function monsterSearchIndexRows(){
+ const data=window.SZO_DATA_BUNDLES&&window.SZO_DATA_BUNDLES.search_index;
+ return data&&Array.isArray(data.monsters)?data.monsters:[];
+}
+function hasMonsterSearchIndex(){return monsterSearchIndexRows().length>0}
+function monsterIndexRace(row){return raceName(row.type)}
+function monsterIndexSubtype(row){return subtypeName(row.type,row.subType)}
+function monsterIndexSearchText(row){return `${row.name||''} ${row.id||''} ${row.level||''} ${row.exp||''} ${monsterIndexRace(row)} ${monsterIndexSubtype(row)}`.toLowerCase()}
+function uniqueMonsterIndexValues(fn){const set=new Set();monsterSearchIndexRows().forEach(m=>{const v=String(fn(m)||'').trim();if(v)set.add(v)});return [...set]}
+
 function monsterSearchText(m){return `${nameOf(m)} ${m.ID||''} ${m.Level||''} ${m.DropExp||''} ${raceName(m.Type)} ${subtypeName(m.Type,m.SubType)} ${locOf(nameOf(m))}`.toLowerCase()}
 function uniqueMonsterValues(fn){const set=new Set();(monsters||[]).forEach(m=>{const v=String(fn(m)||'').trim();if(v)set.add(v)});return [...set]}
 
@@ -44,6 +54,40 @@ function monsterSubtypeOptionsHTML(selected,race){
  const order=Object.values(SUBTYPE_MAP);
  const vals=uniqueMonsterValues(m=>race&&raceName(m.Type)!==race?'':subtypeName(m.Type,m.SubType)).sort((a,b)=>(order.indexOf(a)<0?9999:order.indexOf(a))-(order.indexOf(b)<0?9999:order.indexOf(b))||a.localeCompare(b,'zh-Hant'));
  return `<option value="">全部子分類</option>`+vals.map(v=>`<option value="${esc(v)}" ${v===selected?'selected':''}>${esc(v)}</option>`).join('');
+}
+
+
+function monsterIndexRaceOptionsHTML(selected){
+ const order=Object.values(RACE_MAP);
+ const vals=uniqueMonsterIndexValues(m=>monsterIndexRace(m)).sort((a,b)=>(order.indexOf(a)<0?999:order.indexOf(a))-(order.indexOf(b)<0?999:order.indexOf(b))||a.localeCompare(b,'zh-Hant'));
+ return `<option value="">全部種族</option>`+vals.map(v=>`<option value="${esc(v)}" ${v===selected?'selected':''}>${esc(v)}</option>`).join('');
+}
+
+function monsterIndexSubtypeOptionsHTML(selected,race){
+ const order=Object.values(SUBTYPE_MAP);
+ const vals=uniqueMonsterIndexValues(m=>race&&monsterIndexRace(m)!==race?'':monsterIndexSubtype(m)).sort((a,b)=>(order.indexOf(a)<0?9999:order.indexOf(a))-(order.indexOf(b)<0?9999:order.indexOf(b))||a.localeCompare(b,'zh-Hant'));
+ return `<option value="">?全部種族</option>`+vals.map(v=>`<option value="${esc(v)}" ${v===selected?'selected':''}>${esc(v)}</option>`).join('');
+}
+
+function filterMonsterIndexList(q,min,max,race,subtype){
+ const qText=(q||'').trim().toLowerCase();
+ const minLv=min?intOf(min):null;
+ const maxLv=max?intOf(max):null;
+ const raceFilter=String(race||'').trim();
+ const subtypeFilter=String(subtype||'').trim();
+ let arr=monsterSearchIndexRows().filter(m=>
+  (!qText||monsterIndexSearchText(m).includes(qText))&&
+  (!raceFilter||monsterIndexRace(m)===raceFilter)&&
+  (!subtypeFilter||monsterIndexSubtype(m)===subtypeFilter)&&
+  (minLv===null||intOf(m.level)>=minLv)&&
+  (maxLv===null||intOf(m.level)<=maxLv)
+ );
+ if(min||max)arr=arr.slice().sort((a,b)=>intOf(b.exp)-intOf(a.exp));
+ return arr.slice(0,150);
+}
+
+function monsterIndexResultsHTML(arr){
+ return arr.map(m=>`<button type="button" class="resultItem" data-monster="${esc(m.id)}"><div class="rName">${esc(m.name)}</div><div class="rSub">Lv.${esc(m.level||'')} / EXP ${esc(m.exp||0)} / ${esc(monsterIndexRace(m))}${monsterIndexSubtype(m)?' / '+esc(monsterIndexSubtype(m)):''} / ID ${esc(m.id||'')}</div></button>`).join('')||'<div class="muted">找不到符合條件的怪物。</div>';
 }
 
 function filterMonsterList(q,min,max,race,subtype){
@@ -75,15 +119,18 @@ function monsterResultsHTML(arr){
 }
 
 function latestMonstersHTML(limit=260){
+ if(!hasMonsterData()&&hasMonsterSearchIndex()){
+  return monsterSearchIndexRows().slice().reverse().slice(0,limit).map(m=>`<button type="button" class="resultItem" data-monster="${esc(m.id)}"><div class="rName">${esc(m.name)}</div><div class="rSub">Lv.${esc(m.level||'')} / ${esc(monsterIndexRace(m))}${monsterIndexSubtype(m)?' / '+esc(monsterIndexSubtype(m)):''} / ID ${esc(m.id||'')}</div></button>`).join('');
+ }
  if(!hasMonsterData())return '<div class="muted">資料載入中，請稍等。</div>';
- return (monsters||[]).slice().reverse().slice(0,limit).map(m=>`<button type="button" class="resultItem" data-monster="${esc(m.ID)}"><div class="rName">${esc(nameOf(m))}</div><div class="rSub">Lv.${esc(m.Level||'')}｜${esc(raceName(m.Type))}${subtypeName(m.Type,m.SubType)?' / '+esc(subtypeName(m.Type,m.SubType)):''}｜ID ${esc(m.ID||'')}</div></button>`).join('');
+ return (monsters||[]).slice().reverse().slice(0,limit).map(m=>`<button type="button" class="resultItem" data-monster="${esc(m.ID)}"><div class="rName">${esc(nameOf(m))}</div><div class="rSub">Lv.${esc(m.Level||'')}?${esc(raceName(m.Type))}${subtypeName(m.Type,m.SubType)?' / '+esc(subtypeName(m.Type,m.SubType)):''}?ID ${esc(m.ID||'')}</div></button>`).join('');
 }
 
 function renderMonsterPage(){
  const q=window.v88MonsterQ||'',min=window.v88MonsterMin||'',max=window.v88MonsterMax||'',race=window.v88MonsterRace||'',subtype=window.v88MonsterSubtype||'';
- if(!hasMonsterData()&&typeof window.ensureMonsterDataLoaded==='function'){
+ if(!hasMonsterData()&&!hasMonsterSearchIndex()&&typeof window.ensureSearchIndexLoaded==='function'){
   byId('reader').innerHTML='<section class="card monsterSearchPage"><h1>怪物查詢</h1><div class="muted">正在載入怪物、道具與反查資料，請稍等。</div></section>';
-  window.ensureMonsterDataLoaded().then(ok=>{if(ok)renderMonsterPage();else byId('reader').innerHTML='<section class="card"><h1>怪物查詢</h1><div class="empty">怪物資料載入失敗，請重新整理一次。</div></section>';});
+  window.ensureSearchIndexLoaded().then(ok=>{if(ok)renderMonsterPage();else byId('reader').innerHTML='<section class="card"><h1>怪物查詢</h1><div class="empty">怪物資料載入失敗，請重新整理一次。</div></section>';});
   return;
  }
  byId('reader').innerHTML=`<section class="card monsterSearchPage latestSearchPage"><h1>怪物查詢</h1>
@@ -121,16 +168,16 @@ function searchMonstersMain(){
  window.v88MonsterRace=byId('monsterRaceMain')?.value||'';
  window.v88MonsterSubtype=byId('monsterSubtypeMain')?.value||'';
  const subSel=byId('monsterSubtypeMain');
- if(subSel&&hasMonsterData()){
+ if(subSel&&(hasMonsterData()||hasMonsterSearchIndex())){
   const old=window.v88MonsterSubtype;
-  subSel.innerHTML=monsterSubtypeOptionsHTML(old,window.v88MonsterRace);
+  subSel.innerHTML=hasMonsterData()?monsterSubtypeOptionsHTML(old,window.v88MonsterRace):monsterIndexSubtypeOptionsHTML(old,window.v88MonsterRace);
   if([...subSel.options].some(o=>o.value===old))subSel.value=old;else{subSel.value='';window.v88MonsterSubtype='';}
  }
  const box=byId('monsterResultsMain'); if(!box)return;
  if(!hasMonsterData()){box.innerHTML='<div class="muted">資料載入中，請稍等。</div>';return;}
  const hasFilter=!!(String(window.v88MonsterQ||'').trim()||String(window.v88MonsterMin||'').trim()||String(window.v88MonsterMax||'').trim()||String(window.v88MonsterRace||'').trim()||String(window.v88MonsterSubtype||'').trim());
  if(!hasFilter){box.innerHTML='';return;}
- box.innerHTML=monsterResultsHTML(filterMonsterList(window.v88MonsterQ,window.v88MonsterMin,window.v88MonsterMax,window.v88MonsterRace,window.v88MonsterSubtype));
+ box.innerHTML=hasMonsterData()?monsterResultsHTML(filterMonsterList(window.v88MonsterQ,window.v88MonsterMin,window.v88MonsterMax,window.v88MonsterRace,window.v88MonsterSubtype)):monsterIndexResultsHTML(filterMonsterIndexList(window.v88MonsterQ,window.v88MonsterMin,window.v88MonsterMax,window.v88MonsterRace,window.v88MonsterSubtype));
 }
 
 function compactWanMonster(n){
@@ -260,6 +307,11 @@ function monsterRowsHTML(rows,cls=''){
 function showMonster(id,skipPush){
  window.v86LastView='monster';
  if(!skipPush){try{history.pushState({app:'detail',view:'monster'},'','#monster-'+id);}catch(e){}}
+ if(!hasMonsterData()&&typeof window.ensureMonsterDataLoaded==='function'){
+  byId('reader').innerHTML=`<section class="card"><button class="backBtn" type="button" onclick="goBackToPrevious('monster')">← 返回怪物查詢</button><h1>怪物資料讀取中</h1><div class="muted">正在載入完整怪物資料，請稍等。</div></section>`;
+  window.ensureMonsterDataLoaded().then(ok=>{if(ok)showMonster(id,true);});
+  return;
+ }
  const m=monsters.find(x=>String(x.ID).trim()===String(id).trim()); if(!m)return;
  ensureMonsterOptionalData(String(id));
  const loc=locOf(nameOf(m));
