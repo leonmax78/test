@@ -411,7 +411,7 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
   color:#dbeafe;
   cursor:pointer;
 }
-@media(max-width:640px){
+@media(max-width:979px){
   .collectDropDetailPage{
     padding:14px;
     border-radius:18px;
@@ -435,19 +435,22 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
   .collectDropDetailTable tr,
   .collectDropDetailTable th,
   .collectDropDetailTable td{
-    display:block;
-    width:100%;
-    min-width:0;
+    display:block!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
   }
   .collectDropDetailTable table{
     border-collapse:separate;
     border-spacing:0 10px;
+    table-layout:auto!important;
   }
   .collectDropDetailTable thead{
     display:none;
   }
   .collectDropDetailTable tr{
-    box-sizing:border-box;
+    box-sizing:border-box!important;
     padding:12px;
     border:1px solid rgba(96,165,250,.34);
     border-left:4px solid rgba(34,211,238,.72);
@@ -455,12 +458,13 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
     background:linear-gradient(135deg,rgba(15,47,76,.72),rgba(7,18,34,.82));
   }
   .collectDropDetailTable td{
-    border:0;
-    padding:3px 0;
+    border:0!important;
+    padding:3px 0!important;
     font-size:14px;
     line-height:1.45;
     word-break:break-word;
     white-space:normal;
+    text-align:left!important;
   }
   .collectDropDetailTable td:nth-child(1){
     color:#f3fbff;
@@ -473,12 +477,12 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
     font-weight:1000;
   }
   .collectDropDetailTable td:nth-child(3){
-    text-align:left;
     color:#dff7ff;
     font-weight:1000;
-    white-space:normal;
-    overflow-wrap:anywhere;
-    word-break:break-word;
+    white-space:normal!important;
+    overflow:visible!important;
+    overflow-wrap:anywhere!important;
+    word-break:break-word!important;
   }
   .collectDropDetailTable td:nth-child(3)::before{
     content:'機率：';
