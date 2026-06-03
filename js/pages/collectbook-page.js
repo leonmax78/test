@@ -100,7 +100,6 @@
     if(!dropCount) return '<span class="muted">沒有掉落位置</span>';
     if(!row.itemId) return dropList(drops, row.reverseDrops || [], '沒有掉落位置');
     return `<div class="collectDropSummary">
-      <div class="collectDropSummaryCount">${dropCount} 個掉落來源</div>
       <button class="collectReverseBtn primary" type="button" data-collect-reverse="${escHtml(row.itemId)}">查看掉落資訊<small>共 ${dropCount} 筆掉落資料</small></button>
     </div>`;
   }
@@ -148,13 +147,8 @@
     const dropCount = reverseCount || (row.excelSources || []).filter(x => !shopSet.has(x)).length;
     reader.innerHTML = `<section class="card collectPage collectDropDetailPage">
       <button class="backBtn" type="button" data-collect-back>← 返回武冠系統</button>
-      <div class="collectDropDetailHeader">
-        <div>
-          <div class="muted">掉落反查</div>
-          <h1>${escHtml(row.name || '-')}</h1>
-        </div>
-        <div class="collectDropSummaryCount">${dropCount} 個掉落來源</div>
-      </div>
+      <h1>${escHtml(row.name || '-')}</h1>
+      <p class="muted collectDropDetailMetaLine">掉落反查｜共 ${dropCount} 筆</p>
       <div class="collectDropDetailList">${collectDropDetailRows(row)}</div>
     </section>`;
     try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){}

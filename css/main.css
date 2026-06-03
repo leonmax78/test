@@ -387,17 +387,10 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
 .collectDropDetailPage{
   max-width:1180px;
 }
-.collectDropDetailHeader{
-  display:flex;
-  align-items:flex-end;
-  justify-content:space-between;
-  gap:16px;
-  margin:16px 0;
-  padding-bottom:14px;
-  border-bottom:1px solid rgba(99,177,255,.22);
-}
-.collectDropDetailHeader h1{
-  margin:4px 0 0;
+.collectDropDetailMetaLine{
+  margin:4px 0 14px;
+  font-size:15px;
+  font-weight:800;
 }
 .collectDropDetailList{
   display:grid;
