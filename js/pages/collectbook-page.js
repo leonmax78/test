@@ -99,12 +99,64 @@
     const dropCount = reverseCount || drops.length;
     if(!dropCount) return '<span class="muted">沒有掉落位置</span>';
     if(!row.itemId) return dropList(drops, row.reverseDrops || [], '沒有掉落位置');
-    const preview = (row.reverseDrops || []).slice(0, 3).map(x => x.monster).filter(Boolean).join('、');
     return `<div class="collectDropSummary">
       <div class="collectDropSummaryCount">${dropCount} 個掉落來源</div>
-      ${preview ? `<div class="collectDropSummaryPreview">${escHtml(preview)}${dropCount > 3 ? ' 等' : ''}</div>` : ''}
-      <button class="collectReverseBtn" type="button" data-rev="${escHtml(row.itemId)}">前往掉落反查</button>
+      <button class="collectReverseBtn" type="button" data-collect-reverse="${escHtml(row.itemId)}">查看掉落反查</button>
     </div>`;
+  }
+  function formatRate(value){
+    const num = Number(value);
+    return Number.isFinite(num) ? num.toFixed(6) + '%' : '-';
+  }
+  function findCollectRow(itemId){
+    const id = String(itemId || '');
+    const kinds = [state.active, 'weapon', 'artifact', 'recipe'].filter((kind, index, arr) => kind && arr.indexOf(kind) === index);
+    for(const kind of kinds){
+      const row = getRows(kind).find(item => String(item.itemId || '') === id);
+      if(row) return row;
+    }
+    return null;
+  }
+  function collectDropDetailRows(row){
+    const reverse = Array.isArray(row?.reverseDrops) ? row.reverseDrops : [];
+    if(reverse.length){
+      return reverse.map(drop => `<article class="collectDropDetailItem">
+        <div>
+          <div class="collectDropDetailName">${escHtml(drop.monster || '-')}</div>
+          <div class="collectDropDetailMeta">${escHtml((drop.locations || []).filter(Boolean).join('、') || '沒有位置資料')}</div>
+        </div>
+        <div class="collectDropDetailRate">${escHtml(formatRate(drop.rate))}</div>
+      </article>`).join('');
+    }
+    const shopSet = new Set(row?.shops || []);
+    const drops = (row?.excelSources || []).filter(x => !shopSet.has(x));
+    return drops.length
+      ? drops.map(name => `<article class="collectDropDetailItem"><div class="collectDropDetailName">${escHtml(name)}</div><div class="collectDropDetailRate">-</div></article>`).join('')
+      : '<div class="empty">沒有掉落資料</div>';
+  }
+  function renderCollectDropDetail(itemId){
+    const row = findCollectRow(itemId);
+    const reader = by('reader');
+    if(!reader) return;
+    if(!row){
+      reader.innerHTML = '<section class="card collectPage"><button class="pillBtn" type="button" data-collect-back>← 返回武冠系統</button><div class="empty">找不到這筆掉落資料</div></section>';
+      return;
+    }
+    const reverseCount = Array.isArray(row.reverseDrops) ? row.reverseDrops.length : 0;
+    const shopSet = new Set(row.shops || []);
+    const dropCount = reverseCount || (row.excelSources || []).filter(x => !shopSet.has(x)).length;
+    reader.innerHTML = `<section class="card collectPage collectDropDetailPage">
+      <button class="pillBtn" type="button" data-collect-back>← 返回武冠系統</button>
+      <div class="collectDropDetailHeader">
+        <div>
+          <div class="muted">掉落反查</div>
+          <h1>${escHtml(row.name || '-')}</h1>
+        </div>
+        <div class="collectDropSummaryCount">${dropCount} 個掉落來源</div>
+      </div>
+      <div class="collectDropDetailList">${collectDropDetailRows(row)}</div>
+    </section>`;
+    try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){}
   }
   function taskText(row){
     if(!row.taskFlag) return '<span class="muted">-</span>';
@@ -284,6 +336,25 @@
     try{ if(typeof closeDrawer === 'function') closeDrawer(); }catch(e){}
     try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){}
   }
+  document.addEventListener('click', function(ev){
+    const reverseBtn = ev.target && ev.target.closest ? ev.target.closest('[data-collect-reverse]') : null;
+    if(reverseBtn){
+      ev.preventDefault();
+      ev.stopPropagation();
+      state.returnScroll = window.scrollY || document.documentElement.scrollTop || 0;
+      renderCollectDropDetail(reverseBtn.dataset.collectReverse);
+      return;
+    }
+    const backBtn = ev.target && ev.target.closest ? ev.target.closest('[data-collect-back]') : null;
+    if(backBtn){
+      ev.preventDefault();
+      ev.stopPropagation();
+      renderLoaded(state.active);
+      requestAnimationFrame(() => {
+        try{ window.scrollTo({top: state.returnScroll || 0, behavior: 'auto'}); }catch(e){}
+      });
+    }
+  }, true);
   document.addEventListener('input', function(ev){
     if(ev.target && ev.target.id === 'collectSearch'){
       if(state.composing || ev.isComposing) return;

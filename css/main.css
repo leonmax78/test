@@ -376,6 +376,55 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
   border-color:rgba(103,232,249,.9);
   transform:translateY(-1px);
 }
+.collectDropDetailPage{
+  max-width:1180px;
+}
+.collectDropDetailHeader{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:16px;
+  margin:16px 0;
+  padding-bottom:14px;
+  border-bottom:1px solid rgba(99,177,255,.22);
+}
+.collectDropDetailHeader h1{
+  margin:4px 0 0;
+}
+.collectDropDetailList{
+  display:grid;
+  gap:10px;
+}
+.collectDropDetailItem{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:14px;
+  align-items:center;
+  padding:14px 16px;
+  border:1px solid rgba(99,177,255,.34);
+  border-left:4px solid rgba(34,211,238,.75);
+  border-radius:12px;
+  background:linear-gradient(135deg,rgba(15,47,76,.72),rgba(7,18,34,.78));
+  box-shadow:0 10px 24px rgba(0,0,0,.18);
+}
+.collectDropDetailName{
+  color:#f3fbff;
+  font-size:17px;
+  font-weight:1000;
+}
+.collectDropDetailMeta{
+  margin-top:4px;
+  color:#9fb4d4;
+  font-size:13px;
+  font-weight:800;
+  line-height:1.45;
+}
+.collectDropDetailRate{
+  color:#dff7ff;
+  font-size:16px;
+  font-weight:1000;
+  white-space:nowrap;
+}
 .beastSkillChecks{
   display:flex;
   flex-wrap:wrap;
