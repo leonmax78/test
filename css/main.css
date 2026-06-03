@@ -364,13 +364,21 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
   border:1px solid rgba(34,211,238,.55);
   background:linear-gradient(135deg,rgba(20,184,166,.24),rgba(59,130,246,.18));
   color:#eaffff;
-  border-radius:999px;
-  padding:8px 13px;
+  border-radius:16px;
+  padding:12px 14px;
   font:inherit;
-  font-size:13px;
+  font-size:15px;
   font-weight:1000;
   cursor:pointer;
   box-shadow:0 8px 18px rgba(8,145,178,.16);
+  text-align:left;
+}
+.collectReverseBtn small{
+  display:block;
+  margin-top:4px;
+  color:#b9d5ff;
+  font-size:12px;
+  font-weight:800;
 }
 .collectReverseBtn:hover{
   border-color:rgba(103,232,249,.9);
@@ -395,35 +403,20 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
   display:grid;
   gap:10px;
 }
-.collectDropDetailItem{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  gap:14px;
-  align-items:center;
-  padding:14px 16px;
-  border:1px solid rgba(99,177,255,.34);
-  border-left:4px solid rgba(34,211,238,.75);
-  border-radius:12px;
-  background:linear-gradient(135deg,rgba(15,47,76,.72),rgba(7,18,34,.78));
-  box-shadow:0 10px 24px rgba(0,0,0,.18);
-}
-.collectDropDetailName{
-  color:#f3fbff;
-  font-size:17px;
-  font-weight:1000;
-}
-.collectDropDetailMeta{
-  margin-top:4px;
-  color:#9fb4d4;
-  font-size:13px;
-  font-weight:800;
-  line-height:1.45;
-}
-.collectDropDetailRate{
-  color:#dff7ff;
-  font-size:16px;
-  font-weight:1000;
+.collectDropDetailTable table th:nth-child(3),
+.collectDropDetailTable table td:nth-child(3){
+  text-align:right;
   white-space:nowrap;
+}
+.collectDropDetailTable table th:nth-child(2),
+.collectDropDetailTable table td:nth-child(2){
+  color:#b9d5ff;
+}
+.collectDropDetailPage .backBtn{
+  background:#0b1527;
+  border-color:rgba(96,165,250,.42);
+  color:#dbeafe;
+  cursor:pointer;
 }
 .beastSkillChecks{
   display:flex;

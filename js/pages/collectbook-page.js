@@ -101,7 +101,7 @@
     if(!row.itemId) return dropList(drops, row.reverseDrops || [], '沒有掉落位置');
     return `<div class="collectDropSummary">
       <div class="collectDropSummaryCount">${dropCount} 個掉落來源</div>
-      <button class="collectReverseBtn" type="button" data-collect-reverse="${escHtml(row.itemId)}">查看掉落反查</button>
+      <button class="collectReverseBtn primary" type="button" data-collect-reverse="${escHtml(row.itemId)}">查看掉落資訊<small>共 ${dropCount} 筆掉落資料</small></button>
     </div>`;
   }
   function formatRate(value){
@@ -120,18 +120,19 @@
   function collectDropDetailRows(row){
     const reverse = Array.isArray(row?.reverseDrops) ? row.reverseDrops : [];
     if(reverse.length){
-      return reverse.map(drop => `<article class="collectDropDetailItem">
-        <div>
-          <div class="collectDropDetailName">${escHtml(drop.monster || '-')}</div>
-          <div class="collectDropDetailMeta">${escHtml((drop.locations || []).filter(Boolean).join('、') || '沒有位置資料')}</div>
-        </div>
-        <div class="collectDropDetailRate">${escHtml(formatRate(drop.rate))}</div>
-      </article>`).join('');
+      return `<div class="tableWrap monsterDropTable collectDropDetailTable"><table>
+        <thead><tr><th>怪物</th><th>位置</th><th>機率</th></tr></thead>
+        <tbody>${reverse.map(drop => `<tr>
+          <td>${escHtml(drop.monster || '-')}</td>
+          <td>${escHtml((drop.locations || []).filter(Boolean).join('、') || '沒有位置資料')}</td>
+          <td>${escHtml(formatRate(drop.rate))}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
     }
     const shopSet = new Set(row?.shops || []);
     const drops = (row?.excelSources || []).filter(x => !shopSet.has(x));
     return drops.length
-      ? drops.map(name => `<article class="collectDropDetailItem"><div class="collectDropDetailName">${escHtml(name)}</div><div class="collectDropDetailRate">-</div></article>`).join('')
+      ? `<div class="tableWrap monsterDropTable collectDropDetailTable"><table><thead><tr><th>怪物</th><th>位置</th><th>機率</th></tr></thead><tbody>${drops.map(name => `<tr><td>${escHtml(name)}</td><td>-</td><td>-</td></tr>`).join('')}</tbody></table></div>`
       : '<div class="empty">沒有掉落資料</div>';
   }
   function renderCollectDropDetail(itemId){
@@ -139,14 +140,14 @@
     const reader = by('reader');
     if(!reader) return;
     if(!row){
-      reader.innerHTML = '<section class="card collectPage"><button class="pillBtn" type="button" data-collect-back>← 返回武冠系統</button><div class="empty">找不到這筆掉落資料</div></section>';
+      reader.innerHTML = '<section class="card collectPage"><button class="backBtn" type="button" data-collect-back>← 返回武冠系統</button><div class="empty">找不到這筆掉落資料</div></section>';
       return;
     }
     const reverseCount = Array.isArray(row.reverseDrops) ? row.reverseDrops.length : 0;
     const shopSet = new Set(row.shops || []);
     const dropCount = reverseCount || (row.excelSources || []).filter(x => !shopSet.has(x)).length;
     reader.innerHTML = `<section class="card collectPage collectDropDetailPage">
-      <button class="pillBtn" type="button" data-collect-back>← 返回武冠系統</button>
+      <button class="backBtn" type="button" data-collect-back>← 返回武冠系統</button>
       <div class="collectDropDetailHeader">
         <div>
           <div class="muted">掉落反查</div>
