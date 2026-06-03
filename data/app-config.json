@@ -1,6 +1,6 @@
 {
   "siteTitle": "神州-四海同舟",
-  "version": "V349-ink-header-artwork",
+  "version": "V350-header-title-contrast",
   "defaultPage": "home",
   "nav": [
     { "id": "home", "label": "首頁", "enabled": true },
