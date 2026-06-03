@@ -1,6 +1,6 @@
 {
   "siteTitle": "神州-四海同舟",
-  "version": "V345-collect-mobile-drop-cards",
+  "version": "V346-collect-mobile-card-width",
   "defaultPage": "home",
   "nav": [
     { "id": "home", "label": "首頁", "enabled": true },
