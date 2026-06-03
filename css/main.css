@@ -2445,17 +2445,17 @@ body{
   height:58px!important;
 }
 .brandTitle{
-  font-family:"Microsoft JhengHei UI","Microsoft JhengHei","PingFang TC","Noto Sans TC","Heiti TC",sans-serif!important;
-  font-size:32px!important;
+  font-family:"Ma Shan Zheng","DFKai-SB","KaiTi","Microsoft JhengHei UI","Microsoft JhengHei",serif!important;
+  font-size:40px!important;
   line-height:1!important;
-  font-weight:1000!important;
-  color:#f8fbff!important;
-  letter-spacing:.02em!important;
-  -webkit-text-stroke:0 transparent;
+  font-weight:400!important;
+  color:#fffdf3!important;
+  letter-spacing:.045em!important;
+  -webkit-text-stroke:.35px rgba(0,0,0,.68);
   text-shadow:
-    0 2px 0 rgba(0,0,0,.72),
-    0 0 12px rgba(0,0,0,.9),
-    0 0 22px rgba(8,16,28,.82)!important;
+    0 2px 0 rgba(0,0,0,.82),
+    0 0 8px rgba(0,0,0,.88),
+    0 0 18px rgba(0,0,0,.72)!important;
   filter:none;
 }
 .menuBtn,
@@ -2487,7 +2487,7 @@ body{
     height:56px!important;
   }
   .brandTitle{
-    font-size:24px!important;
+    font-size:31px!important;
     letter-spacing:.02em!important;
   }
   .menuBtn,
@@ -2501,7 +2501,7 @@ body{
 }
 @media(max-width:390px){
   .brandTitle{
-    font-size:22px!important;
+    font-size:29px!important;
     letter-spacing:0!important;
   }
 }
