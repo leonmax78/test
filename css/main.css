@@ -411,6 +411,69 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
   color:#dbeafe;
   cursor:pointer;
 }
+@media(max-width:640px){
+  .collectDropDetailPage{
+    padding:14px;
+    border-radius:18px;
+  }
+  .collectDropDetailTable{
+    overflow:visible;
+    border-radius:14px;
+    border:0;
+    background:transparent;
+  }
+  .collectDropDetailTable table,
+  .collectDropDetailTable thead,
+  .collectDropDetailTable tbody,
+  .collectDropDetailTable tr,
+  .collectDropDetailTable th,
+  .collectDropDetailTable td{
+    display:block;
+    width:100%;
+    min-width:0;
+  }
+  .collectDropDetailTable table{
+    border-collapse:separate;
+    border-spacing:0 10px;
+  }
+  .collectDropDetailTable thead{
+    display:none;
+  }
+  .collectDropDetailTable tr{
+    padding:12px;
+    border:1px solid rgba(96,165,250,.34);
+    border-left:4px solid rgba(34,211,238,.72);
+    border-radius:14px;
+    background:linear-gradient(135deg,rgba(15,47,76,.72),rgba(7,18,34,.82));
+  }
+  .collectDropDetailTable td{
+    border:0;
+    padding:3px 0;
+    font-size:14px;
+    line-height:1.45;
+    word-break:break-word;
+    white-space:normal;
+  }
+  .collectDropDetailTable td:nth-child(1){
+    color:#f3fbff;
+    font-size:16px;
+    font-weight:1000;
+  }
+  .collectDropDetailTable td:nth-child(2)::before{
+    content:'位置：';
+    color:#7dd3fc;
+    font-weight:1000;
+  }
+  .collectDropDetailTable td:nth-child(3){
+    text-align:left;
+    color:#dff7ff;
+    font-weight:1000;
+  }
+  .collectDropDetailTable td:nth-child(3)::before{
+    content:'機率：';
+    color:#7dd3fc;
+  }
+}
 .beastSkillChecks{
   display:flex;
   flex-wrap:wrap;
