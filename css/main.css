@@ -447,7 +447,11 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
     table-layout:auto!important;
   }
   .collectDropDetailTable thead{
-    display:none;
+    display:none!important;
+  }
+  .collectDropDetailTable thead tr,
+  .collectDropDetailTable thead th{
+    display:none!important;
   }
   .collectDropDetailTable tr{
     box-sizing:border-box!important;

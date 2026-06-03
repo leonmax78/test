@@ -1,6 +1,6 @@
 {
   "siteTitle": "神州-四海同舟",
-  "version": "V347-collect-mobile-rate-wrap",
+  "version": "V348-collect-mobile-hide-drop-head",
   "defaultPage": "home",
   "nav": [
     { "id": "home", "label": "首頁", "enabled": true },
