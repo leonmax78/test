@@ -1,6 +1,6 @@
 {
   "siteTitle": "神州-四海同舟",
-  "version": "V340-core-jiangshen-fallback-text",
+  "version": "V341-collect-drop-summary",
   "defaultPage": "home",
   "nav": [
     { "id": "home", "label": "首頁", "enabled": true },
@@ -10,6 +10,7 @@
     { "id": "reverse", "label": "掉落反查", "enabled": true },
     { "id": "compound", "label": "常用裝備配方合成模擬", "enabled": true },
     { "id": "soul", "label": "武魂能力試算", "enabled": true },
+    { "id": "collect", "label": "武冠收錄資料", "enabled": true },
     { "id": "shop", "label": "特殊商店販賣資訊", "enabled": true }
   ],
   "theme": {
