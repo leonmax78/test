@@ -2445,19 +2445,18 @@ body{
   height:58px!important;
 }
 .brandTitle{
-  font-family:"Noto Serif TC","Microsoft JhengHei UI","Microsoft JhengHei","PingFang TC","Heiti TC",serif!important;
-  font-size:35px!important;
+  font-family:"Microsoft JhengHei UI","Microsoft JhengHei","PingFang TC","Noto Sans TC","Heiti TC",sans-serif!important;
+  font-size:32px!important;
   line-height:1!important;
   font-weight:1000!important;
-  color:#fff8df!important;
-  letter-spacing:.01em!important;
-  -webkit-text-stroke:1.1px rgba(0,0,0,.92);
+  color:#f8fbff!important;
+  letter-spacing:.02em!important;
+  -webkit-text-stroke:0 transparent;
   text-shadow:
-    0 2px 0 rgba(0,0,0,.95),
-    0 0 2px rgba(0,0,0,1),
-    0 0 10px rgba(0,0,0,.95),
-    0 0 18px rgba(255,210,112,.42)!important;
-  filter:drop-shadow(0 2px 2px rgba(0,0,0,.78));
+    0 2px 0 rgba(0,0,0,.72),
+    0 0 12px rgba(0,0,0,.9),
+    0 0 22px rgba(8,16,28,.82)!important;
+  filter:none;
 }
 .menuBtn,
 .shellSettingsBtn{
