@@ -2426,3 +2426,81 @@ body{
     )!important;
   }
 }
+
+/* V349 ink header artwork and wuxia title treatment. */
+body{
+  padding-top:86px!important;
+}
+.topbar{
+  height:86px!important;
+  min-height:86px!important;
+  padding:14px 24px!important;
+  background:
+    linear-gradient(90deg,rgba(2,8,18,.92) 0%,rgba(2,8,18,.70) 34%,rgba(2,8,18,.82) 100%),
+    url("../assets/header_bg_desktop.png") center center / cover no-repeat!important;
+  border-bottom:1px solid rgba(110,171,245,.56)!important;
+  box-shadow:0 10px 26px rgba(0,0,0,.28)!important;
+}
+.topline{
+  height:58px!important;
+}
+.brandTitle{
+  font-family:"DFKai-SB","BiauKai","KaiTi","STKaiti","Noto Serif TC","Microsoft JhengHei UI",serif!important;
+  font-size:34px!important;
+  line-height:1!important;
+  font-weight:900!important;
+  color:#fffdf7!important;
+  letter-spacing:.03em!important;
+  -webkit-text-stroke:.35px rgba(4,10,20,.78);
+  text-shadow:
+    0 2px 0 rgba(0,0,0,.55),
+    0 0 10px rgba(0,0,0,.86),
+    0 0 18px rgba(16,51,83,.92)!important;
+}
+.menuBtn,
+.shellSettingsBtn{
+  background:rgba(7,18,35,.72)!important;
+  border-color:rgba(136,180,246,.62)!important;
+  box-shadow:0 8px 18px rgba(0,0,0,.24)!important;
+  backdrop-filter:blur(6px)!important;
+}
+@media(min-width:980px){
+  .drawer{
+    top:86px!important;
+    height:calc(100dvh - 86px)!important;
+  }
+}
+@media(max-width:979px){
+  body{
+    padding-top:92px!important;
+  }
+  .topbar{
+    height:92px!important;
+    min-height:92px!important;
+    padding:calc(12px + env(safe-area-inset-top)) 12px 12px!important;
+    background:
+      linear-gradient(90deg,rgba(2,8,18,.93) 0%,rgba(2,8,18,.66) 48%,rgba(2,8,18,.86) 100%),
+      url("../assets/header_bg_mobile.png") center center / cover no-repeat!important;
+  }
+  .topline{
+    height:56px!important;
+  }
+  .brandTitle{
+    font-size:24px!important;
+    letter-spacing:.02em!important;
+  }
+  .menuBtn,
+  .shellSettingsBtn{
+    height:50px!important;
+  }
+  .homeBlank{
+    min-height:calc(100dvh - 92px)!important;
+    height:calc(100dvh - 92px)!important;
+  }
+}
+@media(max-width:390px){
+  .brandTitle{
+    font-size:22px!important;
+    letter-spacing:0!important;
+  }
+}
