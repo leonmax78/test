@@ -51,6 +51,100 @@
     return (mapData?.stages || []).filter(stage => stageMatches(stage, q));
   }
 
+  function mapSuggestionKey(kind, id, stageId, name){
+    return `${kind}:${id || ''}:${stageId || ''}:${name || ''}`;
+  }
+
+  function mapSearchSuggestions(limit = 10){
+    const q = state.query.trim().toLowerCase();
+    if(!q) return [];
+    const rows = [];
+    const seen = new Set();
+    const push = row => {
+      const key = mapSuggestionKey(row.kind, row.id, row.stageId, row.name);
+      if(seen.has(key) || rows.length >= limit) return;
+      seen.add(key);
+      rows.push(row);
+    };
+    (mapData?.stages || []).forEach(stage => {
+      const stageHead = `${stage.stageId || ''} ${stage.stageName || ''}`.toLowerCase();
+      if(stageHead.includes(q)){
+        push({
+          kind: 'stage',
+          id: stage.stageId,
+          stageId: stage.stageId,
+          name: stage.stageName,
+          label: `${String(stage.stageId).padStart(3, '0')} ${stage.stageName}`,
+          note: '地圖'
+        });
+      }
+      monsterGroups(stage).forEach(group => {
+        if(markerMatches(group, q)){
+          push({
+            kind: 'monster',
+            id: group.id,
+            stageId: stage.stageId,
+            name: group.name,
+            label: group.name,
+            note: `${stage.stageName} / Lv.${group.level || ''} / 共 ${group.points?.length || 0} 點`
+          });
+        }
+      });
+      (stage.npcs || []).forEach(npc => {
+        const row = Object.assign({ kind: 'npc' }, npc);
+        if(markerMatches(row, q)){
+          push({
+            kind: 'npc',
+            id: npc.id,
+            stageId: stage.stageId,
+            name: npc.name,
+            label: npc.name,
+            note: `${stage.stageName} ${coordLabel(npc)}${roleLabel(npc.role) ? ' / ' + roleLabel(npc.role) : ''}`
+          });
+        }
+      });
+    });
+    return rows;
+  }
+
+  function renderMapSuggestions(){
+    const suggestions = mapSearchSuggestions();
+    if(!state.query.trim() || !suggestions.length) return '';
+    return `<div class="mapSuggestions" aria-label="搜尋候選">
+      ${suggestions.map(s => `<button type="button" class="mapSuggestBtn" data-map-suggest="${htmlEscape(s.kind)}" data-id="${htmlEscape(s.id)}" data-stage="${htmlEscape(s.stageId)}" data-name="${htmlEscape(s.name)}">
+        <span>${htmlEscape(s.label)}</span>
+        <small>${htmlEscape(s.note)}</small>
+      </button>`).join('')}
+    </div>`;
+  }
+
+  function restoreMapSearchFocus(pos){
+    const input = byId('mapSearchInput');
+    if(!input) return;
+    input.focus({ preventScroll: true });
+    const p = Math.min(Number.isFinite(pos) ? pos : input.value.length, input.value.length);
+    try{ input.setSelectionRange(p, p); }catch(e){}
+  }
+
+  function applyMapSuggestion(btn){
+    const kind = btn.dataset.mapSuggest;
+    const id = btn.dataset.id || '';
+    const stageId = Number(btn.dataset.stage);
+    const name = btn.dataset.name || '';
+    state.query = name;
+    state.stageId = stageId;
+    state.monsters.clear();
+    state.npcs.clear();
+    const stage = (mapData?.stages || []).find(s => Number(s.stageId) === stageId);
+    if(kind === 'monster' && id) state.monsters.add(String(id));
+    if(kind === 'npc' && stage){
+      (stage.npcs || []).forEach(n => {
+        if(String(n.id || '') === String(id) || String(n.name || '') === name) state.npcs.add(npcKey(n));
+      });
+    }
+    renderLoaded();
+  }
+
   function currentStage(){
     const stages = filteredStages();
     if(!stages.length) return null;
@@ -202,11 +296,12 @@
     if(!stage){
       reader.innerHTML = `<section class="card mapPage"><h1>地圖查詢</h1>
         <div class="mapToolbar">
-          <label>搜尋地圖 / 怪物 / NPC
-            <input id="mapSearchInput" value="${htmlEscape(state.query)}" placeholder="例如：京城、大山犬、敖姬">
-          </label>
-          <button type="button" class="ghost mapClearSearchBtn" data-map-clear-search>清空搜尋</button>
-        </div>
+        <label>搜尋地圖 / 怪物 / NPC
+          <input id="mapSearchInput" value="${htmlEscape(state.query)}" placeholder="例如：京城、大山犬、敖姬">
+        </label>
+        <button type="button" class="ghost mapClearSearchBtn" data-map-clear-search>清空搜尋</button>
+      </div>
+      ${renderMapSuggestions()}
         <div class="empty">找不到符合的地圖。</div></section>`;
       return;
     }
@@ -222,6 +317,7 @@
         </label>
         <button type="button" class="ghost mapClearSearchBtn" data-map-clear-search>清空搜尋</button>
       </div>
+      ${renderMapSuggestions()}
       <div class="mapLayout">
         <aside class="mapLeftPane">
         <section class="mapSide mapMonsterSide">
@@ -284,20 +380,24 @@
   document.addEventListener('compositionend', ev => {
     if(ev.target?.id === 'mapSearchInput'){
       state.composing = false;
+      const pos = ev.target.selectionStart ?? ev.target.value.length;
       state.query = ev.target.value || '';
       const stage = currentStage();
       if(stage) autoCheckMatches(stage);
       renderLoaded();
+      restoreMapSearchFocus(pos);
     }
   });
 
   document.addEventListener('input', ev => {
     if(ev.target?.id === 'mapSearchInput'){
       if(state.composing || ev.isComposing) return;
+      const pos = ev.target.selectionStart ?? ev.target.value.length;
       state.query = ev.target.value || '';
       const stage = currentStage();
       if(stage) autoCheckMatches(stage);
       renderLoaded();
+      restoreMapSearchFocus(pos);
     }
     if(ev.target?.id === 'mapZoomInput'){
       state.zoom = Number(ev.target.value) || 1;
@@ -325,6 +425,11 @@
   });
 
   document.addEventListener('click', ev => {
+    const suggest = ev.target?.closest?.('[data-map-suggest]');
+    if(suggest){
+      applyMapSuggestion(suggest);
+      return;
+    }
     const all = ev.target?.closest?.('[data-map-all]')?.dataset.mapAll;
     const none = ev.target?.closest?.('[data-map-none]')?.dataset.mapNone;
     const stage = currentStage();

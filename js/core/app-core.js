@@ -210,9 +210,29 @@ window.SZO_SYNC_DATA = SZO_SYNC_DATA;
 // V220: closeDrawer moved to js/utils/common-utils.js.
 // V220: setTopStatus moved to js/utils/common-utils.js.
 
+function renderChoiceMenu(title, rows){
+ const safeEsc=typeof esc==='function'?esc:(s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
+ byId('reader').innerHTML=`<section class="card choiceMenuPage">
+  <h1>${safeEsc(title)}</h1>
+  <div class="choiceMenuList">
+   ${rows.map(row=>`<button type="button" class="choiceMenuItem" ${row.attr}>
+    <strong>${safeEsc(row.title)}</strong>
+    <small>${safeEsc(row.desc)}</small>
+   </button>`).join('')}
+  </div>
+ </section>`;
+}
+
 function renderJiangHome(){
  document.body.classList.remove('isHomeView');
- byId('reader').innerHTML='';
+ renderChoiceMenu('降神、經驗、修練計算',[
+  {title:'副降神模擬',desc:'試算副降神能力與需求',attr:'data-jiang="support"'},
+  {title:'主降神比較',desc:'比較主降神能力差異',attr:'data-jiang="compare"'},
+  {title:'20星等',desc:'星等資料與累積需求',attr:'data-jiang="stars"'},
+  {title:'星等 / 靈氣',desc:'星等與靈氣相關試算',attr:'data-jiang="starAura"'},
+  {title:'等級 / 經驗丹',desc:'經驗與丹藥需求試算',attr:'data-jiang="expPill"'},
+  {title:'修練計算',desc:'四聖、天照、靈丹、煉金、真元、聖鑽材料計算',attr:'data-jiang="training"'}
+ ]);
 }
 
 function pageLoadingText(label){
@@ -289,9 +309,9 @@ async function setView(view){
  document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
  document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
  if(view==='home'){renderHome(); closeDrawer();}
- else if(view==='jiang'){openJiangMenuOnly();}
+ else if(view==='jiang'){openJiangMenuOnly(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
  else if(view==='monster'){showPageLoading(viewLoadingLabel(view)); await ensureMonsterPageLoaded(); renderMonsterPage(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
- else if(view==='item'){openItemMenuOnly(); showPageLoading('道具查詢'); await ensureItemPageLoaded(); await renderItemPage('item'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
+ else if(view==='item'){openItemMenuOnly(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
  else if(view==='collect'){showPageLoading(viewLoadingLabel(view)); await ensureCollectPageLoaded(); if(typeof renderCollectBookPage==='function')renderCollectBookPage('menu');}
  else if(view==='shop'){showPageLoading(viewLoadingLabel(view)); await ensureShopPageLoaded(); if(typeof renderShopPage==='function')renderShopPage();}
  else if(view==='map'){showPageLoading(viewLoadingLabel(view),'地圖載入中，請稍候。'); await ensureMapPageLoaded(); if(typeof renderStageMapPage==='function')renderStageMapPage(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
@@ -360,7 +380,11 @@ function openItemMenuOnly(){
  document.querySelectorAll('.navBtn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='item'));
  document.querySelectorAll('.formBox').forEach(f=>f.classList.remove('active'));
  byId('itemForm')?.classList.add('active');
- byId('reader').innerHTML='';
+ renderChoiceMenu('道具查詢',[
+  {title:'道具查詢',desc:'搜尋道具名稱、ID、類型、等級與專剋',attr:'data-item-open="item"'},
+  {title:'掉落反查',desc:'用道具名稱或 ID 查詢掉落怪物與位置',attr:'data-item-open="reverse"'},
+  {title:'裝備合成',desc:'查詢裝備合成來源與材料',attr:'data-item-open="compound"'}
+ ]);
 }
 async function setItemSub(kind){
  openItemMenuOnly();
@@ -1426,7 +1450,7 @@ function backButtonHTML(view){
 function initEvents(){
  byId('openMenuBtn').onclick=openDrawer;byId('closeMenuBtn').onclick=closeDrawer;byId('backdrop').onclick=closeDrawer;
  document.addEventListener('change',e=>{if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions(); if(e.target.classList&&(e.target.classList.contains('trainCur')||e.target.classList.contains('trainTar'))){clampTrainingInputs(); updateTrainingNeeds();}});
-document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v){if(v==='jiang')openJiangMenuOnly();else setView(v);}const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);if(window.innerWidth<980)openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo)}const io=e.target.closest('[data-item-open]')?.dataset.itemOpen;if(io){setItemSub(io)}const co=e.target.closest('[data-collect-open]')?.dataset.collectOpen;if(co){showPageLoading('武冠收錄資料');ensureCollectPageLoaded().then(()=>{if(typeof clearCollectBookSearch==='function')clearCollectBookSearch(co);if(typeof renderCollectBookPage==='function')renderCollectBookPage(co);});}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid){e.preventDefault();e.stopPropagation();showMonster(mid);return;}const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);const equid=e.target.closest('[data-eq-uid]')?.dataset.eqUid;if(equid){openEquipmentSim(equid);}const eg=e.target.closest('[data-eq-group]')?.dataset.eqGroup;if(eg){eqRenderPreview();}const er=e.target.closest('[data-eq-recipe]')?.dataset.eqRecipe;if(er){eqToggleRecipe(er);}const esr=e.target.closest('[data-eq-sim-recipe]')?.dataset.eqSimRecipe;if(esr){eqSimToggleRecipe(esr);}if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds();if(e.target.id==='calcStarAura')calcStarAura();if(e.target.id==='calcExpNeed')calcExpNeed();if(e.target.id==='calcEatPill')calcEatPill();if(e.target.id==='calcTraining')calcTraining();if(e.target.id==='eqShowMaterials')showEquipmentMaterials();if(e.target.id==='eqBackToSim')eqRenderPreview();if(e.target.id==='eqBackToList')renderEquipmentCompoundPage();if(e.target.id==='eqOpenRandom')renderEquipmentRandomPage();if(e.target.id==='eqSimOnce'){eqRandomOnce();renderEquipmentRandomPage(true);}if(e.target.id==='eqSimClear'){const keep=Object.assign({},eqState.simSelectedRecipes||{});eqResetRandom(false);eqState.simSelectedRecipes=keep;renderEquipmentRandomPage(true);}if(e.target.id==='trainCurrentZero'||e.target.id==='trainAllMax')setTrainingCurrentZero();if(e.target.id==='trainCurrentMax'||e.target.id==='trainClear')setTrainingCurrentMax();const et=e.target.closest('[data-exp-tab]');if(et){document.querySelectorAll('.calcTab').forEach(b=>b.classList.remove('active'));et.classList.add('active');byId('expTabNeed').style.display=et.dataset.expTab==='need'?'block':'none';byId('expTabEat').style.display=et.dataset.expTab==='eat'?'block':'none';}});
+document.addEventListener('click',e=>{const v=e.target.closest('[data-view]')?.dataset.view;if(v){setView(v);}const o=e.target.closest('[data-open]')?.dataset.open;if(o){setView(o);if(window.innerWidth<980)openDrawer()}const jo=e.target.closest('[data-jiang-open]')?.dataset.jiangOpen;if(jo){setJiang(jo)}const io=e.target.closest('[data-item-open]')?.dataset.itemOpen;if(io){setItemSub(io)}const co=e.target.closest('[data-collect-open]')?.dataset.collectOpen;if(co){showPageLoading('武冠收錄資料');ensureCollectPageLoaded().then(()=>{if(typeof clearCollectBookSearch==='function')clearCollectBookSearch(co);if(typeof renderCollectBookPage==='function')renderCollectBookPage(co);});}const jk=e.target.closest('[data-jiang]')?.dataset.jiang;if(jk)setJiang(jk);const mid=e.target.closest('[data-monster]')?.dataset.monster;if(mid){e.preventDefault();e.stopPropagation();showMonster(mid);return;}const iid=e.target.closest('[data-item]')?.dataset.item;if(iid)showItem(iid);const rid=e.target.closest('[data-rev]')?.dataset.rev;if(rid)showReverse(rid);const rr=e.target.closest('[data-reverse-item]')?.dataset.reverseItem;if(rr)showReverse(rr);const equid=e.target.closest('[data-eq-uid]')?.dataset.eqUid;if(equid){openEquipmentSim(equid);}const eg=e.target.closest('[data-eq-group]')?.dataset.eqGroup;if(eg){eqRenderPreview();}const er=e.target.closest('[data-eq-recipe]')?.dataset.eqRecipe;if(er){eqToggleRecipe(er);}const esr=e.target.closest('[data-eq-sim-recipe]')?.dataset.eqSimRecipe;if(esr){eqSimToggleRecipe(esr);}if(e.target.classList&&e.target.classList.contains('jsSupportName'))updateSupportOptions();if(e.target.id==='calcSupport')calcSupport();if(e.target.id==='calcCompare')calcCompare();if(e.target.id==='calcStars')calcStars();if(e.target.id==='calcNeeds')calcNeeds();if(e.target.id==='calcStarAura')calcStarAura();if(e.target.id==='calcExpNeed')calcExpNeed();if(e.target.id==='calcEatPill')calcEatPill();if(e.target.id==='calcTraining')calcTraining();if(e.target.id==='eqShowMaterials')showEquipmentMaterials();if(e.target.id==='eqBackToSim')eqRenderPreview();if(e.target.id==='eqBackToList')renderEquipmentCompoundPage();if(e.target.id==='eqOpenRandom')renderEquipmentRandomPage();if(e.target.id==='eqSimOnce'){eqRandomOnce();renderEquipmentRandomPage(true);}if(e.target.id==='eqSimClear'){const keep=Object.assign({},eqState.simSelectedRecipes||{});eqResetRandom(false);eqState.simSelectedRecipes=keep;renderEquipmentRandomPage(true);}if(e.target.id==='trainCurrentZero'||e.target.id==='trainAllMax')setTrainingCurrentZero();if(e.target.id==='trainCurrentMax'||e.target.id==='trainClear')setTrainingCurrentMax();const et=e.target.closest('[data-exp-tab]');if(et){document.querySelectorAll('.calcTab').forEach(b=>b.classList.remove('active'));et.classList.add('active');byId('expTabNeed').style.display=et.dataset.expTab==='need'?'block':'none';byId('expTabEat').style.display=et.dataset.expTab==='eat'?'block':'none';}});
  ['monsterQ','monsterMin','monsterMax'].forEach(id=>{const el=byId(id); if(el)el.addEventListener('input',searchMonsters);});
  
  
