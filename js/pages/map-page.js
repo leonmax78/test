@@ -7,7 +7,8 @@
     stageId: null,
     monsters: new Set(),
     npcs: new Set(),
-    composing: false
+    composing: false,
+    zoom: 1
   };
 
   function htmlEscape(s){
@@ -157,6 +158,12 @@
     }).join('');
   }
 
+  function zoomValue(){
+    const n = Number(state.zoom);
+    if(!Number.isFinite(n)) return 1;
+    return Math.max(0.5, Math.min(2.25, n));
+  }
+
   function assetBase(){
     return (window.SZO_ASSET_MANIFEST && window.SZO_ASSET_MANIFEST.base) || 'assets/test-media';
   }
@@ -202,25 +209,35 @@
         <button type="button" class="ghost mapClearSearchBtn" data-map-clear-search>清空搜尋</button>
       </div>
       <div class="mapLayout">
-        <aside class="mapSide mapMonsterSide">
+        <aside class="mapLeftPane">
+        <section class="mapSide mapMonsterSide">
           <div class="mapSideHead">
             <h2>怪物</h2>
             <div><button type="button" class="ghost mapMiniBtn" data-map-all="monster">全選</button><button type="button" class="ghost mapMiniBtn" data-map-none="monster">全不選</button></div>
           </div>
           <div class="mapChoiceList">${markerList(stage, 'monster')}</div>
-        </aside>
-        <aside class="mapSide mapNpcSide">
+        </section>
+        <section class="mapSide mapNpcSide">
           <div class="mapSideHead">
             <h2>NPC</h2>
             <div><button type="button" class="ghost mapMiniBtn" data-map-all="npc">全選</button><button type="button" class="ghost mapMiniBtn" data-map-none="npc">全不選</button></div>
           </div>
           <div class="mapChoiceList">${markerList(stage, 'npc')}</div>
+        </section>
         </aside>
         <div class="mapCanvasWrap">
+          <div class="mapZoomBar">
+            <label>縮放
+              <input id="mapZoomInput" type="range" min="0.5" max="2.25" step="0.05" value="${zoomValue()}">
+            </label>
+            <span>${Math.round(zoomValue() * 100)}%</span>
+          </div>
           <div class="mapLoading" id="mapImageLoading">地圖載入中</div>
-          <div class="mapImageStage">
-            <img id="mapImage" src="${htmlEscape(stage.image)}" alt="${htmlEscape(stage.stageName)}">
-            <div class="mapOverlay">${markerDots(stage)}</div>
+          <div class="mapZoomSurface" style="width:${Math.round((Number(stage.width)||1)*zoomValue())}px;height:${Math.round((Number(stage.height)||1)*zoomValue())}px;">
+            <div class="mapImageStage" style="transform:scale(${zoomValue()});width:${Number(stage.width)||1}px;height:${Number(stage.height)||1}px;">
+              <img id="mapImage" src="${htmlEscape(stage.image)}" alt="${htmlEscape(stage.stageName)}">
+              <div class="mapOverlay">${markerDots(stage)}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -268,6 +285,10 @@
       if(stage) autoCheckMatches(stage);
       renderLoaded();
     }
+    if(ev.target?.id === 'mapZoomInput'){
+      state.zoom = Number(ev.target.value) || 1;
+      renderLoaded();
+    }
     const monster = ev.target?.dataset?.mapMonster;
     if(monster){
       ev.target.checked ? state.monsters.add(monster) : state.monsters.delete(monster);
@@ -309,13 +330,18 @@
     renderLoaded();
   });
 
-  window.openMonsterMapLocations = async function(monsterId){
-    state.query = '';
+  window.openMonsterMapLocations = async function(monsterId, monsterName){
     state.monsters.clear();
     state.npcs.clear();
     await ensureMapDataLoaded();
     const target = String(monsterId || '');
-    const stage = (mapData.stages || []).find(s => (s.monsters || []).some(m => String(m.id) === target));
+    let foundName = monsterName || '';
+    const stage = (mapData.stages || []).find(s => (s.monsters || []).some(m => {
+      const ok = String(m.id) === target;
+      if(ok && !foundName) foundName = m.name || '';
+      return ok;
+    }));
+    state.query = foundName || target;
     if(stage){
       state.stageId = Number(stage.stageId);
       state.monsters.add(target);

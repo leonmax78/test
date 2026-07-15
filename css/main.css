@@ -744,7 +744,7 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
    V200 modular framework
 ========================= */
 
-.monsterCompact .monsterTopActions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin:-8px 0 10px}.monsterCompact .monsterTopActions button{min-width:210px}.monsterCompact h1{margin-bottom:8px}.monsterCompact h3{margin:10px 0 7px}.monsterCompact .kv{padding:8px 10px;border-radius:12px}.monsterCompact .k{font-size:11px;margin-bottom:2px}.monsterCompact .v{font-size:14px;line-height:1.28}.monsterCompact .monsterGrid{display:grid;grid-template-columns:1fr;gap:8px}.monsterCompact .monsterPanel{border:1px solid rgba(96,165,250,.18);border-radius:16px;padding:10px;background:rgba(8,18,37,.38)}
+.monsterCompact .monsterTopActions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin:-8px 0 10px}.monsterCompact .monsterTopActions button{min-width:210px}.monsterCompact .monsterTopActions .mapJumpBtn{border:1px solid rgba(45,212,191,.72);background:linear-gradient(135deg,#0f766e,#2563eb);color:#f8fafc;box-shadow:0 10px 26px rgba(14,165,233,.2)}.monsterCompact .monsterTopActions .mapJumpBtn:hover{filter:brightness(1.08);transform:translateY(-1px)}.monsterCompact h1{margin-bottom:8px}.monsterCompact h3{margin:10px 0 7px}.monsterCompact .kv{padding:8px 10px;border-radius:12px}.monsterCompact .k{font-size:11px;margin-bottom:2px}.monsterCompact .v{font-size:14px;line-height:1.28}.monsterCompact .monsterGrid{display:grid;grid-template-columns:1fr;gap:8px}.monsterCompact .monsterPanel{border:1px solid rgba(96,165,250,.18);border-radius:16px;padding:10px;background:rgba(8,18,37,.38)}
 @media(min-width:901px){.monsterCompact.card{max-width:1400px;padding:14px 18px}.monsterCompact .monsterDataGrid{grid-template-columns:repeat(5,minmax(0,1fr))}.monsterCompact .monsterStatGrid{grid-template-columns:repeat(4,minmax(0,1fr))}.monsterCompact .monsterDefenseGrid{grid-template-columns:repeat(4,minmax(0,1fr))}.monsterCompact .monsterSkillGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.monsterDropPage.card{max-width:1100px}.monsterDropTable table th:first-child,.monsterDropTable table td:first-child{text-align:left}}
 @media(max-width:700px){.monsterCompact .monsterTopActions{justify-content:stretch}.monsterCompact .monsterTopActions button{width:100%}.monsterCompact .kvGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.monsterCompact .monsterSkillGrid{grid-template-columns:1fr}.monsterCompact .monsterDefenseGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.monsterCompact .v{font-size:13px}.monsterCompact .kv{padding:8px}}
 @media(max-width:560px){
@@ -3090,8 +3090,9 @@ body{
 .mapToolbar{display:grid;grid-template-columns:minmax(240px,1fr) minmax(220px,360px) auto;gap:12px;margin:8px 0 14px;align-items:end}
 .mapToolbar label{display:grid;gap:6px;color:#67e8f9;font-size:12px;font-weight:900}
 .mapToolbar input,.mapToolbar select{width:100%;background:#10111b;color:var(--text);border:1px solid rgba(245,158,11,.45);border-radius:12px;padding:11px 12px;font-size:16px}
-.mapLayout{display:grid;grid-template-columns:300px 300px minmax(0,1fr);gap:14px;align-items:start}
-.mapSide{border:1px solid rgba(96,165,250,.22);background:rgba(8,18,37,.46);border-radius:16px;padding:12px;max-height:calc(100vh - 220px);overflow:auto}
+.mapLayout{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:14px;align-items:start}
+.mapLeftPane{display:grid;grid-template-rows:minmax(150px,1fr) minmax(150px,1fr);gap:12px;max-height:calc(100vh - 220px);min-height:360px}
+.mapSide{border:1px solid rgba(96,165,250,.22);background:rgba(8,18,37,.46);border-radius:16px;padding:12px;min-height:0;overflow:auto}
 .mapSideHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 8px}
 .mapSideHead h2{font-size:17px;margin:0;color:#eaf2ff}
 .mapMiniBtn{padding:5px 8px;border-radius:999px;font-size:12px;margin-left:4px}
@@ -3099,8 +3100,13 @@ body{
 .mapMarkerChoice{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start;border:1px solid rgba(148,163,184,.16);background:#0b1527;border-radius:12px;padding:8px 9px;color:#dbeafe;font-weight:800;line-height:1.35}
 .mapMarkerChoice input{width:18px;height:18px;margin-top:1px;accent-color:var(--accent)}
 .mapEmptyLine{padding:8px}
-.mapCanvasWrap{position:relative;min-height:340px;border:1px solid rgba(245,158,11,.35);border-radius:16px;background:#020817;overflow:auto}
-.mapImageStage{position:relative;display:inline-block;width:max-content;min-width:0}
+.mapCanvasWrap{position:relative;min-height:520px;border:1px solid rgba(245,158,11,.35);border-radius:16px;background:#020817;overflow:auto}
+.mapZoomBar{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:10px;justify-content:flex-end;padding:10px 12px;background:linear-gradient(180deg,rgba(2,8,23,.92),rgba(2,8,23,.62));backdrop-filter:blur(8px)}
+.mapZoomBar label{display:flex;align-items:center;gap:8px;color:#a7f3d0;font-size:12px;font-weight:1000}
+.mapZoomBar input{width:180px;accent-color:#2dd4bf}
+.mapZoomBar span{min-width:48px;text-align:right;color:#eaf2ff;font-weight:1000}
+.mapZoomSurface{position:relative;margin:0 auto 14px}
+.mapImageStage{position:relative;display:inline-block;width:max-content;min-width:0;transform-origin:top left}
 .mapImageStage img{display:block;max-width:none;image-rendering:auto}
 .mapOverlay{position:absolute;inset:0;pointer-events:none;width:100%;height:100%}
 .mapDot{position:absolute;transform:translate(-50%,-85%);width:28px;height:28px;border-radius:999px;border:2px solid #fff;display:grid;place-items:center;font-size:11px;font-weight:1000;color:#06111f;box-shadow:0 0 0 3px rgba(0,0,0,.4);pointer-events:auto;overflow:hidden}
@@ -3113,6 +3119,7 @@ body{
 .mapClearSearchBtn{min-height:42px;white-space:nowrap}
 @media(max-width:900px){
   .mapToolbar,.mapLayout{grid-template-columns:1fr}
+  .mapLeftPane{grid-template-rows:none;max-height:none}
   .mapSide{max-height:42vh}
   .mapCanvasWrap{min-height:280px}
 }
