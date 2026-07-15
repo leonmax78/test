@@ -21,8 +21,16 @@
     return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
   function price(value){
-    const n = Number(value);
-    return Number.isFinite(n) ? n.toLocaleString('zh-TW') + '兩' : '-';
+    const n = Math.floor(Number(value));
+    if(!Number.isFinite(n)) return '-';
+    const yi = Math.floor(n / 100000000);
+    const wan = Math.floor((n % 100000000) / 10000);
+    const rest = n % 10000;
+    let text = '';
+    if(yi) text += yi + '億';
+    if(wan) text += wan + '萬';
+    if(rest || !text) text += rest;
+    return text + '兩';
   }
   function syncData(){
     try{ if(typeof window.SZO_SYNC_DATA === 'function') window.SZO_SYNC_DATA(); }catch(e){}
@@ -94,6 +102,14 @@
   function modePrice(item){
     return state.mode === 'buy' ? item.buyPrice : item.sellPrice;
   }
+  function mergeDisplayItems(items){
+    const seen = new Map();
+    for(const item of items || []){
+      const key = [item.name || '', modePrice(item), item.icon || '', item.type || ''].join('|');
+      if(!seen.has(key)) seen.set(key, item);
+    }
+    return [...seen.values()];
+  }
   function itemHasMode(item, mode){
     const value = mode === 'buy' ? item.buyPrice : item.sellPrice;
     return value !== null && value !== undefined && value !== '';
@@ -125,7 +141,7 @@
   }
   function filteredItems(loc){
     if(!loc?.shop) return [];
-    return (loc.shop.items || [])
+    const rows = (loc.shop.items || [])
       .filter(item => itemHasMode(item, state.mode))
       .filter(item => itemMatches(item, loc))
       .sort((a,b) => {
@@ -134,6 +150,7 @@
         if(state.mode === 'buy') return pb - pa || String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant');
         return pa - pb || String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant');
       });
+    return mergeDisplayItems(rows);
   }
   function rankedLocations(){
     const q = state.query.trim().toLowerCase();
@@ -260,6 +277,7 @@
           <input id="shopSearch" value="${escHtml(state.query)}" placeholder="搜尋商品 / 商店 / 地圖，例如：虎皮、京城、打鐵店長" autocomplete="off">
           <button type="button" class="ghost shopSearchBtn" data-shop-search>搜尋</button>
         </div>
+        <div class="shopSearchNote">備注：部分商品受名聲影響，最多享八折優惠</div>
         <div class="shopModeTabs">
           <button type="button" class="${state.mode === 'sell' ? 'active' : ''}" data-shop-mode="sell">販賣</button>
           <button type="button" class="${state.mode === 'buy' ? 'active' : ''}" data-shop-mode="buy">回收</button>

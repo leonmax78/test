@@ -1647,6 +1647,13 @@ section.card:has(.supportPlan) > .notice{
   border-color:rgba(45,212,191,.38);
   color:#ccfbf1;
 }
+.shopSearchNote{
+  grid-column:1;
+  color:#fde68a;
+  font-size:13px;
+  font-weight:900;
+  line-height:1.4;
+}
 .shopModeTabs{
   display:inline-flex;
   gap:6px;
@@ -1933,6 +1940,9 @@ section.card:has(.supportPlan) > .notice{
   }
   .shopTools{
     grid-template-columns:1fr;
+  }
+  .shopSearchNote{
+    grid-column:auto;
   }
   .shopModeTabs{
     justify-self:start;

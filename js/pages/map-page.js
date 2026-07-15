@@ -63,9 +63,26 @@
     return value !== null && value !== undefined && value !== '';
   }
 
+  function mergeShopItems(items, mode){
+    const seen = new Map();
+    for(const item of items || []){
+      const key = [item.name || '', modePrice(item, mode), item.icon || '', item.type || ''].join('|');
+      if(!seen.has(key)) seen.set(key, item);
+    }
+    return [...seen.values()];
+  }
+
   function priceText(value){
-    const n = Number(value);
-    return Number.isFinite(n) ? n.toLocaleString('zh-TW') + '兩' : '-';
+    const n = Math.floor(Number(value));
+    if(!Number.isFinite(n)) return '-';
+    const yi = Math.floor(n / 100000000);
+    const wan = Math.floor((n % 100000000) / 10000);
+    const rest = n % 10000;
+    let text = '';
+    if(yi) text += yi + '億';
+    if(wan) text += wan + '萬';
+    if(rest || !text) text += rest;
+    return text + '兩';
   }
 
   function shopItemIcon(item){
@@ -79,10 +96,10 @@
 
   function mapShopPanelHtml(marker, shop, mode){
     const activeMode = mode === 'buy' ? 'buy' : 'sell';
-    const items = (shop?.items || [])
+    const items = mergeShopItems((shop?.items || [])
       .filter(item => itemHasMode(item, activeMode))
       .slice()
-      .sort((a,b) => Number(modePrice(a, activeMode)) - Number(modePrice(b, activeMode)) || String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant'));
+      .sort((a,b) => Number(modePrice(a, activeMode)) - Number(modePrice(b, activeMode)) || String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant')), activeMode);
     const title = `${marker.stageName || ''} / ${marker.name || ''}`;
     return `<div class="mapShopBackdrop" data-map-shop-backdrop>
       <section class="mapShopPanel" role="dialog" aria-label="${htmlEscape(title)}">
@@ -343,7 +360,8 @@
       const fallback = marker.kind === 'npc' ? 'N' : 'M';
       const inner = src ? `<img src="${htmlEscape(src)}" alt="" onerror="this.hidden=true;this.nextElementSibling.hidden=false;this.parentElement.classList.remove('withImage')"><span hidden>${fallback}</span>` : `<span>${fallback}</span>`;
       const shopAttrs = marker.kind === 'npc' && marker.shop ? ` data-map-shop="${htmlEscape(marker.shop)}" data-map-shop-stage="${htmlEscape(stage.stageId)}" data-map-shop-stage-name="${htmlEscape(stage.stageName || '')}" data-map-shop-npc="${htmlEscape(marker.id || '')}" data-map-shop-name="${htmlEscape(marker.name || '')}" data-map-shop-x="${htmlEscape(marker.x ?? '')}" data-map-shop-y="${htmlEscape(marker.y ?? '')}" data-map-shop-coord-x="${htmlEscape(marker.coordX ?? marker.x ?? '')}" data-map-shop-coord-y="${htmlEscape(marker.coordY ?? marker.y ?? '')}"` : '';
-      return `<button type="button" class="mapDot ${cls}${src ? ' withImage' : ''}${marker.shop ? ' shopNpcDot' : ''}" style="left:${left}%;top:${top}%;" title="${htmlEscape(markerLabel(marker))}"${shopAttrs}>
+      const monsterAttrs = marker.kind === 'monster' ? ` data-map-monster="${htmlEscape(marker.id || '')}"` : '';
+      return `<button type="button" class="mapDot ${cls}${src ? ' withImage' : ''}${marker.shop ? ' shopNpcDot' : ''}" style="left:${left}%;top:${top}%;" title="${htmlEscape(markerLabel(marker))}"${shopAttrs}${monsterAttrs}>
         ${inner}
       </button>`;
     }).join('');
@@ -522,6 +540,15 @@
   });
 
   document.addEventListener('click', ev => {
+    const monsterDot = ev.target?.closest?.('[data-map-monster]');
+    if(monsterDot){
+      const id = monsterDot.dataset.mapMonster || '';
+      if(id && typeof window.showMonsterDropPage === 'function'){
+        ev.preventDefault();
+        window.showMonsterDropPage(id);
+        return;
+      }
+    }
     const shopDot = ev.target?.closest?.('[data-map-shop]');
     if(shopDot){
       ev.preventDefault();
