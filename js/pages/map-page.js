@@ -164,6 +164,20 @@
     return Math.max(0.5, Math.min(2.25, n));
   }
 
+  function applyZoomToDom(stage){
+    const z = zoomValue();
+    const target = stage || currentStage();
+    const surface = document.querySelector('.mapZoomSurface');
+    const imageStage = document.querySelector('.mapImageStage');
+    const label = document.querySelector('.mapZoomBar span');
+    if(target && surface){
+      surface.style.width = `${Math.round((Number(target.width) || 1) * z)}px`;
+      surface.style.height = `${Math.round((Number(target.height) || 1) * z)}px`;
+    }
+    if(imageStage) imageStage.style.transform = `scale(${z})`;
+    if(label) label.textContent = `${Math.round(z * 100)}%`;
+  }
+
   function assetBase(){
     return (window.SZO_ASSET_MANIFEST && window.SZO_ASSET_MANIFEST.base) || 'assets/test-media';
   }
@@ -235,7 +249,7 @@
           <div class="mapLoading" id="mapImageLoading">地圖載入中</div>
           <div class="mapZoomSurface" style="width:${Math.round((Number(stage.width)||1)*zoomValue())}px;height:${Math.round((Number(stage.height)||1)*zoomValue())}px;">
             <div class="mapImageStage" style="transform:scale(${zoomValue()});width:${Number(stage.width)||1}px;height:${Number(stage.height)||1}px;">
-              <img id="mapImage" src="${htmlEscape(stage.image)}" alt="${htmlEscape(stage.stageName)}">
+              <img id="mapImage" src="${htmlEscape(stage.image)}" alt="${htmlEscape(stage.stageName)}" decoding="async" fetchpriority="high">
               <div class="mapOverlay">${markerDots(stage)}</div>
             </div>
           </div>
@@ -287,7 +301,7 @@
     }
     if(ev.target?.id === 'mapZoomInput'){
       state.zoom = Number(ev.target.value) || 1;
-      renderLoaded();
+      applyZoomToDom();
     }
     const monster = ev.target?.dataset?.mapMonster;
     if(monster){
