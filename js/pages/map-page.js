@@ -6,7 +6,8 @@
     query: '',
     stageId: null,
     monsters: new Set(),
-    npcs: new Set()
+    npcs: new Set(),
+    composing: false
   };
 
   function htmlEscape(s){
@@ -30,7 +31,7 @@
   }
 
   function markerText(marker){
-    return `${marker.name || ''} ${marker.id || ''} ${marker.level || ''} ${marker.x || ''} ${marker.y || ''}`.toLowerCase();
+    return `${marker.name || ''} ${marker.id || ''} ${marker.level || ''} ${marker.x || marker.coordX || ''} ${marker.y || marker.coordY || ''}`.toLowerCase();
   }
 
   function stageMatches(stage, q){
@@ -61,8 +62,16 @@
     return stage;
   }
 
-  function markerKey(marker){
+  function monsterGroupKey(marker){
+    return String(marker.id || '');
+  }
+
+  function npcKey(marker){
     return `${marker.id}:${marker.x}:${marker.y}`;
+  }
+
+  function markerKey(marker){
+    return marker.kind === 'npc' ? npcKey(marker) : monsterGroupKey(marker);
   }
 
   function autoCheckMatches(stage){
@@ -70,8 +79,8 @@
     state.npcs.clear();
     const q = state.query.trim().toLowerCase();
     if(!q) return;
-    (stage.monsters || []).forEach(m => { if(markerMatches(m, q)) state.monsters.add(markerKey(m)); });
-    (stage.npcs || []).forEach(n => { if(markerMatches(n, q)) state.npcs.add(markerKey(n)); });
+    monsterGroups(stage).forEach(group => { if(markerMatches(group, q)) state.monsters.add(markerKey(group)); });
+    (stage.npcs || []).forEach(n => { if(markerMatches(Object.assign({ kind: 'npc' }, n), q)) state.npcs.add(npcKey(n)); });
   }
 
   function roleLabel(role){
@@ -85,22 +94,50 @@
     return `${marker.name || '未命名'}${lv}${roleText} (${marker.x}, ${marker.y})`;
   }
 
+  function coordLabel(marker){
+    const x = marker.coordX ?? marker.x ?? '';
+    const y = marker.coordY ?? marker.y ?? '';
+    return `(${x}, ${y})`;
+  }
+
+  function monsterGroups(stage){
+    const groups = new Map();
+    (stage.monsters || []).forEach(marker => {
+      const key = monsterGroupKey(marker);
+      if(!groups.has(key)){
+        groups.set(key, Object.assign({ kind: 'monster', points: [] }, marker));
+      }
+      groups.get(key).points.push(marker);
+    });
+    return [...groups.values()].sort((a, b) => {
+      const la = Number(a.level) || 0, lb = Number(b.level) || 0;
+      return la - lb || String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant') || Number(a.id) - Number(b.id);
+    });
+  }
+
+  function monsterGroupLabel(group){
+    const lv = group.level ? ` Lv.${group.level}` : '';
+    const count = Array.isArray(group.points) ? group.points.length : 0;
+    return `${group.name || '未命名'}${lv} / 共 ${count} 點`;
+  }
+
   function markerList(stage, kind){
-    const rows = kind === 'monster' ? (stage.monsters || []) : (stage.npcs || []);
+    const rows = kind === 'monster' ? monsterGroups(stage) : (stage.npcs || []).map(n => Object.assign({ kind: 'npc' }, n));
     const checked = kind === 'monster' ? state.monsters : state.npcs;
     if(!rows.length) return '<div class="muted mapEmptyLine">沒有資料</div>';
-    return rows.map((marker, index) => {
+    return rows.map(marker => {
       const key = markerKey(marker);
+      const label = kind === 'monster' ? monsterGroupLabel(marker) : `${marker.name || '未命名'}${roleLabel(marker.role) ? ' / ' + roleLabel(marker.role) : ''} ${coordLabel(marker)}`;
       return `<label class="mapMarkerChoice">
         <input type="checkbox" data-map-${kind}="${htmlEscape(key)}" ${checked.has(key) ? 'checked' : ''}>
-        <span>${htmlEscape(markerLabel(Object.assign({kind}, marker)))}</span>
+        <span>${htmlEscape(label)}</span>
       </label>`;
     }).join('');
   }
 
   function visibleMarkers(stage){
-    const monsterRows = (stage.monsters || []).filter(m => state.monsters.has(markerKey(m))).map(m => Object.assign({ kind: 'monster' }, m));
-    const npcRows = (stage.npcs || []).filter(n => state.npcs.has(markerKey(n))).map(n => Object.assign({ kind: 'npc' }, n));
+    const monsterRows = (stage.monsters || []).filter(m => state.monsters.has(monsterGroupKey(m))).map(m => Object.assign({ kind: 'monster' }, m));
+    const npcRows = (stage.npcs || []).filter(n => state.npcs.has(npcKey(n))).map(n => Object.assign({ kind: 'npc' }, n));
     return monsterRows.concat(npcRows);
   }
 
@@ -111,10 +148,29 @@
       const left = Math.max(0, Math.min(100, Number(marker.x || 0) / w * 100));
       const top = Math.max(0, Math.min(100, Number(marker.y || 0) / h * 100));
       const cls = marker.kind === 'npc' ? 'npc' : 'monster';
-      return `<button type="button" class="mapDot ${cls}" style="left:${left}%;top:${top}%;" title="${htmlEscape(markerLabel(marker))}">
-        <span>${marker.kind === 'npc' ? 'N' : 'M'}</span>
+      const src = markerImage(marker);
+      const fallback = marker.kind === 'npc' ? 'N' : 'M';
+      const inner = src ? `<img src="${htmlEscape(src)}" alt="" onerror="this.hidden=true;this.nextElementSibling.hidden=false;this.parentElement.classList.remove('withImage')"><span hidden>${fallback}</span>` : `<span>${fallback}</span>`;
+      return `<button type="button" class="mapDot ${cls}${src ? ' withImage' : ''}" style="left:${left}%;top:${top}%;" title="${htmlEscape(markerLabel(marker))}">
+        ${inner}
       </button>`;
     }).join('');
+  }
+
+  function assetBase(){
+    return (window.SZO_ASSET_MANIFEST && window.SZO_ASSET_MANIFEST.base) || 'assets/test-media';
+  }
+
+  function pad4(v){
+    return String(v || '').padStart(4, '0');
+  }
+
+  function markerImage(marker){
+    const pic = marker.pic;
+    if(pic === undefined || pic === null || pic === '') return '';
+    const base = assetBase();
+    if(marker.kind === 'monster') return `${base}/monster-portraits/m${pic}.png`;
+    return `${base}/npc-portraits/n${pic}.png`;
   }
 
   function renderLoaded(){
@@ -123,7 +179,14 @@
     const stages = filteredStages();
     const stage = currentStage();
     if(!stage){
-      reader.innerHTML = `<section class="card mapPage"><h1>地圖查詢</h1><div class="empty">找不到符合的地圖。</div></section>`;
+      reader.innerHTML = `<section class="card mapPage"><h1>地圖查詢</h1>
+        <div class="mapToolbar">
+          <label>搜尋地圖 / 怪物 / NPC
+            <input id="mapSearchInput" value="${htmlEscape(state.query)}" placeholder="例如：京城、大山犬、敖姬">
+          </label>
+          <button type="button" class="ghost mapClearSearchBtn" data-map-clear-search>清空搜尋</button>
+        </div>
+        <div class="empty">找不到符合的地圖。</div></section>`;
       return;
     }
     const stageOptions = stages.map(s => `<option value="${Number(s.stageId)}" ${Number(s.stageId) === Number(stage.stageId) ? 'selected' : ''}>${String(s.stageId).padStart(3,'0')} ${htmlEscape(s.stageName)}</option>`).join('');
@@ -136,14 +199,17 @@
         <label>地圖
           <select id="mapStageSelect">${stageOptions}</select>
         </label>
+        <button type="button" class="ghost mapClearSearchBtn" data-map-clear-search>清空搜尋</button>
       </div>
       <div class="mapLayout">
-        <aside class="mapSide">
+        <aside class="mapSide mapMonsterSide">
           <div class="mapSideHead">
             <h2>怪物</h2>
             <div><button type="button" class="ghost mapMiniBtn" data-map-all="monster">全選</button><button type="button" class="ghost mapMiniBtn" data-map-none="monster">全不選</button></div>
           </div>
           <div class="mapChoiceList">${markerList(stage, 'monster')}</div>
+        </aside>
+        <aside class="mapSide mapNpcSide">
           <div class="mapSideHead">
             <h2>NPC</h2>
             <div><button type="button" class="ghost mapMiniBtn" data-map-all="npc">全選</button><button type="button" class="ghost mapMiniBtn" data-map-none="npc">全不選</button></div>
@@ -180,8 +246,23 @@
     renderLoaded();
   }
 
+  document.addEventListener('compositionstart', ev => {
+    if(ev.target?.id === 'mapSearchInput') state.composing = true;
+  });
+
+  document.addEventListener('compositionend', ev => {
+    if(ev.target?.id === 'mapSearchInput'){
+      state.composing = false;
+      state.query = ev.target.value || '';
+      const stage = currentStage();
+      if(stage) autoCheckMatches(stage);
+      renderLoaded();
+    }
+  });
+
   document.addEventListener('input', ev => {
     if(ev.target?.id === 'mapSearchInput'){
+      if(state.composing || ev.isComposing) return;
       state.query = ev.target.value || '';
       const stage = currentStage();
       if(stage) autoCheckMatches(stage);
@@ -214,11 +295,33 @@
     const stage = currentStage();
     if(!stage || (!all && !none)) return;
     const set = (all || none) === 'monster' ? state.monsters : state.npcs;
-    const rows = (all || none) === 'monster' ? (stage.monsters || []) : (stage.npcs || []);
+    const rows = (all || none) === 'monster' ? monsterGroups(stage) : (stage.npcs || []).map(n => Object.assign({ kind: 'npc' }, n));
     set.clear();
     if(all) rows.forEach(row => set.add(markerKey(row)));
     renderLoaded();
   });
+
+  document.addEventListener('click', ev => {
+    if(!ev.target?.closest?.('[data-map-clear-search]')) return;
+    state.query = '';
+    state.monsters.clear();
+    state.npcs.clear();
+    renderLoaded();
+  });
+
+  window.openMonsterMapLocations = async function(monsterId){
+    state.query = '';
+    state.monsters.clear();
+    state.npcs.clear();
+    await ensureMapDataLoaded();
+    const target = String(monsterId || '');
+    const stage = (mapData.stages || []).find(s => (s.monsters || []).some(m => String(m.id) === target));
+    if(stage){
+      state.stageId = Number(stage.stageId);
+      state.monsters.add(target);
+    }
+    await renderStageMapPage();
+  };
 
   window.ensureMapPageLoaded = async function(){ return true; };
   window.renderStageMapPage = renderStageMapPage;
