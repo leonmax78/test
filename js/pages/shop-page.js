@@ -1,10 +1,12 @@
-// V300: shop sale information page with item detail and container contents.
+// Full shop lookup page: SHOP.INI + NPC map placements.
 (function(){
-  const SHOP_DATA_URL = 'data/shop_selected_11_fixed.json';
-  const SHOP_ORDER = [430,433,436,432,435,438,911,890,891,893,895];
+  const SHOP_DATA_URL = 'data/shop_all.json';
+  const MAP_DATA_URL = 'data/stage_maps.json';
   const state = {
     data: null,
-    activeShopId: '430',
+    maps: null,
+    activeKey: '',
+    mode: 'sell',
     query: '',
     loading: null
   };
@@ -14,16 +16,15 @@
     if(typeof esc === 'function') return esc(value);
     return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
-  function itemName(item){ return String(item?.name || item?.Name || '').trim(); }
-  function nameOfSafe(row){
-    try{ return typeof nameOf === 'function' ? nameOf(row) : String(row?.Name || row?.name || '').trim(); }
-    catch(e){ return String(row?.Name || row?.name || '').trim(); }
-  }
   function price(value){
     if(value === null || value === undefined || value === '') return '-';
     const n = Number(value);
     if(!Number.isFinite(n)) return escHtml(value);
     return n.toLocaleString('zh-TW');
+  }
+  function nameOfSafe(row){
+    try{ return typeof nameOf === 'function' ? nameOf(row) : String(row?.Name || row?.name || '').trim(); }
+    catch(e){ return String(row?.Name || row?.name || '').trim(); }
   }
   function syncData(){
     try{ if(typeof window.SZO_SYNC_DATA === 'function') window.SZO_SYNC_DATA(); }catch(e){}
@@ -35,159 +36,182 @@
     try{ if(itemIndex && Object.keys(itemIndex).length) return itemIndex; }catch(e){}
     return window.itemIndex || {};
   }
-  function getMonsters(){
-    const d = syncData();
-    if(Array.isArray(d.monsters) && d.monsters.length) return d.monsters;
-    try{ if(Array.isArray(monsters) && monsters.length) return monsters; }catch(e){}
-    return Array.isArray(window.monsters) ? window.monsters : [];
-  }
-  function normalizedName(value){
-    return String(value || '').replace(/\s+/g, '').trim();
-  }
-  function parseDropRows(value){
-    try{ if(typeof parseDropSafe === 'function') return parseDropSafe(value); }catch(e){}
-    try{ if(typeof parseDrop === 'function') return parseDrop(value); }catch(e){}
-    const nums = String(value || '').split(',').map(x => x.trim()).filter(Boolean);
-    if(nums.length < 4) return [];
-    const raw = [];
-    for(let i = 2; i + 1 < nums.length; i += 2){
-      const id = String(nums[i]).trim();
-      const weight = Number(nums[i + 1]);
-      if(id && id !== '0' && Number.isFinite(weight) && weight > 0) raw.push([id, weight]);
-    }
-    const total = raw.reduce((sum, row) => sum + row[1], 0);
-    return total ? raw.map(([dropId, weight]) => [dropId, weight / total * 100, weight, total]) : [];
-  }
-  function findContainerForItem(itemId, names){
-    const id = String(itemId || '').trim();
-    const wanted = names.map(normalizedName).filter(Boolean);
-    const list = getMonsters().filter(row => String(row?.DropItem || '').trim() !== '');
-    const byName = list.find(row => wanted.includes(normalizedName(nameOfSafe(row))));
-    if(byName) return byName;
-    return list.find(row => String(row?.ID || '').trim() === id) || null;
-  }
-  function containerContents(container){
-    const itemsById = getItemIndex();
-    return parseDropRows(container?.DropItem).map(([dropId, rate]) => {
-      const iid = String(dropId || '').trim();
-      const it = itemsById[iid] || null;
-      return { itemId: iid, rate: Number(rate) || 0, item: it, name: it ? nameOfSafe(it) : ('道具 ID ' + iid) };
-    }).sort((a,b) => b.rate - a.rate || Number(a.itemId) - Number(b.itemId));
-  }
-  function orderedShops(){
-    const shops = Array.isArray(state.data?.shops) ? state.data.shops : [];
-    const map = new Map(shops.map(shop => [Number(shop.shopId), shop]));
-    const ordered = SHOP_ORDER.map(id => map.get(id)).filter(Boolean);
-    shops.forEach(shop => { if(!SHOP_ORDER.includes(Number(shop.shopId))) ordered.push(shop); });
-    return ordered;
+  async function fetchJson(url){
+    const res = await fetch(url + '?v=' + encodeURIComponent(document.body?.dataset?.version || 'dev'), { cache: 'no-store' });
+    if(!res.ok) throw new Error(url + ' load failed');
+    return res.json();
   }
   async function loadShopData(){
-    if(state.data) return state.data;
+    if(state.data && state.maps) return;
     if(state.loading) return state.loading;
-    state.loading = fetch(SHOP_DATA_URL + '?v=' + encodeURIComponent(document.body?.dataset?.version || 'dev'))
-      .then(res => {
-        if(!res.ok) throw new Error('Shop data load failed');
-        return res.json();
-      })
-      .then(data => {
-        state.data = data;
-        const first = orderedShops()[0];
-        if(first) state.activeShopId = String(first.shopId);
-        return data;
-      });
+    state.loading = Promise.all([fetchJson(SHOP_DATA_URL), fetchJson(MAP_DATA_URL)]).then(([data, maps]) => {
+      state.data = data || { shops: [] };
+      state.maps = maps || { stages: [] };
+      const first = shopLocations()[0];
+      if(first && !state.activeKey) state.activeKey = first.key;
+    });
     return state.loading;
   }
-  function matches(item, shop){
-    const q = state.query.trim().toLowerCase();
-    if(!q) return true;
-    return [
-      shop.shopName,
-      shop.shopId,
-      item.itemId,
-      item.name,
-      item.sellPrice,
-      item.buyPrice
-    ].join(' ').toLowerCase().includes(q);
+  function shopById(){
+    return new Map((state.data?.shops || []).map(shop => [String(shop.shopId), shop]));
   }
-  function shopNav(shops){
-    return '<aside class="shopSideNav">'
-      + '<div class="shopSideTitle">商店販售資訊</div>'
-      + shops.map(shop => {
-        const active = String(shop.shopId) === state.activeShopId;
-        return `<button type="button" class="shopSideBtn ${active ? 'active' : ''}" data-shop-tab="${escHtml(shop.shopId)}"><span>${escHtml(shop.shopName)}</span><small>${escHtml(shop.items?.length || 0)} 筆</small></button>`;
-      }).join('')
-      + '</aside>';
-  }
-  function shopTable(shop, items){
-    const rows = items.map(item => `<tr>
-      <td><button type="button" class="shopItemLink" data-shop-item="${escHtml(item.itemId)}" data-shop-name="${escHtml(itemName(item))}">${escHtml(itemName(item))}<small>ID ${escHtml(item.itemId)}</small></button></td>
-      <td class="num">${price(item.sellPrice)}</td>
-      <td class="num">${price(item.buyPrice)}</td>
-    </tr>`).join('');
-    return `<section class="shopBlock">
-      <div class="shopBlockHead">
-        <h2>${escHtml(shop.shopName)}</h2>
-        <span>${items.length} / ${shop.items?.length || 0} 筆</span>
-      </div>
-      <div class="tableWrap shopTableWrap">
-        <table class="shopTable">
-          <thead><tr><th>物品</th><th>販賣金額</th><th>回收金額</th></tr></thead>
-          <tbody>${rows || '<tr><td colspan="3" class="muted">沒有符合條件的物品。</td></tr>'}</tbody>
-        </table>
-      </div>
-    </section>`;
-  }
-  function shopBlocksHTML(shops){
-    const searching = state.query.trim() !== '';
-    if(searching){
-      const blocks = shops.map(shop => {
-        const items = (shop.items || []).filter(item => matches(item, shop));
-        return items.length ? shopTable(shop, items) : '';
-      }).join('');
-      return blocks || '<div class="empty">全部商店都沒有符合條件的物品。</div>';
+  function shopLocations(){
+    const shops = shopById();
+    const rows = [];
+    for(const stage of state.maps?.stages || []){
+      for(const npc of stage.npcs || []){
+        const shopId = String(npc.shop || '').trim();
+        if(!shopId || !shops.has(shopId)) continue;
+        rows.push({
+          key: `${stage.stageId}:${npc.id}:${npc.coordX ?? npc.x}:${npc.coordY ?? npc.y}:${shopId}`,
+          stageId: Number(stage.stageId),
+          stageName: stage.stageName || '',
+          npcId: String(npc.id || ''),
+          npcName: npc.name || '',
+          shopId,
+          x: npc.coordX ?? npc.x ?? '',
+          y: npc.coordY ?? npc.y ?? '',
+          rawX: npc.x ?? '',
+          rawY: npc.y ?? '',
+          shop: shops.get(shopId)
+        });
+      }
     }
-    const visible = shops.filter(shop => String(shop.shopId) === state.activeShopId);
-    return visible.map(shop => shopTable(shop, shop.items || [])).join('') || '<div class="empty">沒有商店資料。</div>';
+    return rows.sort((a,b) => a.stageId - b.stageId || a.npcName.localeCompare(b.npcName, 'zh-Hant') || Number(a.shopId) - Number(b.shopId));
   }
-  function updateShopBlocks(){
-    const box = document.querySelector('.shopBlocks');
-    if(box) box.innerHTML = shopBlocksHTML(orderedShops());
+  function activeLocation(){
+    const rows = shopLocations();
+    return rows.find(row => row.key === state.activeKey) || rows[0] || null;
+  }
+  function itemSearchText(item, loc){
+    return [item.itemId, item.name, item.type, item.sellPrice, item.buyPrice, loc.stageName, loc.npcName, loc.shopId].join(' ').toLowerCase();
+  }
+  function itemHasMode(item, mode){
+    return mode === 'sell' ? item.sellPrice !== null && item.sellPrice !== undefined : item.buyPrice !== null && item.buyPrice !== undefined;
+  }
+  function modePrice(item){
+    return state.mode === 'sell' ? item.sellPrice : item.buyPrice;
+  }
+  function filteredItems(loc){
+    if(!loc?.shop) return [];
+    const q = state.query.trim().toLowerCase();
+    return (loc.shop.items || [])
+      .filter(item => itemHasMode(item, state.mode))
+      .filter(item => !q || itemSearchText(item, loc).includes(q))
+      .sort((a,b) => {
+        const pa = Number(modePrice(a));
+        const pb = Number(modePrice(b));
+        const ap = Number.isFinite(pa) ? pa : Number.MAX_SAFE_INTEGER;
+        const bp = Number.isFinite(pb) ? pb : Number.MAX_SAFE_INTEGER;
+        return ap - bp || Number(a.itemId) - Number(b.itemId);
+      });
+  }
+  function searchedLocations(){
+    const q = state.query.trim().toLowerCase();
+    const rows = shopLocations();
+    if(!q) return rows;
+    return rows.map(loc => {
+      const items = filteredItems(loc);
+      const direct = [loc.stageName, loc.npcName, loc.shopId, loc.npcId].join(' ').toLowerCase().includes(q);
+      return Object.assign({}, loc, { matchCount: items.length, bestPrice: items.length ? Number(modePrice(items[0])) : Number.MAX_SAFE_INTEGER, direct });
+    }).filter(loc => loc.matchCount || loc.direct).sort((a,b) => {
+      return (a.bestPrice || Number.MAX_SAFE_INTEGER) - (b.bestPrice || Number.MAX_SAFE_INTEGER)
+        || b.matchCount - a.matchCount
+        || a.stageId - b.stageId
+        || a.npcName.localeCompare(b.npcName, 'zh-Hant');
+    });
+  }
+  function itemThumb(item){
+    const src = window.SZO_ASSET_MEDIA && window.SZO_ASSET_MEDIA.itemIconSrc({
+      Icon: item.icon,
+      Type: item.type,
+      ID: item.itemId,
+      Name: item.name
+    });
+    return src ? `<span class="shopItemThumb"><img src="${escHtml(src)}" alt="" loading="lazy" decoding="async"></span>` : '<span class="shopItemThumb emptyThumb"></span>';
+  }
+  function locationTitle(loc){
+    return `${loc.stageName} / ${loc.npcName}`;
+  }
+  function locationSub(loc){
+    return `Shop ${loc.shopId} / NPC ${loc.npcId} / (${loc.x}, ${loc.y})`;
+  }
+  function shopNav(){
+    const rows = searchedLocations();
+    if(!rows.some(row => row.key === state.activeKey) && rows[0]) state.activeKey = rows[0].key;
+    return `<aside class="shopSideNav">
+      <div class="shopSideTitle">地圖商店</div>
+      ${rows.map(loc => {
+        const active = loc.key === state.activeKey;
+        const count = state.query.trim() ? (loc.matchCount || 0) : (loc.shop?.items || []).filter(item => itemHasMode(item, state.mode)).length;
+        return `<button type="button" class="shopSideBtn ${active ? 'active' : ''}" data-shop-loc="${escHtml(loc.key)}">
+          <span>${escHtml(locationTitle(loc))}</span>
+          <small>${escHtml(locationSub(loc))} / ${count} 筆</small>
+        </button>`;
+      }).join('') || '<div class="empty shopEmptySide">找不到符合的商店。</div>'}
+    </aside>`;
+  }
+  function shopRows(loc, items){
+    if(!items.length) return '<div class="empty">這個商店沒有符合條件的商品。</div>';
+    return `<div class="shopItemList">
+      ${items.map(item => `<button type="button" class="shopItemCard" data-shop-item="${escHtml(item.itemId)}" data-shop-name="${escHtml(item.name)}">
+        ${itemThumb(item)}
+        <span class="shopItemText">
+          <strong>${escHtml(item.name)}</strong>
+          <small>ID ${escHtml(item.itemId)} / ${escHtml(item.type || '')}</small>
+        </span>
+        <span class="shopItemPrice">${price(modePrice(item))}</span>
+      </button>`).join('')}
+    </div>`;
   }
   function renderLoaded(){
-    const shops = orderedShops();
-    if(!shops.some(shop => String(shop.shopId) === state.activeShopId) && shops[0]) state.activeShopId = String(shops[0].shopId);
-    const blocks = shopBlocksHTML(shops);
+    const loc = activeLocation();
     const reader = by('reader');
     if(!reader) return;
+    const items = loc ? filteredItems(loc) : [];
     reader.innerHTML = `<section class="card shopPage">
       <div class="shopHeader">
         <div>
-          <h1>特殊商店販賣資訊</h1>
+          <h1>商店販賣資訊</h1>
+          <div class="muted">依 NPC 地圖位置整理，可從商店跳地圖，也可從地圖點商店。</div>
         </div>
-        <div class="shopCount">${shops.length} 間商店</div>
+        <div class="shopCount">${shopLocations().length} 個地圖商店</div>
+      </div>
+      <div class="shopTools">
+        <input id="shopSearch" value="${escHtml(state.query)}" placeholder="搜尋商品 / 商店 / 地圖，例如：虎皮、京城、打鐵店長">
+        <div class="shopModeTabs">
+          <button type="button" class="${state.mode === 'sell' ? 'active' : ''}" data-shop-mode="sell">販賣</button>
+          <button type="button" class="${state.mode === 'buy' ? 'active' : ''}" data-shop-mode="buy">回收</button>
+        </div>
       </div>
       <div class="shopLayout">
-        ${shopNav(shops)}
+        ${shopNav()}
         <div class="shopMainPane">
-          <div class="shopTools">
-            <input id="shopSearch" value="${escHtml(state.query)}" placeholder="搜尋全部商店的物品、ID、金額">
-          </div>
-          <div class="shopBlocks">${blocks}</div>
+          ${loc ? `<div class="shopBlock">
+            <div class="shopBlockHead">
+              <div>
+                <h2>${escHtml(locationTitle(loc))}</h2>
+                <div class="muted">${escHtml(locationSub(loc))}</div>
+              </div>
+              <button type="button" class="ghost shopMapBtn" data-shop-map="${escHtml(loc.key)}">地圖位置</button>
+            </div>
+            ${shopRows(loc, items)}
+          </div>` : '<div class="empty">沒有商店資料。</div>'}
         </div>
       </div>
     </section>`;
     const input = by('shopSearch');
-    if(input) input.focus({preventScroll:true});
+    if(input) input.focus({ preventScroll: true });
   }
   async function renderShopPage(){
     window.v86LastView = 'shop';
     const reader = by('reader');
-    if(reader) reader.innerHTML = '<section class="card shopPage"><h1>特殊商店販賣資訊</h1><div class="muted">資料載入中...</div></section>';
+    if(reader) reader.innerHTML = '<section class="card shopPage"><h1>商店販賣資訊</h1><div class="muted">資料載入中...</div></section>';
     try{
       await loadShopData();
       renderLoaded();
     }catch(err){
-      if(reader) reader.innerHTML = '<section class="card shopPage"><h1>特殊商店販賣資訊</h1><div class="empty">商店資料載入失敗，請重新整理一次。</div></section>';
+      if(reader) reader.innerHTML = '<section class="card shopPage"><h1>商店販賣資訊</h1><div class="empty">商店資料載入失敗，請重新整理一次。</div></section>';
     }
     try{ if(typeof closeDrawer === 'function') closeDrawer(); }catch(e){}
     try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){}
@@ -203,69 +227,103 @@
     window.v86LastView = 'shop';
     const itemId = String(id || '').trim();
     const reader = by('reader');
-    if(reader) reader.innerHTML = '<section class="card itemCompact"><button class="backBtn" type="button" data-shop-back>← 返回特殊商店販賣資訊</button><h1>資料載入中...</h1></section>';
+    if(reader) reader.innerHTML = '<section class="card itemCompact"><button class="backBtn" type="button" data-shop-back>← 返回商店</button><h1>資料載入中...</h1></section>';
     if(typeof window.ensureLookupDataLoaded === 'function') await window.ensureLookupDataLoaded();
     const it = getItemIndex()[itemId];
     const title = it ? nameOfSafe(it) : (fallbackName || ('ID ' + itemId));
-    const container = findContainerForItem(itemId, [title, fallbackName]);
-    const contents = containerContents(container);
     const kv = detailRows(it).map(([k,v]) => {
       const cls = String(v).length > 34 ? ' itemFullRow' : '';
       return `<div class="kv${cls}"><div class="k">${escHtml(k)}</div><div class="v">${escHtml(v)}</div></div>`;
     }).join('');
-    const contentRows = contents.map(row => {
-      return `<tr>
-        <td><button type="button" class="shopItemLink" data-shop-item="${escHtml(row.itemId)}" data-shop-name="${escHtml(row.name)}">${escHtml(row.name)}<small>ID ${escHtml(row.itemId)}</small></button></td>
-        <td>${escHtml(row.rate.toFixed(6))}%</td>
-      </tr>`;
-    }).join('');
-    const sourceLine = container ? `<div class="muted">來源資料：${escHtml(nameOfSafe(container))} / ID ${escHtml(container.ID || '')}</div>` : '';
     if(reader){
       reader.innerHTML = `<section class="card itemCompact shopItemDetail">
-        <button class="backBtn" type="button" data-shop-back>← 返回特殊商店販賣資訊</button>
+        <button class="backBtn" type="button" data-shop-back>← 返回商店</button>
         <h1>${escHtml(title)}</h1>
-        <div class="muted">商店物品 ID ${escHtml(itemId)}</div>
-        <h2>物品說明 ITEM</h2>
-        ${it ? `<div class="kvGrid">${kv}</div>` : '<div class="empty">ITEM 資料中找不到這個物品，只顯示商店資料。</div>'}
-        <h2>打開後內容 / 掉落資料</h2>
-        ${sourceLine}
-        ${contents.length ? `<div class="tableWrap"><table class="shopDropTable"><thead><tr><th>道具</th><th>機率</th></tr></thead><tbody>${contentRows}</tbody></table></div>` : '<div class="empty">目前找不到這個物品打開後的內容資料。</div>'}
+        <div class="muted">商店商品 ID ${escHtml(itemId)}</div>
+        ${it ? `<div class="kvGrid">${kv}</div>` : '<div class="empty">ITEM 資料找不到。</div>'}
       </section>`;
     }
     try{ history.pushState({app:'detail',view:'shopItem'}, '', '#shop-item-' + encodeURIComponent(itemId)); }catch(e){}
     try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){}
   }
+  function locationByKey(key){
+    return shopLocations().find(loc => loc.key === key) || null;
+  }
+  async function jumpToMap(key){
+    const loc = locationByKey(key);
+    if(!loc) return;
+    if(typeof showPageLoading === 'function') showPageLoading('地圖查詢', '地圖載入中，請稍候。');
+    if(typeof window.ensureMapPageLoaded === 'function') await window.ensureMapPageLoaded();
+    if(typeof window.openShopMapLocation === 'function') await window.openShopMapLocation({
+      stageId: loc.stageId,
+      npcId: loc.npcId,
+      npcName: loc.npcName,
+      x: loc.rawX,
+      y: loc.rawY,
+      shopId: loc.shopId
+    });
+  }
+  function openShopLocation(shopId, stageId, npcId, x, y){
+    state.mode = 'sell';
+    state.query = '';
+    const loc = shopLocations().find(row =>
+      String(row.shopId) === String(shopId)
+      && Number(row.stageId) === Number(stageId)
+      && String(row.npcId) === String(npcId)
+      && String(row.rawX) === String(x)
+      && String(row.rawY) === String(y)
+    ) || shopLocations().find(row => String(row.shopId) === String(shopId));
+    if(loc) state.activeKey = loc.key;
+    renderShopPage();
+  }
 
   document.addEventListener('click', function(ev){
+    const mode = ev.target && ev.target.closest ? ev.target.closest('[data-shop-mode]') : null;
+    if(mode){
+      ev.preventDefault();
+      state.mode = mode.dataset.shopMode || 'sell';
+      renderLoaded();
+      return;
+    }
+    const locBtn = ev.target && ev.target.closest ? ev.target.closest('[data-shop-loc]') : null;
+    if(locBtn){
+      ev.preventDefault();
+      state.activeKey = locBtn.dataset.shopLoc || state.activeKey;
+      renderLoaded();
+      return;
+    }
+    const mapBtn = ev.target && ev.target.closest ? ev.target.closest('[data-shop-map]') : null;
+    if(mapBtn){
+      ev.preventDefault();
+      jumpToMap(mapBtn.dataset.shopMap || '');
+      return;
+    }
     const shopItem = ev.target && ev.target.closest ? ev.target.closest('[data-shop-item]') : null;
     if(shopItem){
       ev.preventDefault();
-      ev.stopPropagation();
       showShopItem(shopItem.dataset.shopItem, shopItem.dataset.shopName || '');
       return;
     }
     const back = ev.target && ev.target.closest ? ev.target.closest('[data-shop-back]') : null;
     if(back){
       ev.preventDefault();
-      ev.stopPropagation();
       renderShopPage();
-      return;
-    }
-    const tab = ev.target && ev.target.closest ? ev.target.closest('[data-shop-tab]') : null;
-    if(tab){
-      ev.preventDefault();
-      state.activeShopId = tab.dataset.shopTab || state.activeShopId;
-      state.query = '';
-      renderLoaded();
     }
   }, true);
   document.addEventListener('input', function(ev){
     if(ev.target && ev.target.id === 'shopSearch'){
+      const pos = ev.target.selectionStart ?? ev.target.value.length;
       state.query = ev.target.value || '';
-      updateShopBlocks();
+      renderLoaded();
+      const input = by('shopSearch');
+      if(input){
+        input.focus({ preventScroll: true });
+        try{ input.setSelectionRange(pos, pos); }catch(e){}
+      }
     }
   }, true);
 
   window.renderShopPage = renderShopPage;
   window.showShopItem = showShopItem;
+  window.openShopLocation = openShopLocation;
 })();

@@ -2,6 +2,8 @@
 (function(){
   let mapDataPromise = null;
   let mapData = null;
+  let shopDataPromise = null;
+  let shopData = null;
   const state = {
     query: '',
     stageId: null,
@@ -29,6 +31,101 @@
         });
     }
     return mapDataPromise;
+  }
+
+  async function ensureMapShopDataLoaded(){
+    if(shopData) return shopData;
+    if(!shopDataPromise){
+      shopDataPromise = fetch('data/shop_all.json?v=' + encodeURIComponent(document.body?.dataset?.version || 'dev'), { cache: 'no-store' })
+        .then(res => {
+          if(!res.ok) throw new Error('shop data load failed');
+          return res.json();
+        })
+        .then(data => {
+          shopData = data || { shops: [] };
+          return shopData;
+        });
+    }
+    return shopDataPromise;
+  }
+
+  function shopById(shopId){
+    const id = String(shopId || '').trim();
+    return (shopData?.shops || []).find(shop => String(shop.shopId) === id) || null;
+  }
+
+  function modePrice(item, mode){
+    return mode === 'buy' ? item.buyPrice : item.sellPrice;
+  }
+
+  function itemHasMode(item, mode){
+    const value = modePrice(item, mode);
+    return value !== null && value !== undefined && value !== '';
+  }
+
+  function priceText(value){
+    const n = Number(value);
+    return Number.isFinite(n) ? n.toLocaleString('zh-TW') : '-';
+  }
+
+  function shopItemIcon(item){
+    const media = window.SZO_ASSET_MEDIA;
+    if(media && typeof media.itemIconSrc === 'function'){
+      const src = media.itemIconSrc(item);
+      if(src) return `<span class="mapShopThumb"><img src="${htmlEscape(src)}" alt="" loading="lazy" decoding="async"></span>`;
+    }
+    return '<span class="mapShopThumb emptyThumb"></span>';
+  }
+
+  function mapShopPanelHtml(marker, shop, mode){
+    const activeMode = mode === 'buy' ? 'buy' : 'sell';
+    const items = (shop?.items || [])
+      .filter(item => itemHasMode(item, activeMode))
+      .slice()
+      .sort((a,b) => Number(modePrice(a, activeMode)) - Number(modePrice(b, activeMode)) || String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant'));
+    const title = `${marker.stageName || ''} / ${marker.name || ''}`;
+    return `<div class="mapShopBackdrop" data-map-shop-close>
+      <section class="mapShopPanel" role="dialog" aria-label="${htmlEscape(title)}" onclick="event.stopPropagation()">
+        <div class="mapShopHead">
+          <div>
+            <h2>${htmlEscape(marker.name || '商店')}</h2>
+            <div class="mapShopMeta">${htmlEscape(marker.stageName || '')} ${coordLabel(marker)} / Shop ${htmlEscape(shop?.shopId || marker.shop || '')}</div>
+          </div>
+          <button type="button" class="ghost mapMiniBtn" data-map-shop-close>關閉</button>
+        </div>
+        <div class="mapShopActions">
+          <div class="mapShopModes">
+            <button type="button" class="${activeMode === 'sell' ? 'active' : ''}" data-map-shop-mode="sell">販賣</button>
+            <button type="button" class="${activeMode === 'buy' ? 'active' : ''}" data-map-shop-mode="buy">回收</button>
+          </div>
+          <button type="button" class="ghost mapShopOpenPage" data-map-shop-open-page>查看商店頁</button>
+        </div>
+        <div class="mapShopItems">
+          ${items.map(item => `<button type="button" class="mapShopItem" data-map-shop-item="${htmlEscape(item.itemId)}">
+            ${shopItemIcon(item)}
+            <span class="mapShopText">
+              <strong>${htmlEscape(item.name || '')}</strong>
+              <small>ID ${htmlEscape(item.itemId)} / ${htmlEscape(item.type || '')}</small>
+            </span>
+            <span class="mapShopPrice">${priceText(modePrice(item, activeMode))}</span>
+          </button>`).join('') || '<div class="empty">這個模式沒有商品資料。</div>'}
+        </div>
+      </section>
+    </div>`;
+  }
+
+  async function showMapShopPanel(marker, mode){
+    await ensureMapShopDataLoaded();
+    const shop = shopById(marker.shop);
+    if(!shop) return;
+    closeMapShopPanel();
+    document.body.insertAdjacentHTML('beforeend', mapShopPanelHtml(marker, shop, mode || 'sell'));
+    window.__szoMapShopMarker = marker;
+    window.__szoMapShopMode = mode || 'sell';
+  }
+
+  function closeMapShopPanel(){
+    document.querySelectorAll('.mapShopBackdrop').forEach(el => el.remove());
   }
 
   function markerText(marker){
@@ -246,7 +343,8 @@
       const src = markerImage(marker);
       const fallback = marker.kind === 'npc' ? 'N' : 'M';
       const inner = src ? `<img src="${htmlEscape(src)}" alt="" onerror="this.hidden=true;this.nextElementSibling.hidden=false;this.parentElement.classList.remove('withImage')"><span hidden>${fallback}</span>` : `<span>${fallback}</span>`;
-      return `<button type="button" class="mapDot ${cls}${src ? ' withImage' : ''}" style="left:${left}%;top:${top}%;" title="${htmlEscape(markerLabel(marker))}">
+      const shopAttrs = marker.kind === 'npc' && marker.shop ? ` data-map-shop="${htmlEscape(marker.shop)}" data-map-shop-stage="${htmlEscape(stage.stageId)}" data-map-shop-stage-name="${htmlEscape(stage.stageName || '')}" data-map-shop-npc="${htmlEscape(marker.id || '')}" data-map-shop-name="${htmlEscape(marker.name || '')}" data-map-shop-x="${htmlEscape(marker.x ?? '')}" data-map-shop-y="${htmlEscape(marker.y ?? '')}" data-map-shop-coord-x="${htmlEscape(marker.coordX ?? marker.x ?? '')}" data-map-shop-coord-y="${htmlEscape(marker.coordY ?? marker.y ?? '')}"` : '';
+      return `<button type="button" class="mapDot ${cls}${src ? ' withImage' : ''}${marker.shop ? ' shopNpcDot' : ''}" style="left:${left}%;top:${top}%;" title="${htmlEscape(markerLabel(marker))}"${shopAttrs}>
         ${inner}
       </button>`;
     }).join('');
@@ -425,6 +523,24 @@
   });
 
   document.addEventListener('click', ev => {
+    const shopDot = ev.target?.closest?.('[data-map-shop]');
+    if(shopDot){
+      ev.preventDefault();
+      const marker = {
+        kind: 'npc',
+        id: shopDot.dataset.mapShopNpc || '',
+        name: shopDot.dataset.mapShopName || '',
+        shop: shopDot.dataset.mapShop || '',
+        stageId: Number(shopDot.dataset.mapShopStage) || state.stageId,
+        stageName: shopDot.dataset.mapShopStageName || '',
+        x: Number(shopDot.dataset.mapShopX) || 0,
+        y: Number(shopDot.dataset.mapShopY) || 0,
+        coordX: shopDot.dataset.mapShopCoordX || shopDot.dataset.mapShopX || '',
+        coordY: shopDot.dataset.mapShopCoordY || shopDot.dataset.mapShopY || ''
+      };
+      showMapShopPanel(marker, 'sell');
+      return;
+    }
     const suggest = ev.target?.closest?.('[data-map-suggest]');
     if(suggest){
       applyMapSuggestion(suggest);
@@ -449,6 +565,28 @@
     renderLoaded();
   });
 
+  document.addEventListener('click', ev => {
+    const close = ev.target?.closest?.('[data-map-shop-close]');
+    if(close){
+      closeMapShopPanel();
+      return;
+    }
+    const mode = ev.target?.closest?.('[data-map-shop-mode]');
+    if(mode && window.__szoMapShopMarker){
+      showMapShopPanel(window.__szoMapShopMarker, mode.dataset.mapShopMode || 'sell');
+      return;
+    }
+    const openPage = ev.target?.closest?.('[data-map-shop-open-page]');
+    if(openPage && window.__szoMapShopMarker){
+      const marker = window.__szoMapShopMarker;
+      closeMapShopPanel();
+      (async () => {
+        if(typeof window.ensureShopPageLoaded === 'function') await window.ensureShopPageLoaded();
+        if(typeof window.openShopLocation === 'function') window.openShopLocation(marker.shop, marker.stageId, marker.id, marker.x, marker.y);
+      })();
+    }
+  });
+
   window.openMonsterMapLocations = async function(monsterId, monsterName){
     state.monsters.clear();
     state.npcs.clear();
@@ -464,6 +602,34 @@
     if(stage){
       state.stageId = Number(stage.stageId);
       state.monsters.add(target);
+    }
+    await renderStageMapPage();
+  };
+
+  window.openShopMapLocation = async function(info){
+    await ensureMapDataLoaded();
+    const targetStageId = Number(info?.stageId);
+    const targetNpcId = String(info?.npcId || '');
+    const targetShopId = String(info?.shopId || '');
+    const targetX = String(info?.x ?? '');
+    const targetY = String(info?.y ?? '');
+    state.monsters.clear();
+    state.npcs.clear();
+    const stage = (mapData.stages || []).find(s => Number(s.stageId) === targetStageId)
+      || (mapData.stages || []).find(s => (s.npcs || []).some(n => String(n.shop || '') === targetShopId));
+    if(stage){
+      state.stageId = Number(stage.stageId);
+      const npc = (stage.npcs || []).find(n =>
+        String(n.id || '') === targetNpcId
+        && (!targetX || String(n.x ?? '') === targetX)
+        && (!targetY || String(n.y ?? '') === targetY)
+      ) || (stage.npcs || []).find(n => String(n.shop || '') === targetShopId);
+      if(npc){
+        state.query = npc.name || '';
+        state.npcs.add(npcKey(npc));
+      }else{
+        state.query = info?.npcName || '';
+      }
     }
     await renderStageMapPage();
   };
