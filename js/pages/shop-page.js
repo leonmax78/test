@@ -5,10 +5,13 @@
   const state = {
     data: null,
     maps: null,
+    stageId: null,
     activeKey: '',
     mode: 'sell',
     query: '',
-    loading: null
+    loading: null,
+    composing: false,
+    inputTimer: null
   };
 
   function by(id){ return document.getElementById(id); }
@@ -17,14 +20,8 @@
     return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
   function price(value){
-    if(value === null || value === undefined || value === '') return '-';
     const n = Number(value);
-    if(!Number.isFinite(n)) return escHtml(value);
-    return n.toLocaleString('zh-TW');
-  }
-  function nameOfSafe(row){
-    try{ return typeof nameOf === 'function' ? nameOf(row) : String(row?.Name || row?.name || '').trim(); }
-    catch(e){ return String(row?.Name || row?.name || '').trim(); }
+    return Number.isFinite(n) ? n.toLocaleString('zh-TW') + '兩' : '-';
   }
   function syncData(){
     try{ if(typeof window.SZO_SYNC_DATA === 'function') window.SZO_SYNC_DATA(); }catch(e){}
@@ -35,6 +32,10 @@
     if(d.itemIndex && Object.keys(d.itemIndex).length) return d.itemIndex;
     try{ if(itemIndex && Object.keys(itemIndex).length) return itemIndex; }catch(e){}
     return window.itemIndex || {};
+  }
+  function nameOfSafe(row){
+    try{ return typeof nameOf === 'function' ? nameOf(row) : String(row?.Name || row?.name || '').trim(); }
+    catch(e){ return String(row?.Name || row?.name || '').trim(); }
   }
   async function fetchJson(url){
     const res = await fetch(url + '?v=' + encodeURIComponent(document.body?.dataset?.version || 'dev'), { cache: 'no-store' });
@@ -48,22 +49,25 @@
       state.data = data || { shops: [] };
       state.maps = maps || { stages: [] };
       const first = shopLocations()[0];
-      if(first && !state.activeKey) state.activeKey = first.key;
+      if(first){
+        if(state.stageId === null) state.stageId = first.stageId;
+        if(!state.activeKey) state.activeKey = first.key;
+      }
     });
     return state.loading;
   }
-  function shopById(){
+  function shopMap(){
     return new Map((state.data?.shops || []).map(shop => [String(shop.shopId), shop]));
   }
   function shopLocations(){
-    const shops = shopById();
+    const shops = shopMap();
     const rows = [];
     for(const stage of state.maps?.stages || []){
       for(const npc of stage.npcs || []){
         const shopId = String(npc.shop || '').trim();
         if(!shopId || !shops.has(shopId)) continue;
         rows.push({
-          key: `${stage.stageId}:${npc.id}:${npc.coordX ?? npc.x}:${npc.coordY ?? npc.y}:${shopId}`,
+          key: `${stage.stageId}:${npc.id}:${npc.rawX ?? npc.x}:${npc.rawY ?? npc.y}:${shopId}`,
           stageId: Number(stage.stageId),
           stageName: stage.stageName || '',
           npcId: String(npc.id || ''),
@@ -71,55 +75,127 @@
           shopId,
           x: npc.coordX ?? npc.x ?? '',
           y: npc.coordY ?? npc.y ?? '',
-          rawX: npc.x ?? '',
-          rawY: npc.y ?? '',
+          rawX: npc.rawX ?? npc.x ?? '',
+          rawY: npc.rawY ?? npc.y ?? '',
           shop: shops.get(shopId)
         });
       }
     }
     return rows.sort((a,b) => a.stageId - b.stageId || a.npcName.localeCompare(b.npcName, 'zh-Hant') || Number(a.shopId) - Number(b.shopId));
   }
-  function activeLocation(){
-    const rows = shopLocations();
-    return rows.find(row => row.key === state.activeKey) || rows[0] || null;
-  }
-  function itemSearchText(item, loc){
-    return [item.itemId, item.name, item.type, item.sellPrice, item.buyPrice, loc.stageName, loc.npcName, loc.shopId].join(' ').toLowerCase();
-  }
-  function itemHasMode(item, mode){
-    return mode === 'sell' ? item.sellPrice !== null && item.sellPrice !== undefined : item.buyPrice !== null && item.buyPrice !== undefined;
+  function stagesWithShops(){
+    const seen = new Map();
+    for(const loc of shopLocations()){
+      if(!seen.has(loc.stageId)) seen.set(loc.stageId, { stageId: loc.stageId, stageName: loc.stageName });
+    }
+    return [...seen.values()].sort((a,b) => a.stageId - b.stageId);
   }
   function modePrice(item){
-    return state.mode === 'sell' ? item.sellPrice : item.buyPrice;
+    return state.mode === 'buy' ? item.buyPrice : item.sellPrice;
+  }
+  function itemHasMode(item, mode){
+    const value = mode === 'buy' ? item.buyPrice : item.sellPrice;
+    return value !== null && value !== undefined && value !== '';
+  }
+  function itemSearchText(item, loc){
+    return [item.name, loc.stageName, loc.npcName, loc.shopId].join(' ').toLowerCase();
+  }
+  function itemMatches(item, loc){
+    const q = state.query.trim().toLowerCase();
+    return !q || itemSearchText(item, loc).includes(q);
+  }
+  function matchingItemCount(mode){
+    const q = state.query.trim().toLowerCase();
+    if(!q) return 0;
+    let count = 0;
+    for(const loc of shopLocations()){
+      for(const item of loc.shop?.items || []){
+        if(itemHasMode(item, mode) && itemSearchText(item, loc).includes(q)) count++;
+      }
+    }
+    return count;
+  }
+  function maybeSwitchModeForQuery(){
+    const q = state.query.trim();
+    if(!q) return;
+    if(matchingItemCount(state.mode)) return;
+    const other = state.mode === 'buy' ? 'sell' : 'buy';
+    if(matchingItemCount(other)) state.mode = other;
   }
   function filteredItems(loc){
     if(!loc?.shop) return [];
-    const q = state.query.trim().toLowerCase();
     return (loc.shop.items || [])
       .filter(item => itemHasMode(item, state.mode))
-      .filter(item => !q || itemSearchText(item, loc).includes(q))
+      .filter(item => itemMatches(item, loc))
       .sort((a,b) => {
         const pa = Number(modePrice(a));
         const pb = Number(modePrice(b));
-        const ap = Number.isFinite(pa) ? pa : Number.MAX_SAFE_INTEGER;
-        const bp = Number.isFinite(pb) ? pb : Number.MAX_SAFE_INTEGER;
-        return ap - bp || Number(a.itemId) - Number(b.itemId);
+        if(state.mode === 'buy') return pb - pa || String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant');
+        return pa - pb || String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant');
       });
   }
-  function searchedLocations(){
+  function rankedLocations(){
     const q = state.query.trim().toLowerCase();
     const rows = shopLocations();
     if(!q) return rows;
     return rows.map(loc => {
       const items = filteredItems(loc);
-      const direct = [loc.stageName, loc.npcName, loc.shopId, loc.npcId].join(' ').toLowerCase().includes(q);
-      return Object.assign({}, loc, { matchCount: items.length, bestPrice: items.length ? Number(modePrice(items[0])) : Number.MAX_SAFE_INTEGER, direct });
+      const direct = [loc.stageName, loc.npcName, loc.shopId].join(' ').toLowerCase().includes(q);
+      const prices = items.map(item => Number(modePrice(item))).filter(Number.isFinite);
+      const bestPrice = prices.length
+        ? (state.mode === 'buy' ? Math.max(...prices) : Math.min(...prices))
+        : (state.mode === 'buy' ? -1 : Number.MAX_SAFE_INTEGER);
+      return Object.assign({}, loc, { matchCount: items.length, bestPrice, direct });
     }).filter(loc => loc.matchCount || loc.direct).sort((a,b) => {
-      return (a.bestPrice || Number.MAX_SAFE_INTEGER) - (b.bestPrice || Number.MAX_SAFE_INTEGER)
-        || b.matchCount - a.matchCount
-        || a.stageId - b.stageId
-        || a.npcName.localeCompare(b.npcName, 'zh-Hant');
+      if(state.mode === 'buy') return b.bestPrice - a.bestPrice || b.matchCount - a.matchCount || a.stageId - b.stageId;
+      return a.bestPrice - b.bestPrice || b.matchCount - a.matchCount || a.stageId - b.stageId;
     });
+  }
+  function activeLocation(){
+    const ranked = rankedLocations();
+    if(!ranked.some(row => row.key === state.activeKey) && ranked[0]){
+      state.activeKey = ranked[0].key;
+      state.stageId = ranked[0].stageId;
+    }
+    const rows = shopLocations();
+    return rows.find(row => row.key === state.activeKey) || ranked[0] || rows[0] || null;
+  }
+  function setStage(stageId){
+    state.stageId = Number(stageId);
+    const first = shopLocations().find(loc => Number(loc.stageId) === Number(state.stageId));
+    if(first) state.activeKey = first.key;
+  }
+  function locationTitle(loc){
+    return `${loc.stageName} / ${loc.npcName}`;
+  }
+  function locationSub(loc){
+    return `Shop ${loc.shopId} / (${loc.x}, ${loc.y})`;
+  }
+  function stageSelect(loc){
+    const selected = loc?.stageId ?? state.stageId;
+    return `<label class="shopSelectLabel">地圖
+      <select id="shopStageSelect">
+        ${stagesWithShops().map(stage => `<option value="${stage.stageId}" ${Number(stage.stageId) === Number(selected) ? 'selected' : ''}>${String(stage.stageId).padStart(3, '0')} ${escHtml(stage.stageName)}</option>`).join('')}
+      </select>
+    </label>`;
+  }
+  function npcSelect(loc){
+    const stageId = loc?.stageId ?? state.stageId;
+    let rows = shopLocations().filter(row => Number(row.stageId) === Number(stageId));
+    const q = state.query.trim();
+    if(q){
+      const hitKeys = new Set(rankedLocations().filter(row => Number(row.stageId) === Number(stageId)).map(row => row.key));
+      if(hitKeys.size) rows = rows.filter(row => hitKeys.has(row.key));
+    }
+    if(!rows.length) rows = shopLocations().filter(row => Number(row.stageId) === Number(stageId));
+    return `<label class="shopSelectLabel">商店 NPC
+      <select id="shopNpcSelect">
+        ${rows.map(row => {
+          const count = filteredItems(row).length;
+          return `<option value="${escHtml(row.key)}" ${row.key === loc?.key ? 'selected' : ''}>${escHtml(row.npcName)} / ${escHtml(locationSub(row))}${q ? ` / ${count}筆` : ''}</option>`;
+        }).join('')}
+      </select>
+    </label>`;
   }
   function itemThumb(item){
     const src = window.SZO_ASSET_MEDIA && window.SZO_ASSET_MEDIA.itemIconSrc({
@@ -130,50 +206,26 @@
     });
     return src ? `<span class="shopItemThumb"><img src="${escHtml(src)}" alt="" loading="lazy" decoding="async"></span>` : '<span class="shopItemThumb emptyThumb"></span>';
   }
-  function locationTitle(loc){
-    return `${loc.stageName} / ${loc.npcName}`;
-  }
-  function locationSub(loc){
-    return `Shop ${loc.shopId} / NPC ${loc.npcId} / (${loc.x}, ${loc.y})`;
-  }
-  function shopNav(){
-    const rows = searchedLocations();
-    if(!rows.some(row => row.key === state.activeKey) && rows[0]) state.activeKey = rows[0].key;
-    return `<aside class="shopSideNav">
-      <div class="shopSideTitle">地圖商店</div>
-      ${rows.map(loc => {
-        const active = loc.key === state.activeKey;
-        const count = state.query.trim() ? (loc.matchCount || 0) : (loc.shop?.items || []).filter(item => itemHasMode(item, state.mode)).length;
-        return `<button type="button" class="shopSideBtn ${active ? 'active' : ''}" data-shop-loc="${escHtml(loc.key)}">
-          <span>${escHtml(locationTitle(loc))}</span>
-          <small>${escHtml(locationSub(loc))} / ${count} 筆</small>
-        </button>`;
-      }).join('') || '<div class="empty shopEmptySide">找不到符合的商店。</div>'}
-    </aside>`;
-  }
-  function shopRows(loc, items){
-    if(!items.length) return '<div class="empty">這個商店沒有符合條件的商品。</div>';
+  function shopRows(items){
+    if(!items.length) return '<div class="empty">找不到符合目前條件的商品。</div>';
     return `<div class="shopItemList">
       ${items.map(item => `<button type="button" class="shopItemCard" data-shop-item="${escHtml(item.itemId)}" data-shop-name="${escHtml(item.name)}">
         ${itemThumb(item)}
-        <span class="shopItemText">
-          <strong>${escHtml(item.name)}</strong>
-          <small>ID ${escHtml(item.itemId)} / ${escHtml(item.type || '')}</small>
-        </span>
+        <span class="shopItemText"><strong>${escHtml(item.name)}</strong></span>
         <span class="shopItemPrice">${price(modePrice(item))}</span>
       </button>`).join('')}
     </div>`;
   }
   function renderLoaded(){
-    const loc = activeLocation();
     const reader = by('reader');
     if(!reader) return;
+    const loc = activeLocation();
     const items = loc ? filteredItems(loc) : [];
     reader.innerHTML = `<section class="card shopPage">
       <div class="shopHeader">
         <div>
           <h1>商店販賣資訊</h1>
-          <div class="muted">依 NPC 地圖位置整理，可從商店跳地圖，也可從地圖點商店。</div>
+          <div class="muted">依地圖 NPC 商店整理，可從商店跳地圖，也可從地圖點商店。</div>
         </div>
         <div class="shopCount">${shopLocations().length} 個地圖商店</div>
       </div>
@@ -184,24 +236,35 @@
           <button type="button" class="${state.mode === 'buy' ? 'active' : ''}" data-shop-mode="buy">回收</button>
         </div>
       </div>
-      <div class="shopLayout">
-        ${shopNav()}
-        <div class="shopMainPane">
-          ${loc ? `<div class="shopBlock">
-            <div class="shopBlockHead">
-              <div>
-                <h2>${escHtml(locationTitle(loc))}</h2>
-                <div class="muted">${escHtml(locationSub(loc))}</div>
-              </div>
-              <button type="button" class="ghost shopMapBtn" data-shop-map="${escHtml(loc.key)}">地圖位置</button>
-            </div>
-            ${shopRows(loc, items)}
-          </div>` : '<div class="empty">沒有商店資料。</div>'}
+      <div class="shopPicker">
+        ${stageSelect(loc)}
+        ${npcSelect(loc)}
+        ${state.query.trim() ? `<div class="shopSearchHint">符合搜尋的商店會依${state.mode === 'buy' ? '回收高價' : '販賣低價'}優先排列。</div>` : ''}
+      </div>
+      <div class="shopBlock">
+        ${loc ? `<div class="shopBlockHead">
+          <div>
+            <h2>${escHtml(locationTitle(loc))}</h2>
+            <div class="muted">${escHtml(locationSub(loc))}</div>
+          </div>
+          <button type="button" class="ghost shopMapBtn" data-shop-map="${escHtml(loc.key)}">地圖位置</button>
         </div>
+        ${shopRows(items)}` : '<div class="empty">沒有商店資料。</div>'}
       </div>
     </section>`;
-    const input = by('shopSearch');
-    if(input) input.focus({ preventScroll: true });
+  }
+  function scheduleRender(pos){
+    clearTimeout(state.inputTimer);
+    state.inputTimer = setTimeout(() => {
+      maybeSwitchModeForQuery();
+      renderLoaded();
+      const input = by('shopSearch');
+      if(input){
+        input.focus({ preventScroll: true });
+        const p = Math.min(Number.isFinite(pos) ? pos : input.value.length, input.value.length);
+        try{ input.setSelectionRange(p, p); }catch(e){}
+      }
+    }, 250);
   }
   async function renderShopPage(){
     window.v86LastView = 'shop';
@@ -240,7 +303,7 @@
         <button class="backBtn" type="button" data-shop-back>← 返回商店</button>
         <h1>${escHtml(title)}</h1>
         <div class="muted">商店商品 ID ${escHtml(itemId)}</div>
-        ${it ? `<div class="kvGrid">${kv}</div>` : '<div class="empty">ITEM 資料找不到。</div>'}
+        ${it ? `<div class="kvGrid">${kv}</div>` : '<div class="empty">ITEM 資料不存在。</div>'}
       </section>`;
     }
     try{ history.pushState({app:'detail',view:'shopItem'}, '', '#shop-item-' + encodeURIComponent(itemId)); }catch(e){}
@@ -252,7 +315,7 @@
   async function jumpToMap(key){
     const loc = locationByKey(key);
     if(!loc) return;
-    if(typeof showPageLoading === 'function') showPageLoading('地圖查詢', '地圖載入中，請稍候。');
+    if(typeof showPageLoading === 'function') showPageLoading('地圖查詢', '地圖載入中，請稍候...');
     if(typeof window.ensureMapPageLoaded === 'function') await window.ensureMapPageLoaded();
     if(typeof window.openShopMapLocation === 'function') await window.openShopMapLocation({
       stageId: loc.stageId,
@@ -273,53 +336,65 @@
       && String(row.rawX) === String(x)
       && String(row.rawY) === String(y)
     ) || shopLocations().find(row => String(row.shopId) === String(shopId));
-    if(loc) state.activeKey = loc.key;
+    if(loc){
+      state.stageId = loc.stageId;
+      state.activeKey = loc.key;
+    }
     renderShopPage();
   }
 
-  document.addEventListener('click', function(ev){
-    const mode = ev.target && ev.target.closest ? ev.target.closest('[data-shop-mode]') : null;
+  document.addEventListener('compositionstart', ev => {
+    if(ev.target?.id === 'shopSearch') state.composing = true;
+  }, true);
+  document.addEventListener('compositionend', ev => {
+    if(ev.target?.id === 'shopSearch'){
+      state.composing = false;
+      state.query = ev.target.value || '';
+      scheduleRender(ev.target.selectionStart ?? ev.target.value.length);
+    }
+  }, true);
+  document.addEventListener('input', ev => {
+    if(ev.target?.id === 'shopSearch'){
+      state.query = ev.target.value || '';
+      if(!state.composing && !ev.isComposing) scheduleRender(ev.target.selectionStart ?? ev.target.value.length);
+    }
+  }, true);
+  document.addEventListener('change', ev => {
+    if(ev.target?.id === 'shopStageSelect'){
+      setStage(ev.target.value);
+      renderLoaded();
+    }
+    if(ev.target?.id === 'shopNpcSelect'){
+      state.activeKey = ev.target.value || state.activeKey;
+      const loc = activeLocation();
+      if(loc) state.stageId = loc.stageId;
+      renderLoaded();
+    }
+  }, true);
+  document.addEventListener('click', ev => {
+    const mode = ev.target?.closest?.('[data-shop-mode]');
     if(mode){
       ev.preventDefault();
       state.mode = mode.dataset.shopMode || 'sell';
       renderLoaded();
       return;
     }
-    const locBtn = ev.target && ev.target.closest ? ev.target.closest('[data-shop-loc]') : null;
-    if(locBtn){
-      ev.preventDefault();
-      state.activeKey = locBtn.dataset.shopLoc || state.activeKey;
-      renderLoaded();
-      return;
-    }
-    const mapBtn = ev.target && ev.target.closest ? ev.target.closest('[data-shop-map]') : null;
+    const mapBtn = ev.target?.closest?.('[data-shop-map]');
     if(mapBtn){
       ev.preventDefault();
       jumpToMap(mapBtn.dataset.shopMap || '');
       return;
     }
-    const shopItem = ev.target && ev.target.closest ? ev.target.closest('[data-shop-item]') : null;
+    const shopItem = ev.target?.closest?.('[data-shop-item]');
     if(shopItem){
       ev.preventDefault();
       showShopItem(shopItem.dataset.shopItem, shopItem.dataset.shopName || '');
       return;
     }
-    const back = ev.target && ev.target.closest ? ev.target.closest('[data-shop-back]') : null;
+    const back = ev.target?.closest?.('[data-shop-back]');
     if(back){
       ev.preventDefault();
       renderShopPage();
-    }
-  }, true);
-  document.addEventListener('input', function(ev){
-    if(ev.target && ev.target.id === 'shopSearch'){
-      const pos = ev.target.selectionStart ?? ev.target.value.length;
-      state.query = ev.target.value || '';
-      renderLoaded();
-      const input = by('shopSearch');
-      if(input){
-        input.focus({ preventScroll: true });
-        try{ input.setSelectionRange(pos, pos); }catch(e){}
-      }
     }
   }, true);
 

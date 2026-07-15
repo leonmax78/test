@@ -65,7 +65,7 @@
 
   function priceText(value){
     const n = Number(value);
-    return Number.isFinite(n) ? n.toLocaleString('zh-TW') : '-';
+    return Number.isFinite(n) ? n.toLocaleString('zh-TW') + '兩' : '-';
   }
 
   function shopItemIcon(item){
@@ -105,7 +105,6 @@
             ${shopItemIcon(item)}
             <span class="mapShopText">
               <strong>${htmlEscape(item.name || '')}</strong>
-              <small>ID ${htmlEscape(item.itemId)} / ${htmlEscape(item.type || '')}</small>
             </span>
             <span class="mapShopPrice">${priceText(modePrice(item, activeMode))}</span>
           </button>`).join('') || '<div class="empty">這個模式沒有商品資料。</div>'}
