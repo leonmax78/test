@@ -11,6 +11,7 @@
     query: '',
     loading: null,
     composing: false,
+    focusedSearch: false,
     inputTimer: null
   };
 
@@ -216,9 +217,34 @@
       </button>`).join('')}
     </div>`;
   }
+  function shopBlock(loc, items, extraClass){
+    if(!loc) return '<div class="empty">沒有商店資料。</div>';
+    return `<div class="shopBlock ${extraClass || ''}">
+      <div class="shopBlockHead">
+        <div>
+          <h2>${escHtml(locationTitle(loc))}</h2>
+          <div class="muted">${escHtml(locationSub(loc))}</div>
+        </div>
+        <button type="button" class="ghost shopMapBtn" data-shop-map="${escHtml(loc.key)}">地圖位置</button>
+      </div>
+      ${shopRows(items)}
+    </div>`;
+  }
+  function searchResults(){
+    const q = state.query.trim();
+    if(!q) return '';
+    const rows = rankedLocations()
+      .map(loc => ({ loc, items: filteredItems(loc) }))
+      .filter(row => row.items.length);
+    if(!rows.length) return '<div class="empty">找不到符合目前條件的商店。</div>';
+    return `<div class="shopResultList">
+      ${rows.map(row => shopBlock(row.loc, row.items, 'shopResultBlock')).join('')}
+    </div>`;
+  }
   function renderLoaded(){
     const reader = by('reader');
     if(!reader) return;
+    const isSearching = !!state.query.trim();
     const loc = activeLocation();
     const items = loc ? filteredItems(loc) : [];
     reader.innerHTML = `<section class="card shopPage">
@@ -230,7 +256,10 @@
         <div class="shopCount">${shopLocations().length} 個地圖商店</div>
       </div>
       <div class="shopTools">
-        <input id="shopSearch" value="${escHtml(state.query)}" placeholder="搜尋商品 / 商店 / 地圖，例如：虎皮、京城、打鐵店長">
+        <div class="shopSearchBox">
+          <input id="shopSearch" value="${escHtml(state.query)}" placeholder="搜尋商品 / 商店 / 地圖，例如：虎皮、京城、打鐵店長" autocomplete="off">
+          <button type="button" class="ghost shopSearchBtn" data-shop-search>搜尋</button>
+        </div>
         <div class="shopModeTabs">
           <button type="button" class="${state.mode === 'sell' ? 'active' : ''}" data-shop-mode="sell">販賣</button>
           <button type="button" class="${state.mode === 'buy' ? 'active' : ''}" data-shop-mode="buy">回收</button>
@@ -239,32 +268,22 @@
       <div class="shopPicker">
         ${stageSelect(loc)}
         ${npcSelect(loc)}
-        ${state.query.trim() ? `<div class="shopSearchHint">符合搜尋的商店會依${state.mode === 'buy' ? '回收高價' : '販賣低價'}優先排列。</div>` : ''}
+        ${isSearching ? `<div class="shopSearchHint">符合搜尋的商店會依${state.mode === 'buy' ? '回收高價' : '販賣低價'}優先排列。</div>` : ''}
       </div>
-      <div class="shopBlock">
-        ${loc ? `<div class="shopBlockHead">
-          <div>
-            <h2>${escHtml(locationTitle(loc))}</h2>
-            <div class="muted">${escHtml(locationSub(loc))}</div>
-          </div>
-          <button type="button" class="ghost shopMapBtn" data-shop-map="${escHtml(loc.key)}">地圖位置</button>
-        </div>
-        ${shopRows(items)}` : '<div class="empty">沒有商店資料。</div>'}
-      </div>
+      ${isSearching ? searchResults() : shopBlock(loc, items)}
     </section>`;
   }
-  function scheduleRender(pos){
+  function runSearch(){
+    clearTimeout(state.inputTimer);
+    if(state.composing) return;
+    maybeSwitchModeForQuery();
+    renderLoaded();
+  }
+  function scheduleRender(){
     clearTimeout(state.inputTimer);
     state.inputTimer = setTimeout(() => {
-      maybeSwitchModeForQuery();
-      renderLoaded();
-      const input = by('shopSearch');
-      if(input){
-        input.focus({ preventScroll: true });
-        const p = Math.min(Number.isFinite(pos) ? pos : input.value.length, input.value.length);
-        try{ input.setSelectionRange(p, p); }catch(e){}
-      }
-    }, 250);
+      if(!state.focusedSearch) runSearch();
+    }, 300);
   }
   async function renderShopPage(){
     window.v86LastView = 'shop';
@@ -350,13 +369,31 @@
     if(ev.target?.id === 'shopSearch'){
       state.composing = false;
       state.query = ev.target.value || '';
-      scheduleRender(ev.target.selectionStart ?? ev.target.value.length);
     }
   }, true);
   document.addEventListener('input', ev => {
     if(ev.target?.id === 'shopSearch'){
       state.query = ev.target.value || '';
-      if(!state.composing && !ev.isComposing) scheduleRender(ev.target.selectionStart ?? ev.target.value.length);
+    }
+  }, true);
+  document.addEventListener('focusin', ev => {
+    if(ev.target?.id === 'shopSearch') state.focusedSearch = true;
+  }, true);
+  document.addEventListener('focusout', ev => {
+    if(ev.target?.id === 'shopSearch'){
+      state.focusedSearch = false;
+      if(!state.composing){
+        scheduleRender();
+      }
+    }
+  }, true);
+  document.addEventListener('keydown', ev => {
+    if(ev.target?.id === 'shopSearch' && ev.key === 'Enter'){
+      ev.preventDefault();
+      clearTimeout(state.inputTimer);
+      state.query = ev.target.value || '';
+      state.composing = false;
+      runSearch();
     }
   }, true);
   document.addEventListener('change', ev => {
@@ -377,6 +414,15 @@
       ev.preventDefault();
       state.mode = mode.dataset.shopMode || 'sell';
       renderLoaded();
+      return;
+    }
+    const searchBtn = ev.target?.closest?.('[data-shop-search]');
+    if(searchBtn){
+      ev.preventDefault();
+      const input = by('shopSearch');
+      if(input) state.query = input.value || '';
+      state.composing = false;
+      runSearch();
       return;
     }
     const mapBtn = ev.target?.closest?.('[data-shop-map]');

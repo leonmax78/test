@@ -84,8 +84,8 @@
       .slice()
       .sort((a,b) => Number(modePrice(a, activeMode)) - Number(modePrice(b, activeMode)) || String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant'));
     const title = `${marker.stageName || ''} / ${marker.name || ''}`;
-    return `<div class="mapShopBackdrop" data-map-shop-close>
-      <section class="mapShopPanel" role="dialog" aria-label="${htmlEscape(title)}" onclick="event.stopPropagation()">
+    return `<div class="mapShopBackdrop" data-map-shop-backdrop>
+      <section class="mapShopPanel" role="dialog" aria-label="${htmlEscape(title)}">
         <div class="mapShopHead">
           <div>
             <h2>${htmlEscape(marker.name || '商店')}</h2>
@@ -565,24 +565,27 @@
   });
 
   document.addEventListener('click', ev => {
-    const close = ev.target?.closest?.('[data-map-shop-close]');
-    if(close){
-      closeMapShopPanel();
-      return;
-    }
     const mode = ev.target?.closest?.('[data-map-shop-mode]');
     if(mode && window.__szoMapShopMarker){
+      ev.preventDefault();
       showMapShopPanel(window.__szoMapShopMarker, mode.dataset.mapShopMode || 'sell');
       return;
     }
     const openPage = ev.target?.closest?.('[data-map-shop-open-page]');
     if(openPage && window.__szoMapShopMarker){
+      ev.preventDefault();
       const marker = window.__szoMapShopMarker;
       closeMapShopPanel();
       (async () => {
         if(typeof window.ensureShopPageLoaded === 'function') await window.ensureShopPageLoaded();
         if(typeof window.openShopLocation === 'function') window.openShopLocation(marker.shop, marker.stageId, marker.id, marker.x, marker.y);
       })();
+      return;
+    }
+    const close = ev.target?.closest?.('[data-map-shop-close]');
+    if(close || ev.target?.matches?.('[data-map-shop-backdrop]')){
+      ev.preventDefault();
+      closeMapShopPanel();
     }
   });
 

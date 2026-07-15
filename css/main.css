@@ -1636,6 +1636,17 @@ section.card:has(.supportPlan) > .notice{
 .shopTools input{
   max-width:none;
 }
+.shopSearchBox{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  align-items:center;
+}
+.shopSearchBtn{
+  min-height:46px;
+  border-color:rgba(45,212,191,.38);
+  color:#ccfbf1;
+}
 .shopModeTabs{
   display:inline-flex;
   gap:6px;
