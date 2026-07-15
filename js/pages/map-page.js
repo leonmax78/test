@@ -203,7 +203,6 @@
         </div>
         <div class="mapShopActions">
           <strong>掉落資訊</strong>
-          <button type="button" class="ghost mapShopOpenPage" data-map-monster-open-detail>查看怪物資料</button>
         </div>
         <div class="mapShopItems">
           ${drops.map(item => `<button type="button" class="mapShopItem" data-map-monster-item="${htmlEscape(item.itemId)}">
@@ -211,6 +210,9 @@
             <span class="mapShopText"><strong>${htmlEscape(item.name)}</strong></span>
             <span class="mapShopPrice">${htmlEscape(item.rate)}</span>
           </button>`).join('') || '<div class="empty">沒有掉落資料</div>'}
+        </div>
+        <div class="mapShopActions mapMonsterFooterActions">
+          <button type="button" class="ghost mapShopOpenPage" data-map-monster-open-detail>查看怪物資料</button>
         </div>
       </section>
     </div>`;
@@ -763,8 +765,14 @@
       const marker = window.__szoMapMonsterMarker;
       closeMapMonsterPanel();
       (async () => {
-        if(typeof window.showMonster !== 'function' && typeof window.loadScriptGroup === 'function'){
-          await window.loadScriptGroup('page_monster');
+        if(typeof window.showMonster !== 'function'){
+          if(typeof window.ensureMonsterPageLoaded === 'function'){
+            await window.ensureMonsterPageLoaded();
+          }else if(typeof window.loadScriptGroupOnce === 'function'){
+            await window.loadScriptGroupOnce('page_monster');
+          }else if(typeof window.loadScriptGroup === 'function'){
+            await window.loadScriptGroup('page_monster');
+          }
         }
         if(typeof window.showMonster === 'function') window.showMonster(marker.id);
       })();

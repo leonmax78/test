@@ -151,11 +151,51 @@
     const q = state.query.trim().toLowerCase();
     const rows = shopLocations();
     if(!q) return rows;
-    return rows.map(loc => {
+    return rows.map((loc, order) => {
       const items = filteredItems(loc);
       const direct = [loc.stageName, loc.npcName, loc.shopId].join(' ').toLowerCase().includes(q);
-      return Object.assign({}, loc, { matchCount: items.length, direct });
-    }).filter(loc => loc.matchCount || loc.direct);
+      const prices = items.map(item => Number(modePrice(item))).filter(Number.isFinite);
+      const bestPrice = prices.length ? Math.max(...prices) : -1;
+      return Object.assign({}, loc, { matchCount: items.length, direct, bestPrice, order });
+    }).filter(loc => loc.matchCount || loc.direct).sort((a,b) => {
+      if(a.matchCount && b.matchCount) return b.bestPrice - a.bestPrice || b.matchCount - a.matchCount || a.order - b.order;
+      if(a.matchCount !== b.matchCount) return b.matchCount - a.matchCount;
+      return a.order - b.order;
+    });
+  }
+  function itemSuggestionRows(limit = 10){
+    const q = state.query.trim().toLowerCase();
+    if(!q) return [];
+    const rows = new Map();
+    for(const loc of shopLocations()){
+      for(const item of loc.shop?.items || []){
+        if(!itemHasMode(item, state.mode)) continue;
+        const name = String(item.name || '').trim();
+        if(!name || !name.toLowerCase().includes(q)) continue;
+        const priceValue = Number(state.mode === 'buy' ? item.buyPrice : item.sellPrice);
+        const current = rows.get(name) || { name, count: 0, bestPrice: -1 };
+        current.count += 1;
+        if(Number.isFinite(priceValue)) current.bestPrice = Math.max(current.bestPrice, priceValue);
+        rows.set(name, current);
+      }
+    }
+    if(rows.size <= 1 && rows.has(state.query.trim())) return [];
+    return [...rows.values()].sort((a,b) => {
+      const an = a.name.toLowerCase();
+      const bn = b.name.toLowerCase();
+      const aStarts = an.startsWith(q);
+      const bStarts = bn.startsWith(q);
+      if(aStarts !== bStarts) return aStarts ? -1 : 1;
+      return b.bestPrice - a.bestPrice || b.count - a.count || a.name.localeCompare(b.name, 'zh-Hant');
+    }).slice(0, limit);
+  }
+  function renderItemSuggestions(){
+    const rows = itemSuggestionRows();
+    if(!rows.length) return '';
+    return `<div class="shopSuggestions">
+      <span>你是不是想找：</span>
+      ${rows.map(row => `<button type="button" class="shopSuggestBtn" data-shop-suggest="${escHtml(row.name)}">${escHtml(row.name)}</button>`).join('')}
+    </div>`;
   }
   function activeLocation(){
     const ranked = rankedLocations();
@@ -266,6 +306,7 @@
           <button type="button" class="ghost shopSearchBtn" data-shop-search>搜尋</button>
         </div>
         <div class="shopSearchNote">備注：部分商品受名聲影響，最多享八折優惠</div>
+        ${renderItemSuggestions()}
         <div class="shopModeTabs">
           <button type="button" class="${state.mode === 'sell' ? 'active' : ''}" data-shop-mode="sell">販賣</button>
           <button type="button" class="${state.mode === 'buy' ? 'active' : ''}" data-shop-mode="buy">回收</button>
@@ -274,7 +315,7 @@
       <div class="shopPicker">
         ${stageSelect(loc)}
         ${npcSelect(loc)}
-        ${isSearching ? `<div class="shopSearchHint">符合搜尋的商店會依${state.mode === 'buy' ? '回收高價' : '販賣低價'}優先排列。</div>` : ''}
+        ${isSearching ? `<div class="shopSearchHint">符合搜尋的商店會依${state.mode === 'buy' ? '回收高價' : '販賣高價'}優先排列。</div>` : ''}
       </div>
       ${isSearching ? searchResults() : shopBlock(loc, items)}
     </section>`;
@@ -429,6 +470,15 @@
       if(input) state.query = input.value || '';
       state.composing = false;
       runSearch();
+      return;
+    }
+    const suggest = ev.target?.closest?.('[data-shop-suggest]');
+    if(suggest){
+      ev.preventDefault();
+      state.query = suggest.dataset.shopSuggest || '';
+      state.composing = false;
+      maybeSwitchModeForQuery();
+      renderLoaded();
       return;
     }
     const mapBtn = ev.target?.closest?.('[data-shop-map]');
