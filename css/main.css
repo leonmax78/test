@@ -3084,3 +3084,31 @@ body{
     width:100%;
   }
 }
+
+/* test map lookup */
+.mapPage{max-width:1500px}
+.mapToolbar{display:grid;grid-template-columns:minmax(240px,1fr) minmax(220px,360px);gap:12px;margin:8px 0 14px}
+.mapToolbar label{display:grid;gap:6px;color:#67e8f9;font-size:12px;font-weight:900}
+.mapToolbar input,.mapToolbar select{width:100%;background:#10111b;color:var(--text);border:1px solid rgba(245,158,11,.45);border-radius:12px;padding:11px 12px;font-size:16px}
+.mapLayout{display:grid;grid-template-columns:360px minmax(0,1fr);gap:14px;align-items:start}
+.mapSide{border:1px solid rgba(96,165,250,.22);background:rgba(8,18,37,.46);border-radius:16px;padding:12px;max-height:calc(100vh - 220px);overflow:auto}
+.mapSideHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 8px}
+.mapSideHead h2{font-size:17px;margin:0;color:#eaf2ff}
+.mapMiniBtn{padding:5px 8px;border-radius:999px;font-size:12px;margin-left:4px}
+.mapChoiceList{display:grid;gap:6px;margin-bottom:16px}
+.mapMarkerChoice{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start;border:1px solid rgba(148,163,184,.16);background:#0b1527;border-radius:12px;padding:8px 9px;color:#dbeafe;font-weight:800;line-height:1.35}
+.mapMarkerChoice input{width:18px;height:18px;margin-top:1px;accent-color:var(--accent)}
+.mapEmptyLine{padding:8px}
+.mapCanvasWrap{position:relative;min-height:340px;border:1px solid rgba(245,158,11,.35);border-radius:16px;background:#020817;overflow:auto}
+.mapImageStage{position:relative;display:inline-block;min-width:100%}
+.mapImageStage img{display:block;max-width:none;image-rendering:auto}
+.mapOverlay{position:absolute;inset:0;pointer-events:none}
+.mapDot{position:absolute;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:999px;border:2px solid #fff;display:grid;place-items:center;font-size:11px;font-weight:1000;color:#06111f;box-shadow:0 0 0 3px rgba(0,0,0,.4);pointer-events:auto}
+.mapDot.monster{background:#facc15}
+.mapDot.npc{background:#fb7185}
+.mapLoading{position:absolute;z-index:3;left:14px;top:14px;border:1px solid rgba(96,165,250,.42);background:rgba(3,7,18,.88);color:#eaf2ff;border-radius:999px;padding:8px 12px;font-weight:1000}
+@media(max-width:900px){
+  .mapToolbar,.mapLayout{grid-template-columns:1fr}
+  .mapSide{max-height:42vh}
+  .mapCanvasWrap{min-height:280px}
+}

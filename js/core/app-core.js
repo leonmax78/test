@@ -112,6 +112,12 @@ async function ensureShopPageLoaded(){
 }
 window.ensureShopPageLoaded = ensureShopPageLoaded;
 
+async function ensureMapPageLoaded(){
+ if(typeof window.renderStageMapPage==='function')return true;
+ return await loadScriptGroupOnce('page_map');
+}
+window.ensureMapPageLoaded = ensureMapPageLoaded;
+
 async function ensureDownloadsPageLoaded(){
  if(typeof window.renderDownloadsPage==='function')return true;
  return await loadScriptGroupOnce('page_downloads');
@@ -231,6 +237,7 @@ function viewLoadingLabel(view){
   monster:'怪物查詢',
   collect:'武冠收錄資料',
   shop:'特殊商店販賣資訊',
+  map:'地圖查詢',
   downloads:'工具下載區',
   soul:'武魂能力試算',
   reverse:'掉落反查'
@@ -287,6 +294,7 @@ async function setView(view){
  else if(view==='item'){openItemMenuOnly(); showPageLoading('道具查詢'); await ensureItemPageLoaded(); await renderItemPage('item'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
  else if(view==='collect'){showPageLoading(viewLoadingLabel(view)); await ensureCollectPageLoaded(); if(typeof renderCollectBookPage==='function')renderCollectBookPage('menu');}
  else if(view==='shop'){showPageLoading(viewLoadingLabel(view)); await ensureShopPageLoaded(); if(typeof renderShopPage==='function')renderShopPage();}
+ else if(view==='map'){showPageLoading(viewLoadingLabel(view),'地圖載入中，請稍候。'); await ensureMapPageLoaded(); if(typeof renderStageMapPage==='function')renderStageMapPage(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
  else if(view==='downloads'){showPageLoading(viewLoadingLabel(view)); await ensureDownloadsPageLoaded(); if(typeof renderDownloadsPage==='function')renderDownloadsPage(); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
  else if(view==='soul'){
   currentView='soul';
