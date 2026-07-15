@@ -3328,6 +3328,11 @@ body{
 .mapShopText strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mapShopText small{color:#a8c7ee;font-weight:800}
 .mapShopPrice{color:#facc15;font-size:17px;font-weight:1000;font-variant-numeric:tabular-nums}
+.mapMonsterPanel{border-color:rgba(45,212,191,.5)}
+.mapMonsterTitle{display:flex;align-items:center;gap:12px;min-width:0}
+.mapMonsterThumb{width:58px;height:58px;border:1px solid rgba(96,165,250,.32);border-radius:14px;background:#07111f;display:grid;place-items:center;overflow:hidden;flex:0 0 auto}
+.mapMonsterThumb img{max-width:54px;max-height:54px;object-fit:contain;image-rendering:auto}
+.mapMonsterTitle h2{margin:0 0 4px}
 @media(max-width:900px){
   .mapToolbar,.mapLayout{grid-template-columns:1fr}
   .mapLeftPane{grid-template-rows:none;max-height:none}

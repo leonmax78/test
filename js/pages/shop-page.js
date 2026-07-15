@@ -2,6 +2,7 @@
 (function(){
   const SHOP_DATA_URL = 'data/shop_all.json';
   const MAP_DATA_URL = 'data/stage_maps.json';
+  const SHOW_SHOP_COORDS = false;
   const state = {
     data: null,
     maps: null,
@@ -143,13 +144,7 @@
     if(!loc?.shop) return [];
     const rows = (loc.shop.items || [])
       .filter(item => itemHasMode(item, state.mode))
-      .filter(item => itemMatches(item, loc))
-      .sort((a,b) => {
-        const pa = Number(modePrice(a));
-        const pb = Number(modePrice(b));
-        if(state.mode === 'buy') return pb - pa || String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant');
-        return pa - pb || String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant');
-      });
+      .filter(item => itemMatches(item, loc));
     return mergeDisplayItems(rows);
   }
   function rankedLocations(){
@@ -159,15 +154,8 @@
     return rows.map(loc => {
       const items = filteredItems(loc);
       const direct = [loc.stageName, loc.npcName, loc.shopId].join(' ').toLowerCase().includes(q);
-      const prices = items.map(item => Number(modePrice(item))).filter(Number.isFinite);
-      const bestPrice = prices.length
-        ? (state.mode === 'buy' ? Math.max(...prices) : Math.min(...prices))
-        : (state.mode === 'buy' ? -1 : Number.MAX_SAFE_INTEGER);
-      return Object.assign({}, loc, { matchCount: items.length, bestPrice, direct });
-    }).filter(loc => loc.matchCount || loc.direct).sort((a,b) => {
-      if(state.mode === 'buy') return b.bestPrice - a.bestPrice || b.matchCount - a.matchCount || a.stageId - b.stageId;
-      return a.bestPrice - b.bestPrice || b.matchCount - a.matchCount || a.stageId - b.stageId;
-    });
+      return Object.assign({}, loc, { matchCount: items.length, direct });
+    }).filter(loc => loc.matchCount || loc.direct);
   }
   function activeLocation(){
     const ranked = rankedLocations();
@@ -187,7 +175,7 @@
     return `${loc.stageName} / ${loc.npcName}`;
   }
   function locationSub(loc){
-    return `Shop ${loc.shopId} / (${loc.x}, ${loc.y})`;
+    return SHOW_SHOP_COORDS ? `Shop ${loc.shopId} / (${loc.x}, ${loc.y})` : `Shop ${loc.shopId}`;
   }
   function stageSelect(loc){
     const selected = loc?.stageId ?? state.stageId;
