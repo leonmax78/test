@@ -105,31 +105,46 @@
     if(/[在哪哪裡位置地圖出現座標]/.test(q)) return 'location';
     return 'auto';
   }
+  function searchTerm(raw){
+    let text = String(raw || '').trim();
+    text = text.replace(/(請問|幫我|幫忙|查詢|搜尋|查一下|我想問|想問|可以|嗎|呢|啊|喔|謝謝)/g, '');
+    text = text.replace(/(在哪裡|在哪|哪裡|哪邊|什麼地方|位置|地圖|出現|座標)/g, '');
+    text = text.replace(/(誰會掉|誰掉|哪隻掉|哪裡掉|掉落|掉|出處|反查|來源)/g, '');
+    text = text.replace(/(哪裡買|哪裡賣|哪邊買|哪邊賣|買得到|買|購買|商店|販售|販賣|售價|價格|回收|賣)/g, '');
+    text = text.replace(/[？?！!。．,，、:：;；]/g, ' ');
+    text = text.replace(/\s+/g, ' ').trim();
+    return text || String(raw || '').trim();
+  }
   function resultLoading(){
     const target = by('qaResults');
     if(target) target.innerHTML = '<div class="qaLoading">資料讀取中...</div>';
   }
   function quickExamples(){
-    const examples = ['大山犬在哪', '短劍哪裡掉', '天鐵哪裡買', '老虎皮哪裡賣', '神效靈藥配方錦囊掉落'];
+    const examples = ['大山犬', '短劍', '天鐵', '老虎皮', '神效靈藥配方錦囊'];
     return `<div class="qaExamples">${examples.map(x => `<button type="button" data-qa-example="${html(x)}">${html(x)}</button>`).join('')}</div>`;
   }
   function renderQaPage(){
     const reader = by('reader');
     if(!reader) return;
+    if(window.SZO_PENDING_GLOBAL_SEARCH){
+      state.query = window.SZO_PENDING_GLOBAL_SEARCH;
+      window.SZO_PENDING_GLOBAL_SEARCH = '';
+    }
     window.v86LastView = 'qa';
     reader.innerHTML = `<section class="card qaPage">
-      <h1>文字問答</h1>
-      <p class="muted">測試版先用網站資料回答，適合問怪物位置、道具掉落、商店買賣、地圖跳轉。</p>
+      <h1>全站搜尋</h1>
+      <p class="muted">一次搜尋道具、怪物、商店、地圖與掉落資料。</p>
       <form id="qaForm" class="qaForm">
-        <input id="qaInput" value="${html(state.query)}" placeholder="例如：大山犬在哪、短劍哪裡掉、天鐵哪裡買">
-        <button type="submit" class="primary">詢問</button>
+        <input id="qaInput" value="${html(state.query)}" placeholder="例如：大山犬、短劍、天鐵、老虎皮">
+        <button type="submit" class="primary">搜尋</button>
         <button type="button" class="ghost" id="qaClear">清空</button>
       </form>
       ${quickExamples()}
-      <div id="qaResults" class="qaResults">${state.query ? '' : '<div class="empty">輸入問題後按「詢問」，我會從目前網站資料裡找答案。</div>'}</div>
+      <div id="qaResults" class="qaResults">${state.query ? '' : '<div class="empty">輸入關鍵字後按「搜尋」。</div>'}</div>
     </section>`;
     const input = by('qaInput');
     if(input) input.focus();
+    if(state.query) runQuestion(state.query);
   }
   function chip(label, attrs = ''){
     return `<button type="button" class="qaChip" ${attrs}>${html(label)}</button>`;
@@ -151,7 +166,8 @@
   }
   async function answerLocation(query){
     const monsters = await json('monsters');
-    const matches = findByName(monsters, monsterName, query, 6);
+    const term = searchTerm(query);
+    const matches = findByName(monsters, monsterName, term, 6);
     if(!matches.length) return null;
     const primary = matches[0];
     const loc = await locationForMonster(monsterName(primary));
@@ -169,7 +185,8 @@
     const reverse = await json('reverse');
     const monsters = await json('monsters');
     const byId = new Map(monsters.map(m => [monsterId(m), m]));
-    const matches = findByName(items, itemName, query, 8);
+    const term = searchTerm(query);
+    const matches = findByName(items, itemName, term, 8);
     if(!matches.length) return null;
     const item = matches[0];
     const id = itemId(item);
@@ -213,6 +230,7 @@
   }
   async function answerShop(query, forcedMode){
     const raw = String(query || '');
+    const term = searchTerm(raw);
     const mode = forcedMode || (/[回收賣]/.test(raw) ? 'buy' : 'sell');
     const locs = await shopLocations();
     const itemRows = [];
@@ -220,7 +238,7 @@
       for(const item of loc.shop?.items || []){
         const priceValue = mode === 'buy' ? item.buyPrice : item.sellPrice;
         if(priceValue === undefined || priceValue === null || priceValue === '') continue;
-        const q = norm(state.exactItem || raw);
+        const q = norm(state.exactItem || term || raw);
         if(!q) continue;
         if(state.exactItem){
           if(String(item.name || '').trim() !== state.exactItem) continue;
@@ -237,7 +255,7 @@
       for(const loc of locs){
         for(const item of loc.shop?.items || []){
           const name = String(item.name || '').trim();
-          if(!name || seen.has(name) || !norm(name).includes(norm(raw))) continue;
+          if(!name || seen.has(name) || !norm(name).includes(norm(term || raw))) continue;
           seen.add(name);
           suggestions.push(name);
           if(suggestions.length >= 10) break;
@@ -267,8 +285,9 @@
     if(intent === 'drop') return answerDrop(query);
     if(intent === 'location') return answerLocation(query);
     const [items, monsters] = await Promise.all([json('items'), json('monsters')]);
-    const itemMatches = findByName(items, itemName, query, 6);
-    const monsterMatches = findByName(monsters, monsterName, query, 6);
+    const term = searchTerm(query);
+    const itemMatches = findByName(items, itemName, term, 6);
+    const monsterMatches = findByName(monsters, monsterName, term, 6);
     if(itemMatches.length || monsterMatches.length){
       return `<div class="qaAnswer">
         <h2>我找到幾個可能的項目</h2>
@@ -278,6 +297,39 @@
       </div>`;
     }
     return '<div class="empty">目前找不到符合的資料，可以換完整名稱或加上「哪裡掉 / 哪裡買 / 在哪」。</div>';
+  }
+  async function answerGlobal(query){
+    const term = searchTerm(query);
+    const [items, monsters, maps] = await Promise.all([json('items'), json('monsters'), json('maps')]);
+    const itemMatches = findByName(items, itemName, term, 12);
+    const monsterMatches = findByName(monsters, monsterName, term, 12);
+    const mapMatches = (maps.stages || []).filter(stage => norm(stage.stageName).includes(norm(term))).slice(0, 10);
+    const shopHtml = await answerShop(term);
+    const shopHasResult = !shopHtml.includes('找不到符合的商店資料');
+    const itemSection = itemMatches.length ? `<div class="qaAnswer"><h2>道具</h2><div class="qaList">${itemMatches.map(item => {
+      const img = itemIcon(item);
+      return `<div class="qaRow qaShopRow">
+        <strong>${html(itemName(item))}</strong>
+        <span>${img ? `<img src="${html(img)}" alt="">` : ''}ID ${html(itemId(item))}${item.Type ? ` / ${html(item.Type)}` : ''}</span>
+        <b></b>
+        <div class="qaRowActions">${chip('掉落反查', `data-qa-reverse="${html(itemId(item))}"`)}${chip('找商店', `data-qa-shop-item="${html(itemName(item))}"`)}</div>
+      </div>`;
+    }).join('')}</div></div>` : '';
+    const monsterSection = monsterMatches.length ? `<div class="qaAnswer"><h2>怪物</h2><div class="qaList">${await Promise.all(monsterMatches.map(async monster => {
+      const img = monsterIcon(monster);
+      const loc = await locationForMonster(monsterName(monster));
+      const locs = String(loc || '').split(/[、,]/).map(x => x.trim()).filter(Boolean);
+      return `<div class="qaRow qaShopRow">
+        <strong>${html(monsterName(monster))}</strong>
+        <span>${img ? `<img src="${html(img)}" alt="">` : ''}Lv.${html(monsterLevel(monster) || '-')} / ${locs.slice(0,2).map(x => html(x)).join('、') || '沒有位置資料'}</span>
+        <b></b>
+        <div class="qaRowActions">${monsterChip(monster)}${locs.slice(0,2).map(x => mapChip(x, monsterName(monster))).join('')}</div>
+      </div>`;
+    })).then(rows => rows.join(''))}</div></div>` : '';
+    const mapSection = mapMatches.length ? `<div class="qaAnswer"><h2>地圖</h2><div class="qaMapChips">${mapMatches.map(stage => mapChip(stage.stageName, '')).join('')}</div></div>` : '';
+    const hasAny = itemMatches.length || monsterMatches.length || mapMatches.length || shopHasResult;
+    if(!hasAny) return '<div class="empty">目前找不到符合的資料，可以換更短或更完整的關鍵字。</div>';
+    return `${itemSection}${monsterSection}${mapSection}${shopHasResult ? shopHtml : ''}`;
   }
   async function runQuestion(query){
     state.query = String(query || '').trim();
@@ -289,7 +341,7 @@
     }
     resultLoading();
     try{
-      const htmlText = await answerAuto(state.query);
+      const htmlText = await answerGlobal(state.query);
       const target = by('qaResults');
       if(target) target.innerHTML = htmlText || '<div class="empty">目前找不到符合的資料。</div>';
     }catch(err){
@@ -303,6 +355,11 @@
     if(ev.target?.id !== 'qaForm') return;
     ev.preventDefault();
     runQuestion(by('qaInput')?.value || '');
+  });
+  document.addEventListener('keydown', ev => {
+    if(ev.target?.id !== 'qaInput' || ev.key !== 'Enter' || ev.isComposing) return;
+    ev.preventDefault();
+    runQuestion(ev.target.value || '');
   });
   document.addEventListener('click', async ev => {
     const ex = ev.target.closest?.('[data-qa-example]');

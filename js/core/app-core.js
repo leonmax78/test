@@ -266,7 +266,7 @@ function viewLoadingLabel(view){
   collect:'武冠收錄資料',
   shop:'商店販賣資訊',
   map:'地圖查詢',
-  qa:'文字問答',
+  qa:'全站搜尋',
   downloads:'工具下載區',
   soul:'武魂能力試算',
   reverse:'掉落反查'
@@ -387,6 +387,7 @@ async function setView(view){
  }
  else if(view==='reverse'){await ensureItemPageLoaded(); await renderItemPage('reverse'); closeDrawer(); window.scrollTo({top:0,behavior:'smooth'});}
 }
+window.setView = setView;
 function setJiang(kind){
  openJiangMenuOnly();
  const loadingLabel=jiangLoadingLabel(kind);
