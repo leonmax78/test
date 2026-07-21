@@ -312,7 +312,7 @@
         <strong>${html(itemName(item))}</strong>
         <span>${img ? `<img src="${html(img)}" alt="">` : ''}ID ${html(itemId(item))}${item.Type ? ` / ${html(item.Type)}` : ''}</span>
         <b></b>
-        <div class="qaRowActions">${chip('掉落反查', `data-qa-reverse="${html(itemId(item))}"`)}${chip('找商店', `data-qa-shop-item="${html(itemName(item))}"`)}</div>
+        <div class="qaRowActions">${chip('道具資訊', `data-qa-item="${html(itemId(item))}"`)}${chip('掉落反查', `data-qa-reverse="${html(itemId(item))}"`)}${chip('找商店', `data-qa-shop-item="${html(itemName(item))}"`)}</div>
       </div>`;
     }).join('')}</div></div>` : '';
     const monsterSection = monsterMatches.length ? `<div class="qaAnswer"><h2>怪物</h2><div class="qaList">${await Promise.all(monsterMatches.map(async monster => {
@@ -389,6 +389,11 @@
     if(rev){
       if(typeof window.ensureItemPageLoaded === 'function') await window.ensureItemPageLoaded();
       if(typeof window.showReverse === 'function') window.showReverse(rev.dataset.qaReverse, 'qa');
+    }
+    const item = ev.target.closest?.('[data-qa-item]');
+    if(item){
+      if(typeof window.ensureItemPageLoaded === 'function') await window.ensureItemPageLoaded();
+      if(typeof window.showItem === 'function') window.showItem(item.dataset.qaItem);
     }
   });
 
