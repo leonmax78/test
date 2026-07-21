@@ -50,7 +50,6 @@
         <button class="navBtn sub" data-collect-open="beast">封獸出處 <span>›</span></button>
       </div>
       <button class="navBtn major" data-view="shop">商店販賣資訊 <span>›</span></button>
-      <button class="navBtn major" data-view="qa">全站搜尋 <span>›</span></button>
       <button class="navBtn major" data-view="downloads">工具下載區 <span>›</span></button>
     </div>
     <div class="navGroup" id="manualGroup" style="display:none">
@@ -222,18 +221,28 @@
   }
   bindSiteInfoTools();
 
-  document.addEventListener('submit', async function(ev){
-    if(!ev.target || ev.target.id !== 'globalSearchForm') return;
-    ev.preventDefault();
+  async function runGlobalSearch(){
     const input = document.getElementById('globalSearchInput');
     const q = String(input && input.value || '').trim();
     if(!q) return;
     window.SZO_PENDING_GLOBAL_SEARCH = q;
     if(typeof window.setView === 'function') await window.setView('qa');
-    else {
-      const btn = document.querySelector('[data-view="qa"]');
-      if(btn) btn.click();
-    }
+    else setTimeout(runGlobalSearch, 250);
+  }
+  document.addEventListener('submit', async function(ev){
+    if(!ev.target || ev.target.id !== 'globalSearchForm') return;
+    ev.preventDefault();
+    await runGlobalSearch();
+  });
+  document.addEventListener('click', async function(ev){
+    if(!ev.target || !ev.target.closest || !ev.target.closest('#globalSearchForm button')) return;
+    ev.preventDefault();
+    await runGlobalSearch();
+  });
+  document.addEventListener('keydown', async function(ev){
+    if(!ev.target || ev.target.id !== 'globalSearchInput' || ev.key !== 'Enter' || ev.isComposing) return;
+    ev.preventDefault();
+    await runGlobalSearch();
   });
 
   // V221：模組尚未載入完成時，先擋住功能選單點擊。
