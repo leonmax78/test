@@ -317,17 +317,6 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
 .supportPlan{border:1px solid var(--line);border-radius:18px;padding:12px;background:rgba(8,18,37,.55)}
 .supportPlan h3{margin-top:0}
 .supportSaveBar{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin:10px 0 12px}
-.shopTools{display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:10px;align-items:center;margin:0 0 12px}
-.shopSearchBox{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}.shopSearchBtn{min-height:46px;border-color:rgba(45,212,191,.38);color:#ccfbf1}
-.shopModeTabs{display:inline-flex;gap:6px;border:1px solid rgba(96,165,250,.28);border-radius:999px;padding:4px;background:rgba(8,18,37,.72)}
-.shopModeTabs button{border:0;border-radius:999px;background:transparent;color:#bfdbfe;padding:8px 13px;font-weight:1000}
-.shopModeTabs button.active{background:linear-gradient(135deg,#f59e0b,#38bdf8);color:#06111f}
-.shopPicker{display:grid;grid-template-columns:minmax(180px,300px) minmax(260px,1fr);gap:12px;align-items:end;margin:0 0 14px}
-.shopSelectLabel{display:grid;gap:6px;color:#67e8f9;font-size:12px;font-weight:900}
-.shopSelectLabel select{width:100%;min-height:46px;background:#10111b;color:var(--text);border:1px solid rgba(245,158,11,.45);border-radius:12px;padding:10px 12px;font-size:16px;font-weight:900}
-.shopSearchHint{grid-column:1 / -1;border:1px solid rgba(245,158,11,.28);border-radius:12px;background:rgba(245,158,11,.11);color:#fde68a;padding:9px 11px;font-weight:900}
-.shopItemList{display:grid;gap:8px;padding:12px}.shopItemCard{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:11px;align-items:center;border:1px solid rgba(45,212,191,.24);background:#0b1527;color:#eaf2ff;border-radius:14px;padding:8px 10px;text-align:left}.shopItemThumb{width:44px;height:44px;border:1px solid rgba(96,165,250,.26);border-radius:10px;background:#07111f;display:grid;place-items:center}.shopItemThumb img{max-width:38px;max-height:38px;object-fit:contain}.shopItemText{min-width:0}.shopItemText strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.shopItemText small{display:none}.shopItemPrice{color:#facc15;font-weight:1000;font-size:17px;font-variant-numeric:tabular-nums}
-@media(max-width:700px){.shopTools,.shopPicker{grid-template-columns:1fr}.shopItemCard{grid-template-columns:42px minmax(0,1fr)}.shopItemPrice{grid-column:2;justify-self:start}}
 
 /* test map lookup */
 .mapPage{max-width:1500px}
@@ -350,7 +339,7 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
 .mapMarkerChoice input{width:18px;height:18px;margin-top:1px;accent-color:var(--accent)}
 .mapEmptyLine{padding:8px}
 .mapCanvasWrap{position:relative;min-height:520px;border:1px solid rgba(245,158,11,.35);border-radius:16px;background:#020817;overflow:auto}
-.mapZoomBar{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:10px;justify-content:flex-end;padding:10px 12px;background:linear-gradient(180deg,rgba(2,8,23,.92),rgba(2,8,23,.62));backdrop-filter:blur(8px)}
+.mapZoomBar{position:sticky;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:10px;justify-content:flex-end;width:100%;min-width:100%;box-sizing:border-box;padding:10px 12px;background:linear-gradient(180deg,rgba(2,8,23,.92),rgba(2,8,23,.62));backdrop-filter:blur(8px)}
 .mapZoomBar label{display:flex;align-items:center;gap:8px;color:#a7f3d0;font-size:12px;font-weight:1000}
 .mapZoomBar input{width:180px;accent-color:#2dd4bf}
 .mapZoomBar span{min-width:48px;text-align:right;color:#eaf2ff;font-weight:1000}
@@ -358,42 +347,21 @@ h1{font-size:24px;line-height:1.22;margin:0 0 8px}h2{font-size:19px;margin:0 0 1
 .mapImageStage{position:relative;display:inline-block;width:max-content;min-width:0;transform-origin:top left}
 .mapImageStage img{display:block;max-width:none;image-rendering:auto}
 .mapOverlay{position:absolute;inset:0;pointer-events:none;width:100%;height:100%}
-.mapDot{position:absolute;transform:translate(-50%,-85%);width:28px;height:28px;border-radius:999px;border:2px solid #fff;display:grid;place-items:center;font-size:11px;font-weight:1000;color:#06111f;box-shadow:0 0 0 3px rgba(0,0,0,.4);pointer-events:auto;overflow:hidden}
+.mapAreaOverlay{position:absolute;inset:0;pointer-events:none;width:100%;height:100%;z-index:2}
+.mapAreaLabel{position:absolute;transform:translate(-50%,-50%);display:inline-grid;place-items:center;min-width:34px;height:24px;padding:0 8px;border-radius:999px;border:1px solid rgba(34,211,238,.75);background:rgba(6,17,31,.82);box-shadow:0 0 0 3px rgba(0,0,0,.28),0 8px 20px rgba(0,0,0,.35);color:#e0f2fe;font-size:13px;font-weight:1000;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.65)}
+.mapDot{position:absolute;transform:translate(-50%,-85%);width:22px;height:22px;border-radius:999px;border:2px solid #fff;display:grid;place-items:center;font-size:10px;font-weight:1000;color:#06111f;box-shadow:0 0 0 2px rgba(0,0,0,.4);pointer-events:auto;overflow:hidden}
 .mapDot.monster{background:#facc15}
 .mapDot.npc{background:#fb7185}
-.mapDot.withImage{width:46px;height:46px;border-radius:12px;background:#07111f}
+.mapDot.withImage{width:34px;height:34px;border-radius:9px;background:#07111f}
 .mapDot.withImage img{display:block;max-width:100%;max-height:100%;object-fit:contain;image-rendering:auto}
 .mapDot.withImage img[src=""],.mapDot.withImage img:not([src]){display:none}
-.mapDot.shopNpcDot{border-color:#fbbf24;box-shadow:0 0 0 3px rgba(0,0,0,.45),0 0 0 6px rgba(251,191,36,.22)}
 .mapLoading{position:absolute;z-index:3;left:14px;top:14px;border:1px solid rgba(96,165,250,.42);background:rgba(3,7,18,.88);color:#eaf2ff;border-radius:999px;padding:8px 12px;font-weight:1000}
 .mapClearSearchBtn{min-height:42px;white-space:nowrap}
-.mapShopBackdrop{position:fixed;inset:0;z-index:120;background:rgba(2,6,23,.58);display:grid;place-items:center;padding:18px}
-.mapShopPanel{width:min(760px,96vw);max-height:min(760px,88vh);display:grid;grid-template-rows:auto auto minmax(0,1fr);border:1px solid rgba(245,158,11,.45);border-radius:18px;background:#0b1020;box-shadow:0 24px 70px rgba(0,0,0,.52);overflow:hidden}
-.mapShopHead{display:flex;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid rgba(148,163,184,.18)}
-.mapShopHead h2{margin:0 0 5px;font-size:22px}
-.mapShopMeta{color:#a8c7ee;font-weight:850}
-.mapShopActions{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 18px;border-bottom:1px solid rgba(148,163,184,.14)}
-.mapShopModes{display:inline-flex;gap:6px;border:1px solid rgba(96,165,250,.28);border-radius:999px;padding:4px;background:#081225}
-.mapShopModes button{border:0;border-radius:999px;background:transparent;color:#bfdbfe;padding:8px 14px;font-weight:1000}
-.mapShopModes button.active{background:linear-gradient(135deg,#f59e0b,#38bdf8);color:#06111f}
-.mapShopOpenPage{border-color:rgba(45,212,191,.38);color:#ccfbf1}
-.mapShopItems{display:grid;gap:8px;padding:14px 18px;overflow:auto}
-.mapShopItem{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid rgba(45,212,191,.22);background:#0b1527;color:#eaf2ff;border-radius:14px;padding:8px 10px;text-align:left}
-.mapShopItem:hover{border-color:#2dd4bf;background:#10223a}
-.mapShopThumb{width:42px;height:42px;border:1px solid rgba(96,165,250,.26);border-radius:10px;background:#07111f;display:grid;place-items:center}
-.mapShopThumb img{max-width:36px;max-height:36px;object-fit:contain}
-.mapShopText{min-width:0;display:grid;gap:3px}
-.mapShopText strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mapShopText small{color:#a8c7ee;font-weight:800}
-.mapShopPrice{color:#facc15;font-size:17px;font-weight:1000;font-variant-numeric:tabular-nums}
 @media(max-width:900px){
   .mapToolbar,.mapLayout{grid-template-columns:1fr}
   .mapLeftPane{grid-template-rows:none;max-height:none}
   .mapSide{max-height:42vh}
   .mapCanvasWrap{min-height:280px}
-  .mapShopActions{display:grid}
-  .mapShopItem{grid-template-columns:42px minmax(0,1fr)}
-  .mapShopPrice{grid-column:2;justify-self:start}
 }
 .supportSaveBar select{width:auto;min-width:100px}.supportSaveBar button{border:1px solid #355275;background:#0e1a2f;color:#fff;border-radius:12px;padding:10px 12px;font-weight:900}
 @media (max-width:760px){.supportPlanGrid{grid-template-columns:1fr}.supportSaveBar select,.supportSaveBar button{width:100%}}
