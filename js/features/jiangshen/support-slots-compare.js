@@ -331,6 +331,12 @@
   }
   function recommendCompareTable(plans){
     if(!plans || !plans.length) return '';
+    const planTitle = (plan, idx) => {
+      const picks = plan.picks || [];
+      const main = picks[0]?.n || '';
+      const supports = picks.slice(1).map(p => p.n).filter(Boolean);
+      return `${idx + 1}. ${main}${supports.length ? `(${supports.join('、')})` : ''}`;
+    };
     const scoreVals = plans.map(p=>Number(p.score || 0));
     const scoreMax = Math.max(...scoreVals);
     const scoreRow = `<tr><td>推薦分數</td>${scoreVals.map(v=>`<td class="${v===scoreMax?'supportBest':''}">${fmt(v)}</td>`).join('')}</tr>`;
@@ -339,7 +345,7 @@
       const max = Math.max(...vals);
       return `<tr><td>${E(st)}</td>${vals.map(v=>`<td class="${max>0 && v===max?'supportBest':''}">${fmt(v)}</td>`).join('')}</tr>`;
     }).join('');
-    return `<h3>候補數值比較</h3><div class="tableWrap"><table class="compareTable"><thead><tr><th>能力</th>${plans.map((p,i)=>`<th>${i+1}. ${E(p.picks?.[0]?.n || '')}</th>`).join('')}</tr></thead><tbody>${scoreRow}${statRows}</tbody></table></div>`;
+    return `<h3>候補數值比較</h3><div class="tableWrap"><table class="compareTable"><thead><tr><th>能力</th>${plans.map((p,i)=>`<th>${E(planTitle(p,i))}</th>`).join('')}</tr></thead><tbody>${scoreRow}${statRows}</tbody></table></div>`;
   }
   function recommendCard(metric, plan, idx){
     return `<article class="kv supportChoiceCard" style="margin-top:12px">
