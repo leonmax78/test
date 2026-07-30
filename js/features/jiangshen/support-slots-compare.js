@@ -166,7 +166,8 @@
   const REC_SLOTS = ['主降神', '副降1', '副降2', '副降3', '副降4'];
   const REC_RATE = [1, 0.1, 0.1, 0.1, 0.1];
   const REC_METRICS = [
-    {kind:'physical', title:'物理職業', desc:'依 力量 ^ 2 + 靈敏 / 2 + 防禦 排序', keys:['力量','靈敏','防禦']},
+    {kind:'physicalStr', title:'物理職業（力）', desc:'依 力量 * 2 + 靈敏 / 2 + 防禦 排序', keys:['力量','靈敏','防禦']},
+    {kind:'physicalDex', title:'物理職業（敏）', desc:'依 靈敏 * 2 + 力量 / 2 + 防禦 排序', keys:['靈敏','力量','防禦']},
     {kind:'spell', title:'術法職業', desc:'依 智慧 + 術攻 排序', keys:['智慧','術攻']},
     {kind:'defense', title:'防禦向', desc:'依 防禦 + 術防 排序', keys:['防禦','術防']}
   ];
@@ -184,7 +185,8 @@
     return Array.from({length:21},(_,i)=>`<option value="${i}" ${i===sel?'selected':''}>${i} 星</option>`).join('');
   }
   function metricScore(total, kind){
-    if(kind === 'physical') return Math.pow(Number(total['力量'] || 0), 2) + Number(total['靈敏'] || 0) / 2 + Number(total['防禦'] || 0);
+    if(kind === 'physicalStr') return Number(total['力量'] || 0) * 2 + Number(total['靈敏'] || 0) / 2 + Number(total['防禦'] || 0);
+    if(kind === 'physicalDex') return Number(total['靈敏'] || 0) * 2 + Number(total['力量'] || 0) / 2 + Number(total['防禦'] || 0);
     if(kind === 'spell') return Number(total['智慧'] || 0) + Number(total['術攻'] || 0);
     if(kind === 'defense') return Number(total['防禦'] || 0) + Number(total['術防'] || 0);
     return 0;
@@ -225,7 +227,7 @@
     return keys.map(k=>`${E(k)} ${fmt(total[k] || 0)}`).join('　');
   }
   function recommendCard(metric, plan, idx){
-    return `<article class="card supportChoiceCard" style="box-shadow:none;margin-top:12px">
+    return `<article class="kv supportChoiceCard" style="margin-top:12px">
       <h3>${idx + 1}. ${E(metric.title)}候補方案</h3>
       <div class="muted">${E(metric.desc)}：${fmt(plan.score)}</div>
       <div class="notice" style="margin-top:10px">${statLine(plan.total, metric.keys)}</div>
@@ -244,7 +246,7 @@
     setTimeout(()=>{
       const html = REC_METRICS.map(metric=>{
         const plans = topRecommendPlans(metric.kind, stars);
-        return `<section class="card supportChoiceCard" style="box-shadow:none;margin-top:14px">
+        return `<section class="card supportChoiceCard" style="box-shadow:none;margin-top:18px;border-color:rgba(54,211,207,.55)">
           <h2>${E(metric.title)}</h2>
           <div class="muted">${E(metric.desc)}，列出前 3 個候補。</div>
           ${plans.map((p,i)=>recommendCard(metric,p,i)).join('')}
