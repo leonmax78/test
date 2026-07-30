@@ -163,28 +163,28 @@
   }
 
   const REC_STAR_KEY = 'szo_jiang_recommend_stars_v1';
-  const REC_SLOTS = ['主降神', '副降1', '副降2', '副降3', '副降4', '副降5'];
-  const REC_RATE = [1, 0.1, 0.1, 0.1, 0.1, 0.1];
+  const REC_SLOTS = ['主降神', '副降1', '副降2', '副降3', '副降4'];
+  const REC_RATE = [1, 0.1, 0.1, 0.1, 0.1];
   const REC_METRICS = [
-    {kind:'physical', title:'物理職業', desc:'依 力量 ^ 2 + 靈敏 / 2 排序', keys:['力量','靈敏']},
+    {kind:'physical', title:'物理職業', desc:'依 力量 ^ 2 + 靈敏 / 2 + 防禦 排序', keys:['力量','靈敏','防禦']},
     {kind:'spell', title:'術法職業', desc:'依 智慧 + 術攻 排序', keys:['智慧','術攻']},
     {kind:'defense', title:'防禦向', desc:'依 防禦 + 術防 排序', keys:['防禦','術防']}
   ];
 
   function recommendStars(){
     const saved = readJson(REC_STAR_KEY, null);
-    const fallback = [20,20,20,20,20,20];
-    return Array.from({length:6},(_,i)=>Math.max(0,Math.min(20,Math.floor(Number(saved?.[i] ?? fallback[i])))));
+    const fallback = [20,20,20,20,20];
+    return Array.from({length:REC_SLOTS.length},(_,i)=>Math.max(0,Math.min(20,Math.floor(Number(saved?.[i] ?? fallback[i])))));
   }
   function saveRecommendStars(stars){ writeJson(REC_STAR_KEY, stars); }
   function readRecommendStars(){
-    return Array.from({length:6},(_,i)=>Math.max(0,Math.min(20,Math.floor(Number($('recStar'+i)?.value || 0)))));
+    return Array.from({length:REC_SLOTS.length},(_,i)=>Math.max(0,Math.min(20,Math.floor(Number($('recStar'+i)?.value || 0)))));
   }
   function recommendStarOptions(sel=20){
     return Array.from({length:21},(_,i)=>`<option value="${i}" ${i===sel?'selected':''}>${i} 星</option>`).join('');
   }
   function metricScore(total, kind){
-    if(kind === 'physical') return Math.pow(Number(total['力量'] || 0), 2) + Number(total['靈敏'] || 0) / 2;
+    if(kind === 'physical') return Math.pow(Number(total['力量'] || 0), 2) + Number(total['靈敏'] || 0) / 2 + Number(total['防禦'] || 0);
     if(kind === 'spell') return Number(total['智慧'] || 0) + Number(total['術攻'] || 0);
     if(kind === 'defense') return Number(total['防禦'] || 0) + Number(total['術防'] || 0);
     return 0;
@@ -202,7 +202,7 @@
     const allNames = names().filter(n => n && D().baseStats && D().baseStats[n]);
     const beamLimit = 700;
     let states = [{picks:[]}];
-    for(let slot=0; slot<6; slot++){
+    for(let slot=0; slot<REC_SLOTS.length; slot++){
       const next = [];
       for(const state of states){
         const used = new Set(state.picks.map(p=>p.n));
@@ -258,7 +258,7 @@
     const stars = recommendStars();
     reader.innerHTML = `<section class="card">
       <h1>副降神組合推薦方案</h1>
-      <div class="notice">手動設定主降神與 5 個副降神的星等後，系統會推薦物理、術法、防禦三種方向各 1 ~ 3 個候補組合。副降神能力依 10% 納入，若組合成立也會納入連結加成。</div>
+      <div class="notice">手動設定主降神與 4 個副降神的星等後，系統會推薦物理、術法、防禦三種方向各 1 ~ 3 個候補組合。副降神能力依 10% 納入，若組合成立也會納入連結加成。</div>
       <div class="kvGrid">
         ${REC_SLOTS.map((label,i)=>`<div class="kv"><div class="k">${E(label)}星等</div><div class="v"><select id="recStar${i}">${recommendStarOptions(stars[i])}</select></div></div>`).join('')}
       </div>
