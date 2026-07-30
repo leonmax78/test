@@ -203,21 +203,40 @@
     if(typeof comboBonus === 'function') total = add(total, scale(comboBonus(combos), 1));
     return {total, combos};
   }
+  function emptyTotal(){
+    return Object.fromEntries(stats().map(s=>[s,0]));
+  }
+  function abilityPart(name, star, rate){
+    return scale(getAbility(name, star), rate);
+  }
+  function candidateLists(kind, stars, allNames){
+    const limit = Math.min(36, Math.max(12, allNames.length));
+    return Array.from({length:REC_SLOTS.length},(_,slot)=>{
+      if(slot === 0) return [];
+      return allNames.map(n=>{
+        const a = abilityPart(n, stars[slot], REC_RATE[slot] || 0.1);
+        return {n, a, score:metricScore(a, kind)};
+      }).sort((a,b)=>b.score-a.score).slice(0, limit);
+    });
+  }
   function topRecommendPlans(kind, stars){
     const allNames = names().filter(n => n && D().baseStats && D().baseStats[n]);
-    const beamLimit = 120;
+    const beamLimit = 48;
+    const slotCandidates = candidateLists(kind, stars, allNames);
     const bestByMain = [];
     for(const mainName of allNames){
-      let states = [{picks:[{n:mainName, s:stars[0]}]}];
+      const mainAbility = abilityPart(mainName, stars[0], REC_RATE[0]);
+      let states = [{picks:[{n:mainName, s:stars[0]}], total:mainAbility, quickScore:metricScore(mainAbility, kind)}];
       for(let slot=1; slot<REC_SLOTS.length; slot++){
         const next = [];
         for(const state of states){
           const used = new Set(state.picks.map(p=>p.n));
-          for(const n of allNames){
+          for(const cand of slotCandidates[slot]){
+            const n = cand.n;
             if(used.has(n)) continue;
             const picks = state.picks.concat({n, s:stars[slot]});
-            const quick = recommendTotal(picks).total;
-            next.push({picks, quickScore:metricScore(quick, kind)});
+            const total = add(state.total || emptyTotal(), cand.a);
+            next.push({picks, total, quickScore:metricScore(total, kind)});
           }
         }
         next.sort((a,b)=>b.quickScore-a.quickScore);

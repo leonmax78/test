@@ -398,6 +398,10 @@ function setJiang(kind){
  showPageLoading(loadingLabel);
  (async()=>{
   if(!(await ensureJiangshenToolLoaded()))return;
+  if(kind==='recommend' && typeof window.renderJiangRecommendPage==='function'){
+   window.renderJiangRecommendPage();
+   return;
+  }
   if(!jiangshenSetDelegating && window.setJiang && window.setJiang !== setJiang){
    jiangshenSetDelegating=true;
    try{return window.setJiang(kind);}
