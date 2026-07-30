@@ -175,14 +175,17 @@
   function recommendStars(){
     const saved = readJson(REC_STAR_KEY, null);
     const fallback = [20,20,20,20,20];
-    return Array.from({length:REC_SLOTS.length},(_,i)=>Math.max(0,Math.min(20,Math.floor(Number(saved?.[i] ?? fallback[i])))));
+    return Array.from({length:REC_SLOTS.length},(_,i)=>Math.max(1,Math.min(20,Math.floor(Number(saved?.[i] ?? fallback[i])))));
   }
   function saveRecommendStars(stars){ writeJson(REC_STAR_KEY, stars); }
   function readRecommendStars(){
-    return Array.from({length:REC_SLOTS.length},(_,i)=>Math.max(0,Math.min(20,Math.floor(Number($('recStar'+i)?.value || 0)))));
+    return Array.from({length:REC_SLOTS.length},(_,i)=>Math.max(1,Math.min(20,Math.floor(Number($('recStar'+i)?.value || 1)))));
   }
   function recommendStarOptions(sel=20){
-    return Array.from({length:21},(_,i)=>`<option value="${i}" ${i===sel?'selected':''}>${i} 星</option>`).join('');
+    return Array.from({length:20},(_,idx)=>{
+      const i = idx + 1;
+      return `<option value="${i}" ${i===sel?'selected':''}>${i} 星</option>`;
+    }).join('');
   }
   function metricScore(total, kind){
     if(kind === 'physicalStr') return Number(total['力量'] || 0) * 2 + Number(total['靈敏'] || 0) / 2 + Number(total['防禦'] || 0);
@@ -202,26 +205,31 @@
   }
   function topRecommendPlans(kind, stars){
     const allNames = names().filter(n => n && D().baseStats && D().baseStats[n]);
-    const beamLimit = 700;
-    let states = [{picks:[]}];
-    for(let slot=0; slot<REC_SLOTS.length; slot++){
-      const next = [];
-      for(const state of states){
-        const used = new Set(state.picks.map(p=>p.n));
-        for(const n of allNames){
-          if(used.has(n)) continue;
-          const picks = state.picks.concat({n, s:stars[slot]});
-          const quick = recommendTotal(picks).total;
-          next.push({picks, quickScore:metricScore(quick, kind)});
+    const beamLimit = 120;
+    const bestByMain = [];
+    for(const mainName of allNames){
+      let states = [{picks:[{n:mainName, s:stars[0]}]}];
+      for(let slot=1; slot<REC_SLOTS.length; slot++){
+        const next = [];
+        for(const state of states){
+          const used = new Set(state.picks.map(p=>p.n));
+          for(const n of allNames){
+            if(used.has(n)) continue;
+            const picks = state.picks.concat({n, s:stars[slot]});
+            const quick = recommendTotal(picks).total;
+            next.push({picks, quickScore:metricScore(quick, kind)});
+          }
         }
+        next.sort((a,b)=>b.quickScore-a.quickScore);
+        states = next.slice(0, beamLimit);
       }
-      next.sort((a,b)=>b.quickScore-a.quickScore);
-      states = next.slice(0, beamLimit);
+      const best = states.map(state=>{
+        const res = recommendTotal(state.picks);
+        return {...state, total:res.total, combos:res.combos, score:metricScore(res.total, kind)};
+      }).sort((a,b)=>b.score-a.score)[0];
+      if(best) bestByMain.push(best);
     }
-    return states.map(state=>{
-      const res = recommendTotal(state.picks);
-      return {...state, total:res.total, combos:res.combos, score:metricScore(res.total, kind)};
-    }).sort((a,b)=>b.score-a.score).slice(0,3);
+    return bestByMain.sort((a,b)=>b.score-a.score).slice(0,3);
   }
   function statLine(total, keys){
     return keys.map(k=>`${E(k)} ${fmt(total[k] || 0)}`).join('　');
@@ -242,16 +250,16 @@
     saveRecommendStars(stars);
     const box = $('jiangRecommendResults');
     if(!box) return;
+    const kind = $('recMetric')?.value || 'physicalStr';
+    const metric = REC_METRICS.find(m => m.kind === kind) || REC_METRICS[0];
     box.innerHTML = '<div class="notice">正在計算推薦組合...</div>';
     setTimeout(()=>{
-      const html = REC_METRICS.map(metric=>{
-        const plans = topRecommendPlans(metric.kind, stars);
-        return `<section class="card supportChoiceCard" style="box-shadow:none;margin-top:18px;border-color:rgba(54,211,207,.55)">
-          <h2>${E(metric.title)}</h2>
-          <div class="muted">${E(metric.desc)}，列出前 3 個候補。</div>
-          ${plans.map((p,i)=>recommendCard(metric,p,i)).join('')}
-        </section>`;
-      }).join('');
+      const plans = topRecommendPlans(metric.kind, stars);
+      const html = `<section class="card supportChoiceCard" style="box-shadow:none;margin-top:18px;border-color:rgba(54,211,207,.55)">
+        <h2>${E(metric.title)}</h2>
+        <div class="muted">${E(metric.desc)}，列出前 3 個候補。</div>
+        ${plans.map((p,i)=>recommendCard(metric,p,i)).join('')}
+      </section>`;
       box.innerHTML = html || '<div class="empty">沒有可用的降神資料。</div>';
     }, 20);
   }
@@ -263,14 +271,14 @@
       <div class="notice">手動設定主降神與 4 個副降神的星等後，系統會推薦物理、術法、防禦三種方向各 1 ~ 3 個候補組合。副降神能力依 10% 納入，若組合成立也會納入連結加成。</div>
       <div class="kvGrid">
         ${REC_SLOTS.map((label,i)=>`<div class="kv"><div class="k">${E(label)}星等</div><div class="v"><select id="recStar${i}">${recommendStarOptions(stars[i])}</select></div></div>`).join('')}
+        <div class="kv"><div class="k">推薦方向</div><div class="v"><select id="recMetric">${REC_METRICS.map(m=>`<option value="${E(m.kind)}">${E(m.title)}</option>`).join('')}</select></div></div>
       </div>
       <div class="supportSaveBar" style="margin-top:14px">
         <button id="runJiangRecommend" type="button">產生推薦方案</button>
       </div>
-      <div id="jiangRecommendResults"></div>
+      <div id="jiangRecommendResults"><div class="empty">請先設定星等與推薦方向，再按「產生推薦方案」。</div></div>
     </section>`;
     $('runJiangRecommend').onclick = renderRecommendResults;
-    renderRecommendResults();
   }
 
   window.renderSupportSlotsPage = function(){ renderSupport(); closeMenu(); scrollTop(); };
