@@ -162,11 +162,122 @@
     </tbody></table></div>${cols.map(c=>`<h3>${E(c.label)} 成立連結</h3>${comboTextBlock(c.res)}`).join('')}`;
   }
 
+  const REC_STAR_KEY = 'szo_jiang_recommend_stars_v1';
+  const REC_SLOTS = ['主降神', '副降1', '副降2', '副降3', '副降4', '副降5'];
+  const REC_RATE = [1, 0.1, 0.1, 0.1, 0.1, 0.1];
+  const REC_METRICS = [
+    {kind:'physical', title:'物理職業', desc:'依 力量 ^ 2 + 靈敏 / 2 排序', keys:['力量','靈敏']},
+    {kind:'spell', title:'術法職業', desc:'依 智慧 + 術攻 排序', keys:['智慧','術攻']},
+    {kind:'defense', title:'防禦向', desc:'依 防禦 + 術防 排序', keys:['防禦','術防']}
+  ];
+
+  function recommendStars(){
+    const saved = readJson(REC_STAR_KEY, null);
+    const fallback = [20,20,20,20,20,20];
+    return Array.from({length:6},(_,i)=>Math.max(0,Math.min(20,Math.floor(Number(saved?.[i] ?? fallback[i])))));
+  }
+  function saveRecommendStars(stars){ writeJson(REC_STAR_KEY, stars); }
+  function readRecommendStars(){
+    return Array.from({length:6},(_,i)=>Math.max(0,Math.min(20,Math.floor(Number($('recStar'+i)?.value || 0)))));
+  }
+  function recommendStarOptions(sel=20){
+    return Array.from({length:21},(_,i)=>`<option value="${i}" ${i===sel?'selected':''}>${i} 星</option>`).join('');
+  }
+  function metricScore(total, kind){
+    if(kind === 'physical') return Math.pow(Number(total['力量'] || 0), 2) + Number(total['靈敏'] || 0) / 2;
+    if(kind === 'spell') return Number(total['智慧'] || 0) + Number(total['術攻'] || 0);
+    if(kind === 'defense') return Number(total['防禦'] || 0) + Number(total['術防'] || 0);
+    return 0;
+  }
+  function recommendTotal(picks){
+    let total = Object.fromEntries(stats().map(s=>[s,0]));
+    picks.forEach((p,i)=>{
+      total = add(total, scale(getAbility(p.n, p.s), REC_RATE[i] || 0.1));
+    });
+    const combos = typeof activeCombos === 'function' ? activeCombos(picks.map(p=>p.n)) : [];
+    if(typeof comboBonus === 'function') total = add(total, scale(comboBonus(combos), 1));
+    return {total, combos};
+  }
+  function topRecommendPlans(kind, stars){
+    const allNames = names().filter(n => n && D().baseStats && D().baseStats[n]);
+    const beamLimit = 700;
+    let states = [{picks:[]}];
+    for(let slot=0; slot<6; slot++){
+      const next = [];
+      for(const state of states){
+        const used = new Set(state.picks.map(p=>p.n));
+        for(const n of allNames){
+          if(used.has(n)) continue;
+          const picks = state.picks.concat({n, s:stars[slot]});
+          const quick = recommendTotal(picks).total;
+          next.push({picks, quickScore:metricScore(quick, kind)});
+        }
+      }
+      next.sort((a,b)=>b.quickScore-a.quickScore);
+      states = next.slice(0, beamLimit);
+    }
+    return states.map(state=>{
+      const res = recommendTotal(state.picks);
+      return {...state, total:res.total, combos:res.combos, score:metricScore(res.total, kind)};
+    }).sort((a,b)=>b.score-a.score).slice(0,3);
+  }
+  function statLine(total, keys){
+    return keys.map(k=>`${E(k)} ${fmt(total[k] || 0)}`).join('　');
+  }
+  function recommendCard(metric, plan, idx){
+    return `<article class="card supportChoiceCard" style="box-shadow:none;margin-top:12px">
+      <h3>${idx + 1}. ${E(metric.title)}候補方案</h3>
+      <div class="muted">${E(metric.desc)}：${fmt(plan.score)}</div>
+      <div class="notice" style="margin-top:10px">${statLine(plan.total, metric.keys)}</div>
+      <div class="kvGrid" style="margin-top:10px">
+        ${plan.picks.map((p,i)=>`<div class="kv"><div class="k">${E(REC_SLOTS[i])}</div><div class="v"><b>${E(p.n)}</b><br><span class="muted">${p.s} 星${i===0?' / 100%':' / 10%'}</span></div></div>`).join('')}
+      </div>
+      ${plan.combos && plan.combos.length ? `<div class="muted" style="margin-top:10px">連結：${plan.combos.map(E).join('、')}</div>` : ''}
+    </article>`;
+  }
+  function renderRecommendResults(){
+    const stars = readRecommendStars();
+    saveRecommendStars(stars);
+    const box = $('jiangRecommendResults');
+    if(!box) return;
+    box.innerHTML = '<div class="notice">正在計算推薦組合...</div>';
+    setTimeout(()=>{
+      const html = REC_METRICS.map(metric=>{
+        const plans = topRecommendPlans(metric.kind, stars);
+        return `<section class="card supportChoiceCard" style="box-shadow:none;margin-top:14px">
+          <h2>${E(metric.title)}</h2>
+          <div class="muted">${E(metric.desc)}，列出前 3 個候補。</div>
+          ${plans.map((p,i)=>recommendCard(metric,p,i)).join('')}
+        </section>`;
+      }).join('');
+      box.innerHTML = html || '<div class="empty">沒有可用的降神資料。</div>';
+    }, 20);
+  }
+  function renderRecommend(){
+    const reader = $('reader'); if(!reader) return;
+    const stars = recommendStars();
+    reader.innerHTML = `<section class="card">
+      <h1>副降神組合推薦方案</h1>
+      <div class="notice">手動設定主降神與 5 個副降神的星等後，系統會推薦物理、術法、防禦三種方向各 1 ~ 3 個候補組合。副降神能力依 10% 納入，若組合成立也會納入連結加成。</div>
+      <div class="kvGrid">
+        ${REC_SLOTS.map((label,i)=>`<div class="kv"><div class="k">${E(label)}星等</div><div class="v"><select id="recStar${i}">${recommendStarOptions(stars[i])}</select></div></div>`).join('')}
+      </div>
+      <div class="supportSaveBar" style="margin-top:14px">
+        <button id="runJiangRecommend" type="button">產生推薦方案</button>
+      </div>
+      <div id="jiangRecommendResults"></div>
+    </section>`;
+    $('runJiangRecommend').onclick = renderRecommendResults;
+    renderRecommendResults();
+  }
+
   window.renderSupportSlotsPage = function(){ renderSupport(); closeMenu(); scrollTop(); };
   window.renderSupportComparePage = function(){ renderSupportCompare(); closeMenu(); scrollTop(); };
+  window.renderJiangRecommendPage = function(){ renderRecommend(); closeMenu(); scrollTop(); };
   const oldSetJiang = window.setJiang;
   window.setJiang = function(kind){
     if(kind === 'support'){ window.renderSupportSlotsPage(); return; }
+    if(kind === 'recommend'){ window.renderJiangRecommendPage(); return; }
     if(kind === 'supportCompare'){ window.renderSupportComparePage(); return; }
     if(typeof oldSetJiang === 'function') return oldSetJiang(kind);
   };
